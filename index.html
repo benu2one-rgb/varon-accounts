@@ -1024,6 +1024,7 @@ function renderAdmin(){
         <input class="form-control" id="new-campus-name" placeholder="새 캠퍼스명" style="flex:1">
         <button class="btn btn-success" onclick="doAddCampus()">추가</button>
       </div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="testFirestore()">🔌 Firebase 연결 테스트</button>
     </div>
   </div>`;
 }
@@ -1176,9 +1177,23 @@ async function doAddCampus(){
   const name=document.getElementById('new-campus-name')?.value?.trim();
   if(!name) return;
   if(S.campuses.find(c=>c.name===name)){alert('이미 존재하는 캠퍼스명입니다');return;}
-  await saveCampus(name);
-  setAlert(`캠퍼스 '${name}'이 추가되었습니다.`,'success');
-  renderCurrentView();
+  try{
+    await saveCampus(name);
+    setAlert('✅ 캠퍼스 저장 완료!','success');
+    renderCurrentView();
+  }catch(e){
+    alert('❌ 저장 실패: '+e.message+'\n\nFirebase 보안 규칙을 확인해주세요.');
+  }
+}
+
+async function testFirestore(){
+  try{
+    await db.collection('_test').add({t:Date.now()});
+    alert('✅ Firebase 연결 정상! 캠퍼스를 다시 추가해보세요.');
+    await db.collection('_test').get().then(s=>s.forEach(d=>d.ref.delete()));
+  }catch(e){
+    alert('❌ Firebase 연결 실패: '+e.message);
+  }
 }
 
 async function doDeleteCampus(id){
