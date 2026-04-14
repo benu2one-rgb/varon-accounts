@@ -981,7 +981,8 @@ function initInputGrades(existingRecord){
 function renderAdmin(){
   if(S.user?.role!=='admin') return `<div class="empty-state"><div class="icon">🔒</div><p>접근 권한이 없습니다.</p></div>`;
   const campusOpts=S.campuses.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
-  return `<div class="page-header"><div><div class="page-title">관리자</div><div class="page-sub">사용자 및 캠퍼스 관리</div></div></div>
+  return `<div class="page-header"><div><div class="page-title">관리자</div><div class="page-sub">사용자 및 캠퍼스 관리</div></div>
+    <button class="btn btn-secondary" onclick="reloadData()">🔄 데이터 새로고침</button></div>
   <div class="admin-grid">
     <!-- User Management -->
     <div class="form-section" style="grid-column:1/-1">
@@ -1379,6 +1380,24 @@ function downloadBlankTemplate(){ downloadTemplate(false); }
 function downloadPrefillTemplate(){ downloadTemplate(true); }
 
 // ================================================================
+// RELOAD DATA
+// ================================================================
+async function reloadData(){
+  try{
+    const [cSnap,rSnap]=await Promise.all([
+      db.collection('campuses').get(),
+      db.collection('records').orderBy('year').orderBy('month').get()
+    ]);
+    S.campuses=cSnap.docs.map(d=>({id:d.id,...d.data()}));
+    S.records=rSnap.docs.map(d=>({id:d.id,...d.data()}));
+    setAlert(`✅ 새로고침 완료 — 캠퍼스 ${S.campuses.length}개, 데이터 ${S.records.length}건`,'success');
+    renderCurrentView();
+  }catch(e){
+    alert('새로고침 실패: '+e.message);
+  }
+}
+
+// ================================================================
 // INIT
 // ================================================================
 async function init(){
@@ -1399,12 +1418,18 @@ async function init(){
     }
     if(session && S.users.find(u=>u.displayId===session.displayId&&u.passwordHash===session.passwordHash&&u.active!==false)){
       S.user=session;
-      const [cSnap,rSnap]=await Promise.all([
-        db.collection('campuses').get(),
-        db.collection('records').orderBy('year').orderBy('month').get()
-      ]);
-      S.campuses=cSnap.docs.map(d=>({id:d.id,...d.data()}));
-      S.records=rSnap.docs.map(d=>({id:d.id,...d.data()}));
+      try{
+        const [cSnap,rSnap]=await Promise.all([
+          db.collection('campuses').get(),
+          db.collection('records').orderBy('year').orderBy('month').get()
+        ]);
+        S.campuses=cSnap.docs.map(d=>({id:d.id,...d.data()}));
+        S.records=rSnap.docs.map(d=>({id:d.id,...d.data()}));
+        console.log('Loaded campuses:',S.campuses.length,'records:',S.records.length);
+      }catch(loadErr){
+        console.error('Data load error:',loadErr);
+        alert('데이터 로드 실패: '+loadErr.message);
+      }
       S.view='dashboard';
     } else {
       clearSession();
