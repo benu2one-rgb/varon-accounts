@@ -416,7 +416,7 @@ async function loadAllData(){
     const [uSnap,cSnap,rSnap] = await Promise.all([
       db.collection('users').get(),
       db.collection('campuses').get(),
-      db.collection('records').orderBy('year').orderBy('month').get()
+      db.collection('records').get()
     ]);
     S.users = uSnap.docs.map(d=>({id:d.id,...d.data()}));
     S.campuses = cSnap.docs.map(d=>({id:d.id,...d.data()}));
@@ -1386,7 +1386,7 @@ async function reloadData(){
   try{
     const [cSnap,rSnap]=await Promise.all([
       db.collection('campuses').get(),
-      db.collection('records').orderBy('year').orderBy('month').get()
+      db.collection('records').get()
     ]);
     S.campuses=cSnap.docs.map(d=>({id:d.id,...d.data()}));
     S.records=rSnap.docs.map(d=>({id:d.id,...d.data()}));
@@ -1421,7 +1421,7 @@ async function init(){
       try{
         const [cSnap,rSnap]=await Promise.all([
           db.collection('campuses').get(),
-          db.collection('records').orderBy('year').orderBy('month').get()
+          db.collection('records').get()
         ]);
         S.campuses=cSnap.docs.map(d=>({id:d.id,...d.data()}));
         S.records=rSnap.docs.map(d=>({id:d.id,...d.data()}));
