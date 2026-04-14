@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바론네트웍스 통합 관리 시스템</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#0f3460;--navy2:#1a4a7a;--navy3:#e8eef8;
+  --teal:#1d9e75;--teal2:#eaf7f2;
+  --red:#c0392b;--red2:#fdeaea;
+  --amber:#e67e22;--amber2:#fef6ec;
+  --blue:#2980b9;--blue2:#eaf4fb;
+  --gray:#6b7194;--gray2:#f5f6fa;--gray3:#e4e7f0;
+  --surface:#fff;--border:#e0e4ef;--text:#1a1f36;--text2:#6b7194;
+  --shadow:0 2px 8px rgba(15,52,96,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--gray2);color:var(--text);font-size:14px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:inherit;font-size:14px}
+input,select,textarea{font-family:inherit;font-size:14px}
+
+/* ── LAYOUT ── */
+#app{min-height:100vh}
+.app-shell{display:flex;flex-direction:column;min-height:100vh}
+
+/* ── HEADER ── */
+.header{background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.header-logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:32px;height:32px;background:var(--teal);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.logo-text{font-size:15px;font-weight:600;letter-spacing:-.3px}
+.logo-sub{font-size:11px;opacity:.6;margin-top:1px}
+.header-nav{display:flex;gap:4px}
+.nav-item{padding:6px 16px;border-radius:6px;color:rgba(255,255,255,.7);border:none;background:none;transition:all .15s;font-size:13px;font-weight:500}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.15);color:#fff}
+.header-user{display:flex;align-items:center;gap:10px;font-size:13px;opacity:.9}
+.user-badge{background:rgba(255,255,255,.15);padding:3px 10px;border-radius:12px;font-size:12px}
+.btn-logout{padding:5px 12px;border:1px solid rgba(255,255,255,.3);border-radius:6px;background:none;color:rgba(255,255,255,.8);font-size:12px}
+.btn-logout:hover{background:rgba(255,255,255,.1)}
+
+/* ── CONTENT ── */
+.content{flex:1;padding:24px;max-width:1280px;margin:0 auto;width:100%}
+
+/* ── FILTER BAR ── */
+.filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;box-shadow:var(--shadow)}
+.filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:8px}
+.filter-label{font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
+.filter-divider{width:1px;height:24px;background:var(--border);margin:0 4px}
+.filter-type-btn{padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--gray2);color:var(--text2);font-size:12px;font-weight:500;transition:all .15s}
+.filter-type-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+select.f-select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);min-width:80px}
+select.f-select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px rgba(15,52,96,.12)}
+
+/* ── TABS ── */
+.tab-bar{display:flex;gap:4px;background:var(--gray2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:20px;width:fit-content}
+.tab-btn{padding:8px 20px;border-radius:7px;border:none;background:none;color:var(--text2);font-weight:500;font-size:13px;transition:all .15s}
+.tab-btn.active{background:var(--surface);color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.stat-card.blue{border-left:3px solid var(--blue)}
+.stat-card.green{border-left:3px solid var(--teal)}
+.stat-card.red{border-left:3px solid var(--red)}
+.stat-card.amber{border-left:3px solid var(--amber)}
+.stat-card.navy{border-left:3px solid var(--navy)}
+.stat-lbl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.stat-val{font-size:28px;font-weight:700;color:var(--text);line-height:1}
+.stat-sub{font-size:12px;color:var(--text2);margin-top:4px}
+.stat-note{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* ── TOGGLE STRIP ── */
+.toggle-strip{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.toggle-label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.toggle-group{display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.toggle-btn{padding:5px 12px;border:none;background:var(--gray2);color:var(--text2);font-size:12px;font-weight:500;transition:all .15s;border-right:1px solid var(--border)}
+.toggle-btn:last-child{border-right:none}
+.toggle-btn.active{background:var(--navy);color:#fff}
+
+/* ── CHARTS ── */
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:16px;margin-bottom:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow)}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:.04em}
+.chart-wrap{position:relative;width:100%;height:260px}
+
+/* ── TABLE ── */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px}
+.table-card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.table-card-title{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);background:var(--gray2);border-bottom:1px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
+.data-table thead th.num{text-align:right}
+.data-table tbody td{padding:10px 12px;border-bottom:1px solid var(--gray3);color:var(--text)}
+.data-table tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
+.data-table tbody tr:last-child td{border-bottom:none}
+.data-table tbody tr:hover td{background:var(--gray2)}
+.data-table tfoot td{padding:10px 12px;font-weight:700;background:var(--gray2);border-top:2px solid var(--border);color:var(--navy)}
+.data-table tfoot td.num{text-align:right}
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.pill.up{background:var(--teal2);color:var(--teal)}
+.pill.dn{background:var(--red2);color:var(--red)}
+.pill.neu{background:var(--gray3);color:var(--gray)}
+.pill.blue{background:var(--blue2);color:var(--blue)}
+.rate-badge{font-variant-numeric:tabular-nums}
+
+/* ── LOGIN ── */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%)}
+.login-box{background:var(--surface);border-radius:16px;padding:40px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .mark{width:56px;height:56px;background:var(--navy);border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;margin:0 auto 12px}
+.login-logo .title{font-size:17px;font-weight:700;color:var(--text)}
+.login-logo .sub{font-size:12px;color:var(--text2);margin-top:3px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.form-control{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);transition:border-color .15s}
+.form-control:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,52,96,.1)}
+.btn{padding:10px 20px;border-radius:8px;border:1px solid var(--border);font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy);width:100%;justify-content:center}
+.btn-primary:hover{background:var(--navy2)}
+.btn-secondary{background:var(--surface);color:var(--text)}
+.btn-secondary:hover{background:var(--gray2)}
+.btn-danger{background:var(--red2);color:var(--red);border-color:#f5c6c4}
+.btn-danger:hover{background:#fbd5d3}
+.btn-success{background:var(--teal2);color:var(--teal);border-color:#b8e8d9}
+.btn-success:hover{background:#d4f0e8}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:6px}
+.error-msg{background:var(--red2);color:var(--red);padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
+
+/* ── FORMS ── */
+.form-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow)}
+.form-section-title{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.form-row{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.form-row label{font-size:12px;font-weight:600;color:var(--text2);min-width:80px}
+.input-sm{padding:7px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);width:100px}
+.input-sm:focus{outline:none;border-color:var(--navy)}
+.input-xs{width:70px;padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);text-align:center}
+.input-xs:focus{outline:none;border-color:var(--navy)}
+.grade-entry-table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
+.grade-entry-table th{padding:8px 8px;font-size:11px;font-weight:600;color:var(--text2);background:var(--gray2);border-bottom:1px solid var(--border);text-align:center;text-transform:uppercase;letter-spacing:.04em}
+.grade-entry-table th:first-child{text-align:left;padding-left:12px}
+.grade-entry-table td{padding:6px 6px;border-bottom:1px solid var(--gray3);text-align:center}
+.grade-entry-table td:first-child{text-align:left;padding-left:12px;font-weight:600;color:var(--navy)}
+.grade-entry-table td.calc{background:var(--navy3);font-weight:700;color:var(--navy)}
+.grade-entry-table tfoot td{padding:8px 8px;background:var(--gray2);font-weight:700;border-top:2px solid var(--border);text-align:center;color:var(--navy)}
+.grade-entry-table tfoot td:first-child{text-align:left;padding-left:12px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.overflow-x{overflow-x:auto}
+
+/* ── ADMIN ── */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.user-table-row .actions{display:flex;gap:6px;opacity:0;transition:opacity .15s}
+.user-table-row:hover .actions{opacity:1}
+.campus-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.campus-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--navy3);color:var(--navy);border-radius:14px;font-size:12px;font-weight:500}
+.campus-tag .remove-tag{background:none;border:none;color:var(--text2);line-height:1;padding:0 2px;font-size:14px;cursor:pointer}
+.campus-tag .remove-tag:hover{color:var(--red)}
+.add-row{display:flex;gap:8px;margin-top:10px}
+
+/* ── SETUP ── */
+.setup-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy)}
+.setup-box{background:var(--surface);border-radius:16px;padding:40px;width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.setup-step{margin-bottom:20px;padding:16px;background:var(--gray2);border-radius:10px;border:1px solid var(--border)}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty-state .icon{font-size:40px;margin-bottom:12px;opacity:.5}
+.empty-state p{font-size:14px}
+
+/* ── MISC ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:700;color:var(--text)}
+.page-sub{font-size:13px;color:var(--text2);margin-top:2px}
+.alert{padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px}
+.alert-success{background:var(--teal2);color:var(--teal)}
+.alert-error{background:var(--red2);color:var(--red)}
+.alert-info{background:var(--blue2);color:var(--blue)}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-page{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:var(--gray2);color:var(--text2)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-admin{background:#fff3cd;color:#856404}
+.badge-user{background:var(--blue2);color:var(--blue)}
+@media(max-width:768px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .charts-grid{grid-template-columns:1fr}
+  .admin-grid{grid-template-columns:1fr}
+  .content{padding:12px}
+  .header-nav{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading-page"><div class="spinner" style="border-top-color:var(--navy);border-color:var(--border);width:28px;height:28px;border-width:3px"></div><p>로딩 중...</p></div></div>
+
+<script>
+// ================================================================
+// FIREBASE CONFIG — Replace with your own Firebase project config
+// ================================================================
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// ================================================================
+// CONSTANTS
+// ================================================================
+const GRADES = ['초1','초2','초3','초4','초5','초6','중1','중2','중3'];
+const SEASONS = {winter:'겨울(12~2월)',spring:'봄(3~5월)',summer:'여름(6~8월)',fall:'가을(9~11월)'};
+const SEASON_MONTHS = {
+  winter:[12,1,2], spring:[3,4,5], summer:[6,7,8], fall:[9,10,11]
+};
+const CY = new Date().getFullYear(), CM = new Date().getMonth()+1;
+const CHART_COLORS = ['#0f3460','#1d9e75','#e67e22','#c0392b','#2980b9','#8e44ad','#16a085','#d35400'];
+
+// ================================================================
+// STATE
+// ================================================================
+const S = {
+  user: null, campuses: [], records: [], users: [],
+  view: 'loading', // loading|setup|login|dashboard|input|admin
+  dashTab: 'overview', // overview|campus|grade
+  filterType: 'period', // period|season
+  periodStart: {y:CY, m:1}, periodEnd: {y:CY, m:CM},
+  season: 'spring', seasonYear: CY,
+  campusFilter: 'all', gradeFilter: '초1',
+  inputCampus: '', inputYear: CY, inputMonth: CM,
+  inputGrades: [],
+  newInMode: 'combined', // pure|combined
+  withdrawMode: 'combined',
+  alert: null,
+  loading: false
+};
+
+let db;
+const charts = {};
+
+// ================================================================
+// UTILS
+// ================================================================
+async function sha256(msg) {
+  const buf = new TextEncoder().encode(msg);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function esc(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function sum(arr, fn){ return arr.reduce((s,x)=>s+(fn?fn(x):x),0); }
+
+function yearRange(from=2023){ const yrs=[]; for(let y=CY;y>=from;y--) yrs.push(y); return yrs; }
+
+function getSeason(m){ if([12,1,2].includes(m)) return 'winter'; if([3,4,5].includes(m)) return 'spring'; if([6,7,8].includes(m)) return 'summer'; return 'fall'; }
+
+function getSeasonDateRange(season, year){
+  // Returns [{year, month}] for the given season+year
+  const months = SEASON_MONTHS[season];
+  return months.map(m => ({
+    year: season==='winter' && m===12 ? year : season==='winter' ? year : year,
+    month: m
+  }));
+  // For winter Y: Dec(Y-1), Jan(Y), Feb(Y) -> year means Jan/Feb year
+}
+
+function getSeasonMonthPairs(season, year){
+  if(season==='winter') return [[year-1,12],[year,1],[year,2]];
+  return SEASON_MONTHS[season].map(m=>[year,m]);
+}
+
+function inFilter(r){
+  if(S.filterType==='period'){
+    const d=r.year*100+r.month;
+    return d>=S.periodStart.y*100+S.periodStart.m && d<=S.periodEnd.y*100+S.periodEnd.m;
+  } else {
+    const pairs=getSeasonMonthPairs(S.season,S.seasonYear);
+    return pairs.some(([y,m])=>r.year===y&&r.month===m);
+  }
+}
+
+function filteredRecords(){
+  let recs = S.records.filter(inFilter);
+  if(S.campusFilter!=='all') recs=recs.filter(r=>r.campus===S.campusFilter);
+  return recs;
+}
+
+// ── Grade aggregation for a record ──
+function gradeStats(grades, mode_new='combined', mode_wd='combined'){
+  return grades.map(g=>({
+    grade: g.grade,
+    prev: g.prev||0,
+    newIn: mode_new==='pure' ? (g.newIn||0) : (g.newIn||0)+(g.transIn||0),
+    pureNew: g.newIn||0,
+    transIn: g.transIn||0,
+    withdraw: mode_wd==='pure' ? (g.withdraw||0) : (g.withdraw||0)+(g.transOut||0)+(g.graduate||0),
+    pureWd: g.withdraw||0,
+    transOut: g.transOut||0,
+    graduate: g.graduate||0,
+    current: g.current||0,
+    notes: g.notes||''
+  }));
+}
+
+function recordTotals(rec){
+  const gs=gradeStats(rec.grades, S.newInMode, S.withdrawMode);
+  const prev=sum(gs,g=>g.prev), newIn=sum(gs,g=>g.newIn), withdraw=sum(gs,g=>g.withdraw), current=sum(gs,g=>g.current);
+  const baseDenom=prev+(S.newInMode==='pure'?sum(gs,g=>g.pureNew):sum(gs,g=>g.pureNew+g.transIn));
+  const wdRate=baseDenom>0?((withdraw/baseDenom)*100).toFixed(2):'0.00';
+  return {prev,newIn,withdraw,current,wdRate,gs};
+}
+
+function monthKey(y,m){ return `${y}-${String(m).padStart(2,'0')}`; }
+function monthLabel(k){ const [y,m]=k.split('-'); return `${y}.${m}`; }
+
+// Aggregate all filtered records by month
+function byMonth(recs){
+  const map={};
+  recs.forEach(r=>{
+    const k=monthKey(r.year,r.month);
+    if(!map[k]) map[k]={month:k,newIn:0,withdraw:0,current:0,prev:0,wdNumer:0,wdDenom:0};
+    const t=recordTotals(r);
+    map[k].newIn+=t.newIn; map[k].withdraw+=t.withdraw; map[k].current+=t.current; map[k].prev+=t.prev;
+    // Withdrawal rate numerator/denominator for aggregated rate
+    const gs=gradeStats(r.grades,'combined','combined');
+    map[k].wdNumer+=sum(gs,g=>g.withdraw); map[k].wdDenom+=sum(gs,g=>g.prev+g.pureNew+g.transIn);
+  });
+  return Object.values(map).sort((a,b)=>a.month.localeCompare(b.month));
+}
+
+// Aggregate by campus
+function byCampus(recs){
+  const map={};
+  recs.forEach(r=>{
+    if(!map[r.campus]) map[r.campus]={campus:r.campus,newIn:0,withdraw:0,current:0,prev:0,wdNumer:0,wdDenom:0,months:0};
+    const t=recordTotals(r);
+    map[r.campus].newIn+=t.newIn; map[r.campus].withdraw+=t.withdraw; map[r.campus].prev+=t.prev; map[r.campus].months++;
+    const gs=gradeStats(r.grades,'combined','combined');
+    map[r.campus].wdNumer+=sum(gs,g=>g.withdraw); map[r.campus].wdDenom+=sum(gs,g=>g.prev+g.pureNew+g.transIn);
+    // latest current
+    if(!map[r.campus]._latest || r.year*100+r.month > map[r.campus]._latest)
+      { map[r.campus].current=t.current; map[r.campus]._latest=r.year*100+r.month; }
+  });
+  return Object.values(map).map(c=>({...c, wdRate:c.wdDenom>0?((c.wdNumer/c.wdDenom)*100).toFixed(2):'0.00'}));
+}
+
+// Aggregate by grade across all records
+function byGrade(recs){
+  const map={};
+  GRADES.forEach(g=>{ map[g]={grade:g,newIn:0,withdraw:0,current:0,prev:0,wdNumer:0,wdDenom:0}; });
+  recs.forEach(r=>{
+    const gs=gradeStats(r.grades,S.newInMode,S.withdrawMode);
+    gs.forEach(g=>{
+      if(!map[g.grade]) map[g.grade]={grade:g.grade,newIn:0,withdraw:0,current:0,prev:0,wdNumer:0,wdDenom:0};
+      map[g.grade].newIn+=g.newIn; map[g.grade].withdraw+=g.withdraw; map[g.grade].prev+=g.prev;
+      map[g.grade].wdNumer+=(S.withdrawMode==='pure'?g.pureWd:g.pureWd+g.transOut+g.graduate);
+      map[g.grade].wdDenom+=g.prev+g.pureNew+g.transIn;
+    });
+    // latest current per grade
+    const latestGs=gradeStats(r.grades,'combined','combined');
+    latestGs.forEach(g=>{ map[g.grade].current+=g.current; });
+  });
+  return GRADES.map(g=>({...map[g], wdRate:map[g].wdDenom>0?((map[g].wdNumer/map[g].wdDenom)*100).toFixed(2):'0.00'}));
+}
+
+// Withdrawal rate by campus by month
+function wdRateByCampusMonth(recs){
+  const campusList = [...new Set(recs.map(r=>r.campus))].sort();
+  const months = [...new Set(recs.map(r=>monthKey(r.year,r.month)))].sort();
+  const data={};
+  campusList.forEach(c=>{data[c]={};months.forEach(m=>{data[c][m]=null;});});
+  recs.forEach(r=>{
+    const k=monthKey(r.year,r.month);
+    const gs=gradeStats(r.grades,'combined','combined');
+    const numer=sum(gs,g=>g.withdraw); const denom=sum(gs,g=>g.prev+g.pureNew+g.transIn);
+    data[r.campus][k]=denom>0?parseFloat(((numer/denom)*100).toFixed(2)):0;
+  });
+  return {campusList,months,data};
+}
+
+// ================================================================
+// SESSION
+// ================================================================
+function saveSession(user){ localStorage.setItem('baron_session', JSON.stringify(user)); }
+function clearSession(){ localStorage.removeItem('baron_session'); }
+function getSession(){ try{ return JSON.parse(localStorage.getItem('baron_session')||'null'); }catch(e){return null;} }
+
+// ================================================================
+// FIRESTORE OPS
+// ================================================================
+async function loadAllData(){
+  try {
+    const [uSnap,cSnap,rSnap] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('campuses').get(),
+      db.collection('records').orderBy('year').orderBy('month').get()
+    ]);
+    S.users = uSnap.docs.map(d=>({id:d.id,...d.data()}));
+    S.campuses = cSnap.docs.map(d=>({id:d.id,...d.data()}));
+    S.records = rSnap.docs.map(d=>({id:d.id,...d.data()}));
+  } catch(e){ console.error('Load error',e); }
+}
+
+async function saveRecord(data){
+  // Upsert by campus+year+month
+  const existing = S.records.find(r=>r.campus===data.campus&&r.year===data.year&&r.month===data.month);
+  const payload = {...data, updatedAt: Date.now(), updatedBy: S.user.displayId};
+  if(existing){
+    await db.collection('records').doc(existing.id).set(payload);
+    S.records = S.records.map(r=>r.id===existing.id?{id:existing.id,...payload}:r);
+  } else {
+    const ref = await db.collection('records').add({...payload, createdAt:Date.now(), createdBy:S.user.displayId});
+    S.records.push({id:ref.id,...payload});
+  }
+}
+
+async function deleteRecord(id){
+  await db.collection('records').doc(id).delete();
+  S.records = S.records.filter(r=>r.id!==id);
+}
+
+async function saveCampus(name){
+  const ref = await db.collection('campuses').add({name, createdAt:Date.now()});
+  S.campuses.push({id:ref.id,name});
+}
+
+async function deleteCampus(id){
+  await db.collection('campuses').doc(id).delete();
+  S.campuses = S.campuses.filter(c=>c.id!==id);
+}
+
+async function createUser(displayId, password, role, campuses){
+  const hash = await sha256(password);
+  const data = {displayId, passwordHash:hash, role, campuses:campuses||[], active:true, createdAt:Date.now()};
+  const existing = S.users.find(u=>u.displayId===displayId);
+  if(existing){ await db.collection('users').doc(existing.id).set(data); S.users=S.users.map(u=>u.id===existing.id?{id:existing.id,...data}:u); }
+  else { const ref=await db.collection('users').add(data); S.users.push({id:ref.id,...data}); }
+}
+
+async function deleteUser(id){
+  await db.collection('users').doc(id).delete();
+  S.users = S.users.filter(u=>u.id!==id);
+}
+
+async function toggleUserActive(id){
+  const u = S.users.find(u=>u.id===id);
+  if(!u) return;
+  await db.collection('users').doc(id).update({active:!u.active});
+  S.users = S.users.map(x=>x.id===id?{...x,active:!x.active}:x);
+}
+
+// ================================================================
+// AUTH
+// ================================================================
+async function login(displayId, password){
+  const hash = await sha256(password);
+  const user = S.users.find(u=>u.displayId===displayId && u.passwordHash===hash && u.active!==false);
+  if(!user) throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.');
+  S.user = user;
+  saveSession(user);
+  return user;
+}
+
+// ================================================================
+// CHART MANAGEMENT
+// ================================================================
+function destroyChart(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+function mkChart(id,config){ destroyChart(id); const c=document.getElementById(id); if(c) charts[id]=new Chart(c,config); }
+
+function chartColors(n){ return CHART_COLORS.slice(0,n); }
+
+// ================================================================
+// RENDER ENGINE
+// ================================================================
+function render(html){ document.getElementById('app').innerHTML=html; }
+function setAlert(msg,type='success'){ S.alert={msg,type}; setTimeout(()=>{S.alert=null;renderCurrentView();},3000); }
+
+function renderCurrentView(){
+  if(S.view==='loading') return render(renderLoading());
+  if(S.view==='setup') return render(renderSetup());
+  if(S.view==='login') return render(renderLogin());
+  if(S.view==='dashboard') return render(renderShell(renderDashboard()));
+  if(S.view==='input') return render(renderShell(renderInput()));
+  if(S.view==='admin') return render(renderShell(renderAdmin()));
+}
+
+function renderLoading(){ return `<div class="loading-page"><div class="spinner" style="border-top-color:var(--navy);border-color:var(--border);width:28px;height:28px;border-width:3px"></div><p>로딩 중...</p></div>`; }
+
+function renderAlert(){
+  if(!S.alert) return '';
+  return `<div class="alert alert-${S.alert.type}" style="margin-bottom:16px">${esc(S.alert.msg)}</div>`;
+}
+
+function renderShell(content){
+  const isAdmin = S.user?.role==='admin';
+  return `<div class="app-shell">
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-mark">B</div>
+      <div><div class="logo-text">바론네트웍스</div><div class="logo-sub">통합 관리 시스템</div></div>
+    </div>
+    <nav class="header-nav">
+      <button class="nav-item${S.view==='dashboard'?' active':''}" onclick="navTo('dashboard')">대시보드</button>
+      <button class="nav-item${S.view==='input'?' active':''}" onclick="navTo('input')">데이터 입력</button>
+      ${isAdmin?`<button class="nav-item${S.view==='admin'?' active':''}" onclick="navTo('admin')">관리자</button>`:''}
+    </nav>
+    <div class="header-user">
+      <span>${esc(S.user?.displayId||'')}</span>
+      <span class="user-badge badge badge-${S.user?.role==='admin'?'admin':'user'}">${S.user?.role==='admin'?'관리자':'사용자'}</span>
+      <button class="btn-logout" onclick="doLogout()">로그아웃</button>
+    </div>
+  </header>
+  <main class="content">${renderAlert()}${content}</main>
+</div>`;
+}
+
+// ================================================================
+// LOGIN VIEW
+// ================================================================
+function renderLogin(){
+  return `<div class="login-page">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="mark">B</div>
+      <div class="title">바론네트웍스</div>
+      <div class="sub">통합 관리 시스템</div>
+    </div>
+    <div id="login-err" class="error-msg"></div>
+    <div class="form-group"><label>아이디</label><input class="form-control" id="login-id" placeholder="아이디 입력" autocomplete="username"></div>
+    <div class="form-group"><label>비밀번호</label><input class="form-control" type="password" id="login-pw" placeholder="비밀번호 입력" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn btn-primary" onclick="doLogin()">로그인</button>
+  </div>
+</div>`;
+}
+
+// ================================================================
+// SETUP VIEW (first run)
+// ================================================================
+function renderSetup(){
+  return `<div class="setup-page">
+  <div class="setup-box">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="width:52px;height:52px;background:var(--navy);border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;margin:0 auto 10px">B</div>
+      <div style="font-size:17px;font-weight:700;color:var(--text)">최초 관리자 설정</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">ADMIN1, ADMIN2 계정 비밀번호를 설정하세요</div>
+    </div>
+    <div id="setup-err" class="error-msg"></div>
+    <div class="setup-step">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px">▸ ADMIN1 비밀번호</div>
+      <input class="form-control" type="password" id="setup-pw1" placeholder="ADMIN1 비밀번호">
+      <input class="form-control" type="password" id="setup-pw1c" placeholder="비밀번호 확인" style="margin-top:8px">
+    </div>
+    <div class="setup-step">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px">▸ ADMIN2 비밀번호</div>
+      <input class="form-control" type="password" id="setup-pw2" placeholder="ADMIN2 비밀번호">
+      <input class="form-control" type="password" id="setup-pw2c" placeholder="비밀번호 확인" style="margin-top:8px">
+    </div>
+    <button class="btn btn-primary" onclick="doSetup()" style="margin-top:8px">관리자 계정 생성</button>
+  </div>
+</div>`;
+}
+
+// ================================================================
+// FILTER BAR
+// ================================================================
+function renderFilterBar(showCampus=true, showGrade=false){
+  const yearOpts = yearRange(2023).map(y=>`<option value="${y}"${(S.filterType==='period'?S.periodEnd.y:S.seasonYear)===y?' selected':''}>${y}년</option>`).join('');
+  const syOpts = yearRange(2023).map(y=>`<option value="${y}"${S.periodStart.y===y?' selected':''}>${y}년</option>`).join('');
+  const mOpts = (sel)=>Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}"${sel===m?' selected':''}>${m}월</option>`).join('');
+  const campusOpts = `<option value="all">전체 캠퍼스</option>${S.campuses.map(c=>`<option value="${esc(c.name)}"${S.campusFilter===c.name?' selected':''}>${esc(c.name)}</option>`).join('')}`;
+  const gradeOpts = GRADES.map(g=>`<option value="${g}"${S.gradeFilter===g?' selected':''}>${g}</option>`).join('');
+  const syearOpts = yearRange(2023).map(y=>`<option value="${y}"${S.seasonYear===y?' selected':''}>${y}년</option>`).join('');
+  const seasonOpts = Object.entries(SEASONS).map(([k,v])=>`<option value="${k}"${S.season===k?' selected':''}>${v}</option>`).join('');
+
+  return `<div class="filter-bar">
+  <div class="filter-row">
+    <div class="filter-group">
+      <span class="filter-label">기간 유형</span>
+      <button class="filter-type-btn${S.filterType==='period'?' active':''}" onclick="setFilterType('period')">기간 선택</button>
+      <button class="filter-type-btn${S.filterType==='season'?' active':''}" onclick="setFilterType('season')">학기 선택</button>
+    </div>
+    <div class="filter-divider"></div>
+    ${S.filterType==='period'?`
+    <div class="filter-group">
+      <span class="filter-label">시작</span>
+      <select class="f-select" onchange="setPeriod('sy',this.value)">${syOpts}</select>
+      <select class="f-select" onchange="setPeriod('sm',this.value)">${mOpts(S.periodStart.m)}</select>
+    </div>
+    <span class="filter-sep" style="color:var(--text2)">~</span>
+    <div class="filter-group">
+      <span class="filter-label">종료</span>
+      <select class="f-select" onchange="setPeriod('ey',this.value)">${yearRange(2023).map(y=>`<option value="${y}"${S.periodEnd.y===y?' selected':''}>${y}년</option>`).join('')}</select>
+      <select class="f-select" onchange="setPeriod('em',this.value)">${mOpts(S.periodEnd.m)}</select>
+    </div>
+    `:
+    `<div class="filter-group">
+      <span class="filter-label">학기</span>
+      <select class="f-select" onchange="setSeason('season',this.value)">${seasonOpts}</select>
+      <select class="f-select" onchange="setSeason('year',this.value)">${syearOpts}</select>
+    </div>`
+    }
+    <div class="filter-divider"></div>
+    ${showCampus?`<div class="filter-group"><span class="filter-label">캠퍼스</span><select class="f-select" onchange="setCampusFilter(this.value)">${campusOpts}</select></div>`:''}
+    ${showGrade?`<div class="filter-group"><span class="filter-label">학년</span><select class="f-select" onchange="setGradeFilter(this.value)">${gradeOpts}</select></div>`:''}
+  </div>
+</div>`;
+}
+
+function renderToggleStrip(){
+  return `<div class="toggle-strip">
+  <span class="toggle-label">신입</span>
+  <div class="toggle-group">
+    <button class="toggle-btn${S.newInMode==='pure'?' active':''}" onclick="setMode('new','pure')">순수 신입</button>
+    <button class="toggle-btn${S.newInMode==='combined'?' active':''}" onclick="setMode('new','combined')">전입 포함</button>
+  </div>
+  <span class="toggle-label" style="margin-left:12px">퇴원</span>
+  <div class="toggle-group">
+    <button class="toggle-btn${S.withdrawMode==='pure'?' active':''}" onclick="setMode('wd','pure')">순수 퇴원</button>
+    <button class="toggle-btn${S.withdrawMode==='combined'?' active':''}" onclick="setMode('wd','combined')">전출·졸업 포함</button>
+  </div>
+</div>`;
+}
+
+// ================================================================
+// DASHBOARD VIEW
+// ================================================================
+function renderDashboard(){
+  const tabs = [{id:'overview',label:'전 캠퍼스 비교'},{id:'campus',label:'캠퍼스별 분석'},{id:'grade',label:'학년별 분석'}];
+  return `
+  <div class="page-header"><div><div class="page-title">대시보드</div><div class="page-sub">기간을 선택하여 분원 현황을 분석합니다</div></div></div>
+  <div class="tab-bar">${tabs.map(t=>`<button class="tab-btn${S.dashTab===t.id?' active':''}" onclick="setDashTab('${t.id}')">${t.label}</button>`).join('')}</div>
+  ${S.dashTab==='overview'?renderFilterBar(false)+renderOverview():
+    S.dashTab==='campus'?renderFilterBar(true)+renderCampusView():
+    renderFilterBar(false,true)+renderGradeView()}`;
+}
+
+// ── OVERVIEW TAB ──
+function renderOverview(){
+  const recs = filteredRecords();
+  if(!recs.length) return renderToggleStrip()+`<div class="empty-state"><div class="icon">📊</div><p>선택한 기간에 데이터가 없습니다.</p></div>`;
+  const cs = byCampus(recs);
+  const months = byMonth(recs);
+  const totalNewIn=sum(cs,c=>c.newIn), totalWd=sum(cs,c=>c.withdraw);
+  const totalCurrent=sum(cs,c=>c.current);
+  const avgWdRate = cs.length?((sum(cs,c=>parseFloat(c.wdRate||0))/cs.length).toFixed(2)):'0.00';
+  const wdData=wdRateByCampusMonth(recs);
+
+  const html=`${renderToggleStrip()}
+  <div class="stats-grid">
+    <div class="stat-card blue"><div class="stat-lbl">${S.newInMode==='pure'?'순수 신입':'신입 (전입포함)'}</div><div class="stat-val">${totalNewIn.toLocaleString()}</div><div class="stat-sub">명</div></div>
+    <div class="stat-card red"><div class="stat-lbl">${S.withdrawMode==='pure'?'순수 퇴원':'퇴원 (전출포함)'}</div><div class="stat-val">${totalWd.toLocaleString()}</div><div class="stat-sub">명</div></div>
+    <div class="stat-card navy"><div class="stat-lbl">현재원 합계</div><div class="stat-val">${totalCurrent.toLocaleString()}</div><div class="stat-sub">명 (최신 기준)</div></div>
+    <div class="stat-card amber"><div class="stat-lbl">평균 퇴원율</div><div class="stat-val">${avgWdRate}<span style="font-size:18px">%</span></div><div class="stat-note">전 캠퍼스 평균</div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">캠퍼스별 신입 / 퇴원</div><div class="chart-wrap"><canvas id="ch-campus-bar" role="img" aria-label="캠퍼스별 신입 퇴원 막대 차트"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">월별 신입 / 퇴원 추이</div><div class="chart-wrap"><canvas id="ch-monthly-bar" role="img" aria-label="월별 신입 퇴원 추이"></canvas></div></div>
+    <div class="chart-card full"><div class="chart-title">캠퍼스별 퇴원율 추이</div><div class="chart-wrap" style="height:280px"><canvas id="ch-wdrate-line" role="img" aria-label="캠퍼스별 퇴원율 추이 라인 차트"></canvas></div></div>
+  </div>
+  <div class="table-card">
+    <div class="table-card-header"><span class="table-card-title">캠퍼스별 상세 현황</span></div>
+    <div class="overflow-x">
+    <table class="data-table">
+      <thead><tr>
+        <th>캠퍼스</th>
+        <th class="num">${S.newInMode==='pure'?'순수신입':'신입(전입포함)'}</th>
+        <th class="num">${S.withdrawMode==='pure'?'순수퇴원':'퇴원(전출포함)'}</th>
+        <th class="num">순증감</th>
+        <th class="num">현재원</th>
+        <th class="num">퇴원율</th>
+      </tr></thead>
+      <tbody>${cs.map(c=>{const net=c.newIn-c.withdraw;return`<tr>
+        <td><strong>${esc(c.campus)}</strong></td>
+        <td class="num"><span class="pill blue">+${c.newIn}</span></td>
+        <td class="num"><span class="pill dn">-${c.withdraw}</span></td>
+        <td class="num"><span class="pill ${net>0?'up':net<0?'dn':'neu'}">${net>0?'+':''}${net}</span></td>
+        <td class="num"><strong>${c.current.toLocaleString()}</strong></td>
+        <td class="num"><span class="rate-badge">${c.wdRate}%</span></td>
+      </tr>`;}).join('')}</tbody>
+      <tfoot><tr>
+        <td>합계</td>
+        <td class="num">${totalNewIn}</td>
+        <td class="num">${totalWd}</td>
+        <td class="num">${totalNewIn-totalWd>0?'+':''}${totalNewIn-totalWd}</td>
+        <td class="num">${totalCurrent}</td>
+        <td class="num">${avgWdRate}%</td>
+      </tr></tfoot>
+    </table></div>
+  </div>`;
+
+  setTimeout(()=>{
+    // Campus bar chart
+    mkChart('ch-campus-bar',{type:'bar',data:{labels:cs.map(c=>c.campus),datasets:[
+      {label:'신입',data:cs.map(c=>c.newIn),backgroundColor:'#2980b9',borderRadius:4},
+      {label:'퇴원',data:cs.map(c=>c.withdraw),backgroundColor:'#c0392b',borderRadius:4}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top'}},scales:{x:{ticks:{font:{size:12}}},y:{beginAtZero:true}}}});
+    // Monthly trend
+    mkChart('ch-monthly-bar',{type:'bar',data:{labels:months.map(m=>monthLabel(m.month)),datasets:[
+      {label:'신입',data:months.map(m=>m.newIn),backgroundColor:'rgba(41,128,185,.7)',borderRadius:3},
+      {label:'퇴원',data:months.map(m=>m.withdraw),backgroundColor:'rgba(192,57,43,.7)',borderRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top'}},scales:{x:{ticks:{maxRotation:45,font:{size:11}}},y:{beginAtZero:true}}}});
+    // WD rate line chart
+    const colors=chartColors(wdData.campusList.length);
+    mkChart('ch-wdrate-line',{type:'line',data:{labels:wdData.months.map(monthLabel),datasets:wdData.campusList.map((c,i)=>({
+      label:c,data:wdData.months.map(m=>wdData.data[c][m]),
+      borderColor:colors[i],backgroundColor:'transparent',borderWidth:2,pointRadius:4,tension:.3,spanGaps:true
+    }))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{ticks:{maxRotation:45,font:{size:11}}},y:{beginAtZero:true,ticks:{callback:v=>`${v}%`}}}}});
+  },50);
+  return html;
+}
+
+// ── CAMPUS TAB ──
+function renderCampusView(){
+  const recs = filteredRecords();
+  const campusName = S.campusFilter==='all'?(S.campuses[0]?.name||'')  :S.campusFilter;
+  const campRecs = recs.filter(r=>S.campusFilter==='all'?true:r.campus===campusName);
+  if(!campRecs.length) return renderToggleStrip()+`<div class="empty-state"><div class="icon">🏫</div><p>선택한 캠퍼스·기간에 데이터가 없습니다.</p></div>`;
+
+  const months=byMonth(campRecs);
+  const grades=byGrade(campRecs);
+  const totalNewIn=sum(months,m=>m.newIn),totalWd=sum(months,m=>m.withdraw);
+  const totalCurrent=months.length?months[months.length-1].current:0;
+  const wdNumer=sum(campRecs,r=>sum(gradeStats(r.grades,'combined','combined'),g=>g.withdraw));
+  const wdDenom=sum(campRecs,r=>sum(gradeStats(r.grades,'combined','combined'),g=>g.prev+g.pureNew+g.transIn));
+  const wdRate=wdDenom>0?((wdNumer/wdDenom)*100).toFixed(2):'0.00';
+
+  const html=`${renderToggleStrip()}
+  <div class="stats-grid">
+    <div class="stat-card blue"><div class="stat-lbl">${S.newInMode==='pure'?'순수 신입':'신입 (전입포함)'}</div><div class="stat-val">${totalNewIn}</div></div>
+    <div class="stat-card red"><div class="stat-lbl">${S.withdrawMode==='pure'?'순수 퇴원':'퇴원 (전출포함)'}</div><div class="stat-val">${totalWd}</div></div>
+    <div class="stat-card navy"><div class="stat-lbl">현재원</div><div class="stat-val">${totalCurrent}</div></div>
+    <div class="stat-card amber"><div class="stat-lbl">퇴원율</div><div class="stat-val">${wdRate}<span style="font-size:18px">%</span></div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">월별 신입 / 퇴원 추이</div><div class="chart-wrap"><canvas id="ch-c-trend" role="img" aria-label="캠퍼스 월별 추이"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">월별 퇴원율 추이</div><div class="chart-wrap"><canvas id="ch-c-wdrate" role="img" aria-label="캠퍼스 퇴원율 추이"></canvas></div></div>
+  </div>
+  <div class="table-card">
+    <div class="table-card-header"><span class="table-card-title">학년별 현황</span></div>
+    <div class="overflow-x">
+    <table class="data-table">
+      <thead><tr>
+        <th>학년</th>
+        <th class="num">순수 신입</th><th class="num">전입</th><th class="num">신입 합계</th>
+        <th class="num">순수 퇴원</th><th class="num">전출</th><th class="num">졸업</th><th class="num">퇴원 합계</th>
+        <th class="num">현재원</th><th class="num">퇴원율</th>
+      </tr></thead>
+      <tbody>${grades.map(g=>`<tr>
+        <td><strong>${g.grade}</strong></td>
+        <td class="num">${g.pureNew||0}</td><td class="num">${g.transIn||0}</td>
+        <td class="num"><span class="pill blue">+${g.newIn}</span></td>
+        <td class="num">${g.pureWd||0}</td><td class="num">${g.transOut||0}</td><td class="num">${g.graduate||0}</td>
+        <td class="num"><span class="pill dn">-${g.withdraw}</span></td>
+        <td class="num">${g.current}</td>
+        <td class="num">${g.wdRate}%</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr>
+        <td>합계</td>
+        <td class="num">${sum(grades,g=>g.pureNew||0)}</td><td class="num">${sum(grades,g=>g.transIn||0)}</td>
+        <td class="num">${totalNewIn}</td>
+        <td class="num">${sum(grades,g=>g.pureWd||0)}</td><td class="num">${sum(grades,g=>g.transOut||0)}</td><td class="num">${sum(grades,g=>g.graduate||0)}</td>
+        <td class="num">${totalWd}</td>
+        <td class="num">${totalCurrent}</td>
+        <td class="num">${wdRate}%</td>
+      </tr></tfoot>
+    </table></div>
+  </div>`;
+
+  setTimeout(()=>{
+    const wdRates=months.map(m=>{
+      const mr=campRecs.filter(r=>monthKey(r.year,r.month)===m.month);
+      const n=sum(mr,r=>sum(gradeStats(r.grades,'combined','combined'),g=>g.withdraw));
+      const d=sum(mr,r=>sum(gradeStats(r.grades,'combined','combined'),g=>g.prev+g.pureNew+g.transIn));
+      return d>0?parseFloat(((n/d)*100).toFixed(2)):0;
+    });
+    mkChart('ch-c-trend',{type:'bar',data:{labels:months.map(m=>monthLabel(m.month)),datasets:[
+      {label:'신입',data:months.map(m=>m.newIn),backgroundColor:'rgba(41,128,185,.8)',borderRadius:4},
+      {label:'퇴원',data:months.map(m=>m.withdraw),backgroundColor:'rgba(192,57,43,.8)',borderRadius:4}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{ticks:{maxRotation:45,font:{size:11}}},y:{beginAtZero:true}}}});
+    mkChart('ch-c-wdrate',{type:'line',data:{labels:months.map(m=>monthLabel(m.month)),datasets:[
+      {label:'퇴원율',data:wdRates,borderColor:'#e67e22',backgroundColor:'rgba(230,126,34,.1)',fill:true,borderWidth:2,pointRadius:4,tension:.3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{ticks:{maxRotation:45,font:{size:11}}},y:{beginAtZero:true,ticks:{callback:v=>`${v}%`}}}}});
+  },50);
+  return html;
+}
+
+// ── GRADE TAB ──
+function renderGradeView(){
+  const allRecs = S.records.filter(inFilter);
+  if(!allRecs.length) return renderToggleStrip()+`<div class="empty-state"><div class="icon">📚</div><p>선택한 기간에 데이터가 없습니다.</p></div>`;
+
+  // Per-grade totals across all campuses
+  const grades=byGrade(allRecs);
+  const selectedGrade = grades.find(g=>g.grade===S.gradeFilter)||grades[0];
+
+  // Per grade, campus breakdown
+  const campusGradeMap={};
+  allRecs.forEach(r=>{
+    if(!campusGradeMap[r.campus]) campusGradeMap[r.campus]={campus:r.campus};
+    const g=gradeStats(r.grades,S.newInMode,S.withdrawMode).find(x=>x.grade===S.gradeFilter);
+    if(g){
+      if(!campusGradeMap[r.campus].newIn) campusGradeMap[r.campus]={campus:r.campus,newIn:0,withdraw:0,current:0,wdNumer:0,wdDenom:0};
+      campusGradeMap[r.campus].newIn+=g.newIn; campusGradeMap[r.campus].withdraw+=g.withdraw;
+      campusGradeMap[r.campus].current+=g.current;
+      campusGradeMap[r.campus].wdNumer+=g.pureWd+g.transOut+g.graduate; campusGradeMap[r.campus].wdDenom+=g.prev+g.pureNew+g.transIn;
+    }
+  });
+  const campusGrades=Object.values(campusGradeMap).filter(c=>c.newIn!==undefined).map(c=>({...c,wdRate:c.wdDenom>0?((c.wdNumer/c.wdDenom)*100).toFixed(2):'0.00'}));
+
+  // Monthly trend for selected grade
+  const monthGradeMap={};
+  allRecs.forEach(r=>{
+    const k=monthKey(r.year,r.month);
+    if(!monthGradeMap[k]) monthGradeMap[k]={month:k,newIn:0,withdraw:0,wdNumer:0,wdDenom:0};
+    const g=gradeStats(r.grades,S.newInMode,S.withdrawMode).find(x=>x.grade===S.gradeFilter);
+    if(g){ monthGradeMap[k].newIn+=g.newIn; monthGradeMap[k].withdraw+=g.withdraw; monthGradeMap[k].wdNumer+=g.pureWd+g.transOut+g.graduate; monthGradeMap[k].wdDenom+=g.prev+g.pureNew+g.transIn; }
+  });
+  const monthGrade=Object.values(monthGradeMap).sort((a,b)=>a.month.localeCompare(b.month)).map(m=>({...m,wdRate:m.wdDenom>0?((m.wdNumer/m.wdDenom)*100).toFixed(2):'0.00'}));
+
+  const html=`${renderToggleStrip()}
+  <div class="stats-grid">
+    <div class="stat-card blue"><div class="stat-lbl">${S.gradeFilter} 신입</div><div class="stat-val">${selectedGrade?.newIn||0}</div></div>
+    <div class="stat-card red"><div class="stat-lbl">${S.gradeFilter} 퇴원</div><div class="stat-val">${selectedGrade?.withdraw||0}</div></div>
+    <div class="stat-card navy"><div class="stat-lbl">${S.gradeFilter} 현재원</div><div class="stat-val">${selectedGrade?.current||0}</div></div>
+    <div class="stat-card amber"><div class="stat-lbl">${S.gradeFilter} 퇴원율</div><div class="stat-val">${selectedGrade?.wdRate||'0.00'}<span style="font-size:18px">%</span></div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">${esc(S.gradeFilter)} 캠퍼스별 신입 / 퇴원</div><div class="chart-wrap"><canvas id="ch-g-campus" role="img" aria-label="학년별 캠퍼스 비교"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">${esc(S.gradeFilter)} 월별 퇴원율 추이</div><div class="chart-wrap"><canvas id="ch-g-wdrate" role="img" aria-label="학년 퇴원율 추이"></canvas></div></div>
+  </div>
+  <div class="table-card">
+    <div class="table-card-header"><span class="table-card-title">전 학년 비교</span></div>
+    <div class="overflow-x">
+    <table class="data-table">
+      <thead><tr>
+        <th>학년</th><th class="num">신입</th><th class="num">퇴원</th><th class="num">순증감</th><th class="num">현재원</th><th class="num">퇴원율</th>
+      </tr></thead>
+      <tbody>${grades.map(g=>{const net=g.newIn-g.withdraw;return`<tr style="${g.grade===S.gradeFilter?'background:var(--navy3)':''}">
+        <td><strong>${g.grade}</strong></td>
+        <td class="num"><span class="pill blue">+${g.newIn}</span></td>
+        <td class="num"><span class="pill dn">-${g.withdraw}</span></td>
+        <td class="num"><span class="pill ${net>0?'up':net<0?'dn':'neu'}">${net>0?'+':''}${net}</span></td>
+        <td class="num">${g.current}</td>
+        <td class="num">${g.wdRate}%</td>
+      </tr>`;}).join('')}</tbody>
+    </table></div>
+  </div>`;
+
+  setTimeout(()=>{
+    mkChart('ch-g-campus',{type:'bar',data:{labels:campusGrades.map(c=>c.campus),datasets:[
+      {label:'신입',data:campusGrades.map(c=>c.newIn),backgroundColor:'rgba(41,128,185,.8)',borderRadius:4},
+      {label:'퇴원',data:campusGrades.map(c=>c.withdraw),backgroundColor:'rgba(192,57,43,.8)',borderRadius:4}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}});
+    mkChart('ch-g-wdrate',{type:'line',data:{labels:monthGrade.map(m=>monthLabel(m.month)),datasets:[
+      {label:'퇴원율',data:monthGrade.map(m=>parseFloat(m.wdRate)),borderColor:'#c0392b',backgroundColor:'rgba(192,57,43,.1)',fill:true,borderWidth:2,pointRadius:4,tension:.3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{ticks:{maxRotation:45,font:{size:11}}},y:{beginAtZero:true,ticks:{callback:v=>`${v}%`}}}}});
+  },50);
+  return html;
+}
+
+// ================================================================
+// DATA INPUT VIEW
+// ================================================================
+function renderInput(){
+  const campusOpts=S.campuses.map(c=>`<option value="${esc(c.name)}"${S.inputCampus===c.name?' selected':''}>${esc(c.name)}</option>`).join('');
+  const yearOpts=yearRange(2023).map(y=>`<option value="${y}"${S.inputYear===y?' selected':''}>${y}년</option>`).join('');
+  const monthOpts=Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}"${S.inputMonth===m?' selected':''}>${m}월</option>`).join('');
+
+  const g=S.inputGrades;
+  const totals={prev:sum(g,x=>x.prev||0),newIn:sum(g,x=>x.newIn||0),transIn:sum(g,x=>x.transIn||0),withdraw:sum(g,x=>x.withdraw||0),transOut:sum(g,x=>x.transOut||0),graduate:sum(g,x=>x.graduate||0),current:sum(g,x=>calcGradeCurrent(x))};
+
+  return `<div class="page-header">
+    <div><div class="page-title">데이터 입력</div><div class="page-sub">월별 캠퍼스 현황을 입력합니다</div></div>
+  </div>
+  <div class="form-section">
+    <div class="form-section-title">기본 정보</div>
+    <div class="form-row">
+      <label>캠퍼스</label>
+      <select class="input-sm" style="width:140px" onchange="setInputField('campus',this.value)">${campusOpts||'<option value="">캠퍼스 없음</option>'}</select>
+      <label style="margin-left:12px">년도</label>
+      <select class="input-sm" onchange="setInputField('year',this.value)">${yearOpts}</select>
+      <label style="margin-left:8px">월</label>
+      <select class="input-sm" onchange="setInputField('month',this.value)">${monthOpts}</select>
+      <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="loadExistingInput()">기존 데이터 불러오기</button>
+    </div>
+  </div>
+  <div class="form-section">
+    <div class="form-section-title">학년별 현황 입력</div>
+    <div class="overflow-x">
+    <table class="grade-entry-table">
+      <thead><tr>
+        <th>학년</th><th>전월마감원</th><th>신입</th><th>전입</th><th>퇴원</th><th>전출</th><th>졸업</th><th>현재원 (자동)</th><th>특이사항</th>
+      </tr></thead>
+      <tbody>${g.map((row,i)=>`<tr>
+        <td>${esc(row.grade)}</td>
+        <td><input type="number" class="input-xs" value="${row.prev||0}" min="0" onchange="updateGradeField(${i},'prev',this.value)"></td>
+        <td><input type="number" class="input-xs" value="${row.newIn||0}" min="0" onchange="updateGradeField(${i},'newIn',this.value)"></td>
+        <td><input type="number" class="input-xs" value="${row.transIn||0}" min="0" onchange="updateGradeField(${i},'transIn',this.value)"></td>
+        <td><input type="number" class="input-xs" value="${row.withdraw||0}" min="0" onchange="updateGradeField(${i},'withdraw',this.value)"></td>
+        <td><input type="number" class="input-xs" value="${row.transOut||0}" min="0" onchange="updateGradeField(${i},'transOut',this.value)"></td>
+        <td><input type="number" class="input-xs" value="${row.graduate||0}" min="0" onchange="updateGradeField(${i},'graduate',this.value)"></td>
+        <td class="calc">${calcGradeCurrent(row)}</td>
+        <td><input type="text" style="width:120px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" value="${esc(row.notes||'')}" onchange="updateGradeField(${i},'notes',this.value)"></td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr>
+        <td>합계</td>
+        <td>${totals.prev}</td><td>${totals.newIn}</td><td>${totals.transIn}</td>
+        <td>${totals.withdraw}</td><td>${totals.transOut}</td><td>${totals.graduate}</td>
+        <td>${totals.current}</td><td></td>
+      </tr></tfoot>
+    </table></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="navTo('dashboard')">취소</button>
+    <button class="btn btn-primary" onclick="doSaveRecord()">저장</button>
+  </div>`;
+}
+
+function calcGradeCurrent(g){
+  return Math.max(0,(g.prev||0)+(g.newIn||0)+(g.transIn||0)-(g.withdraw||0)-(g.transOut||0)-(g.graduate||0));
+}
+
+function initInputGrades(existingRecord){
+  if(existingRecord){
+    S.inputGrades = GRADES.map(gr=>{
+      const eg=existingRecord.grades.find(x=>x.grade===gr);
+      return eg||{grade:gr,prev:0,newIn:0,transIn:0,withdraw:0,transOut:0,graduate:0,notes:''};
+    });
+  } else {
+    S.inputGrades = GRADES.map(g=>({grade:g,prev:0,newIn:0,transIn:0,withdraw:0,transOut:0,graduate:0,notes:''}));
+  }
+}
+
+// ================================================================
+// ADMIN VIEW
+// ================================================================
+function renderAdmin(){
+  if(S.user?.role!=='admin') return `<div class="empty-state"><div class="icon">🔒</div><p>접근 권한이 없습니다.</p></div>`;
+  const campusOpts=S.campuses.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+  return `<div class="page-header"><div><div class="page-title">관리자</div><div class="page-sub">사용자 및 캠퍼스 관리</div></div></div>
+  <div class="admin-grid">
+    <!-- User Management -->
+    <div class="form-section" style="grid-column:1/-1">
+      <div class="form-section-title">사용자 관리</div>
+      <div class="overflow-x">
+      <table class="data-table">
+        <thead><tr><th>아이디</th><th>역할</th><th>접근 캠퍼스</th><th>상태</th><th>작업</th></tr></thead>
+        <tbody>${S.users.map(u=>`<tr class="user-table-row">
+          <td><strong>${esc(u.displayId)}</strong></td>
+          <td><span class="badge badge-${u.role==='admin'?'admin':'user'}">${u.role==='admin'?'관리자':'사용자'}</span></td>
+          <td style="font-size:12px">${u.campuses&&u.campuses.length?u.campuses.map(c=>`<span class="pill blue" style="margin:2px 2px">${esc(c)}</span>`).join(''):'<span style="color:var(--text2)">전체</span>'}</td>
+          <td><span class="pill ${u.active!==false?'up':'dn'}">${u.active!==false?'활성':'비활성'}</span></td>
+          <td><div class="actions" style="opacity:1;display:flex;gap:6px">
+            <button class="btn btn-sm btn-secondary" onclick="doToggleUser('${u.id}')">${u.active!==false?'비활성화':'활성화'}</button>
+            ${u.displayId!=='ADMIN1'&&u.displayId!=='ADMIN2'?`<button class="btn btn-sm btn-danger" onclick="doDeleteUser('${u.id}')">삭제</button>`:''}
+          </div></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+    <!-- Add User -->
+    <div class="form-section">
+      <div class="form-section-title">신규 사용자 추가</div>
+      <div class="form-group"><label>아이디</label><input class="form-control" id="nu-id" placeholder="로그인 아이디"></div>
+      <div class="form-group"><label>비밀번호</label><input class="form-control" type="password" id="nu-pw" placeholder="비밀번호"></div>
+      <div class="form-group"><label>역할</label><select class="form-control" id="nu-role"><option value="user">사용자</option><option value="admin">관리자</option></select></div>
+      <div class="form-group">
+        <label>접근 캠퍼스</label>
+        <select class="form-control" id="nu-campus-select">${campusOpts}</select>
+        <div id="nu-campus-tags" class="campus-tags"></div>
+        <button class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="addCampusToNewUser()">캠퍼스 추가</button>
+      </div>
+      <div id="nu-err" class="alert alert-error" style="display:none"></div>
+      <button class="btn btn-primary" onclick="doCreateUser()">사용자 생성</button>
+    </div>
+    <!-- Campus Management -->
+    <div class="form-section">
+      <div class="form-section-title">캠퍼스 관리</div>
+      <div class="campus-tags">${S.campuses.map(c=>`<span class="campus-tag">${esc(c.name)}<button class="remove-tag" onclick="doDeleteCampus('${c.id}')">×</button></span>`).join('')}</div>
+      <div class="add-row">
+        <input class="form-control" id="new-campus-name" placeholder="새 캠퍼스명" style="flex:1">
+        <button class="btn btn-success" onclick="doAddCampus()">추가</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ================================================================
+// EVENT HANDLERS
+// ================================================================
+let newUserCampuses=[];
+
+async function doLogin(){
+  const id=document.getElementById('login-id')?.value?.trim();
+  const pw=document.getElementById('login-pw')?.value;
+  const err=document.getElementById('login-err');
+  if(!id||!pw){if(err){err.textContent='아이디와 비밀번호를 입력하세요';err.style.display='block';}return;}
+  try{
+    await login(id,pw);
+    await loadAllData();
+    S.view='dashboard';
+    renderCurrentView();
+  }catch(e){if(err){err.textContent=e.message;err.style.display='block';}}
+}
+
+async function doSetup(){
+  const pw1=document.getElementById('setup-pw1')?.value;
+  const pw1c=document.getElementById('setup-pw1c')?.value;
+  const pw2=document.getElementById('setup-pw2')?.value;
+  const pw2c=document.getElementById('setup-pw2c')?.value;
+  const err=document.getElementById('setup-err');
+  if(!pw1||!pw2){err.textContent='모든 비밀번호를 입력하세요';err.style.display='block';return;}
+  if(pw1!==pw1c||pw2!==pw2c){err.textContent='비밀번호 확인이 일치하지 않습니다';err.style.display='block';return;}
+  try{
+    await createUser('ADMIN1',pw1,'admin',[]);
+    await createUser('ADMIN2',pw2,'admin',[]);
+    S.view='login';
+    renderCurrentView();
+  }catch(e){err.textContent='오류: '+e.message;err.style.display='block';}
+}
+
+function doLogout(){ clearSession(); S.user=null; S.records=[]; S.users=[]; S.campuses=[]; S.view='login'; renderCurrentView(); }
+
+function navTo(view){
+  S.view=view;
+  if(view==='input'){
+    if(S.campuses.length) S.inputCampus=S.campuses[0].name;
+    initInputGrades(null);
+  }
+  renderCurrentView();
+}
+
+function setDashTab(tab){ S.dashTab=tab; renderCurrentView(); }
+function setFilterType(t){ S.filterType=t; renderCurrentView(); }
+function setPeriod(key,val){
+  if(key==='sy') S.periodStart.y=+val;
+  else if(key==='sm') S.periodStart.m=+val;
+  else if(key==='ey') S.periodEnd.y=+val;
+  else if(key==='em') S.periodEnd.m=+val;
+  renderCurrentView();
+}
+function setSeason(key,val){ if(key==='season') S.season=val; else S.seasonYear=+val; renderCurrentView(); }
+function setCampusFilter(v){ S.campusFilter=v; renderCurrentView(); }
+function setGradeFilter(v){ S.gradeFilter=v; renderCurrentView(); }
+function setMode(type,mode){ if(type==='new') S.newInMode=mode; else S.withdrawMode=mode; renderCurrentView(); }
+
+function setInputField(field,val){
+  if(field==='campus') S.inputCampus=val;
+  else if(field==='year') S.inputYear=+val;
+  else if(field==='month') S.inputMonth=+val;
+  // Don't re-render to avoid losing input focus
+}
+
+function loadExistingInput(){
+  const existing=S.records.find(r=>r.campus===S.inputCampus&&r.year===S.inputYear&&r.month===S.inputMonth);
+  initInputGrades(existing);
+  renderCurrentView();
+}
+
+function updateGradeField(i,field,val){
+  if(field==='notes') S.inputGrades[i].notes=val;
+  else S.inputGrades[i][field]=parseInt(val)||0;
+  // Update current cell only
+  const rows=document.querySelectorAll('.grade-entry-table tbody tr');
+  if(rows[i]){
+    const calcTd=rows[i].querySelector('.calc');
+    if(calcTd) calcTd.textContent=calcGradeCurrent(S.inputGrades[i]);
+  }
+  // Update totals
+  const tf=document.querySelector('.grade-entry-table tfoot tr');
+  if(tf){
+    const g=S.inputGrades;
+    const cells=tf.querySelectorAll('td');
+    if(cells[1]) cells[1].textContent=sum(g,x=>x.prev||0);
+    if(cells[2]) cells[2].textContent=sum(g,x=>x.newIn||0);
+    if(cells[3]) cells[3].textContent=sum(g,x=>x.transIn||0);
+    if(cells[4]) cells[4].textContent=sum(g,x=>x.withdraw||0);
+    if(cells[5]) cells[5].textContent=sum(g,x=>x.transOut||0);
+    if(cells[6]) cells[6].textContent=sum(g,x=>x.graduate||0);
+    if(cells[7]) cells[7].textContent=sum(g,x=>calcGradeCurrent(x));
+  }
+}
+
+async function doSaveRecord(){
+  if(!S.inputCampus){alert('캠퍼스를 선택해주세요');return;}
+  try{
+    const grades=S.inputGrades.map(g=>({...g,current:calcGradeCurrent(g)}));
+    await saveRecord({campus:S.inputCampus,year:S.inputYear,month:S.inputMonth,quarter:Math.ceil(S.inputMonth/3),grades});
+    setAlert(`${S.inputCampus} ${S.inputYear}년 ${S.inputMonth}월 데이터가 저장되었습니다.`,'success');
+    S.view='dashboard';
+    renderCurrentView();
+  }catch(e){alert('저장 실패: '+e.message);}
+}
+
+function addCampusToNewUser(){
+  const sel=document.getElementById('nu-campus-select');
+  if(!sel||!sel.value) return;
+  if(!newUserCampuses.includes(sel.value)) newUserCampuses.push(sel.value);
+  const tags=document.getElementById('nu-campus-tags');
+  if(tags) tags.innerHTML=newUserCampuses.map(c=>`<span class="campus-tag">${esc(c)}<button class="remove-tag" onclick="removeCampusFromNewUser('${esc(c)}')">×</button></span>`).join('');
+}
+function removeCampusFromNewUser(c){ newUserCampuses=newUserCampuses.filter(x=>x!==c); addCampusToNewUser(); }
+
+async function doCreateUser(){
+  const id=document.getElementById('nu-id')?.value?.trim();
+  const pw=document.getElementById('nu-pw')?.value;
+  const role=document.getElementById('nu-role')?.value;
+  const errEl=document.getElementById('nu-err');
+  if(!id||!pw){errEl.textContent='아이디와 비밀번호를 입력하세요';errEl.style.display='block';return;}
+  if(S.users.find(u=>u.displayId===id)){errEl.textContent='이미 존재하는 아이디입니다';errEl.style.display='block';return;}
+  try{
+    await createUser(id,pw,role,newUserCampuses);
+    newUserCampuses=[];
+    setAlert(`사용자 ${id}가 생성되었습니다.`,'success');
+    renderCurrentView();
+  }catch(e){errEl.textContent='오류: '+e.message;errEl.style.display='block';}
+}
+
+async function doDeleteUser(id){
+  const u=S.users.find(x=>x.id===id);
+  if(!u||!confirm(`'${u.displayId}' 사용자를 삭제하시겠습니까?`)) return;
+  await deleteUser(id);
+  setAlert('사용자가 삭제되었습니다.','success');
+  renderCurrentView();
+}
+
+async function doToggleUser(id){
+  await toggleUserActive(id);
+  renderCurrentView();
+}
+
+async function doAddCampus(){
+  const name=document.getElementById('new-campus-name')?.value?.trim();
+  if(!name) return;
+  if(S.campuses.find(c=>c.name===name)){alert('이미 존재하는 캠퍼스명입니다');return;}
+  await saveCampus(name);
+  setAlert(`캠퍼스 '${name}'이 추가되었습니다.`,'success');
+  renderCurrentView();
+}
+
+async function doDeleteCampus(id){
+  const c=S.campuses.find(x=>x.id===id);
+  if(!c||!confirm(`'${c.name}' 캠퍼스를 삭제하시겠습니까?`)) return;
+  await deleteCampus(id);
+  setAlert('캠퍼스가 삭제되었습니다.','success');
+  renderCurrentView();
+}
+
+// ================================================================
+// INIT
+// ================================================================
+async function init(){
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  }catch(e){ console.error('Firebase init error',e); }
+
+  // Check session
+  const session=getSession();
+  try{
+    // Load users first to validate session & check first-run
+    const uSnap=await db.collection('users').get();
+    S.users=uSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+    if(S.users.length===0){
+      S.view='setup'; renderCurrentView(); return;
+    }
+    if(session && S.users.find(u=>u.displayId===session.displayId&&u.passwordHash===session.passwordHash&&u.active!==false)){
+      S.user=session;
+      const [cSnap,rSnap]=await Promise.all([
+        db.collection('campuses').get(),
+        db.collection('records').orderBy('year').orderBy('month').get()
+      ]);
+      S.campuses=cSnap.docs.map(d=>({id:d.id,...d.data()}));
+      S.records=rSnap.docs.map(d=>({id:d.id,...d.data()}));
+      S.view='dashboard';
+    } else {
+      clearSession();
+      S.view='login';
+    }
+  }catch(e){
+    console.error('Init error',e);
+    S.view='login';
+  }
+  renderCurrentView();
+}
+
+init();
+</script>
+</body>
+</html>
