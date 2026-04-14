@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바론네트웍스 — 과거 데이터 일괄 가져오기</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6fa;color:#1a1f36;font-size:14px;padding:24px}
+.wrap{max-width:960px;margin:0 auto}
+.header{background:#0f3460;color:#fff;border-radius:12px;padding:24px;margin-bottom:20px}
+.header h1{font-size:20px;font-weight:700;margin-bottom:4px}
+.header p{font-size:13px;opacity:.7}
+.card{background:#fff;border:1px solid #e0e4ef;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(15,52,96,.06)}
+.card-title{font-size:13px;font-weight:600;color:#6b7194;text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #e4e7f0}
+label{font-size:12px;font-weight:600;color:#6b7194;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.upload-zone{border:2px dashed #1d9e75;border-radius:10px;padding:28px;text-align:center;cursor:pointer;background:#eaf7f2;margin-bottom:14px;transition:all .2s}
+.upload-zone:hover{background:#d4f0e8}
+.upload-zone p{font-size:13px;color:#1d9e75;font-weight:600}
+.upload-zone input{display:none}
+.btn{padding:10px 22px;border-radius:8px;border:none;font-weight:600;font-size:13px;cursor:pointer;transition:all .15s}
+.btn-primary{background:#0f3460;color:#fff}
+.btn-primary:hover{background:#1a4a7a}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-danger{background:#fdeaea;color:#c0392b;border:1px solid #f5c6c4}
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:12px}
+.alert-info{background:#eaf4fb;color:#2980b9}
+.alert-success{background:#eaf7f2;color:#1d9e75}
+.alert-warn{background:#fef6ec;color:#e67e22}
+.alert-error{background:#fdeaea;color:#c0392b}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:8px 10px;text-align:left;font-size:11px;font-weight:600;color:#6b7194;background:#f5f6fa;border-bottom:1px solid #e4e7f0;text-transform:uppercase}
+thead th.r{text-align:right}
+tbody td{padding:7px 10px;border-bottom:1px solid #e4e7f0;color:#1a1f36}
+tbody td.r{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover td{background:#f5f6fa}
+tfoot td{padding:8px 10px;font-weight:700;background:#f5f6fa;border-top:2px solid #e0e4ef}
+tfoot td.r{text-align:right}
+.progress{height:6px;background:#e4e7f0;border-radius:3px;margin:10px 0}
+.progress-bar{height:100%;background:#1d9e75;border-radius:3px;transition:width .3s}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-ok{background:#eaf7f2;color:#1d9e75}
+.badge-skip{background:#f5f6fa;color:#6b7194}
+#log{background:#1a1f36;color:#a8b5c9;border-radius:8px;padding:14px;font-family:monospace;font-size:12px;max-height:200px;overflow-y:auto;margin-top:10px;display:none}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>📥 과거 데이터 일괄 가져오기</h1>
+    <p>기존 인원마감 엑셀 파일에서 2025년·2026년 데이터를 자동으로 읽어 앱에 저장합니다.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚠️ 시작 전 확인사항</div>
+    <div class="alert alert-warn" style="margin-bottom:8px">이 도구는 <strong>관리자 전용</strong>입니다. 실행 전 앱에서 아래 캠퍼스를 먼저 등록해주세요.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+      <span class="badge badge-ok">장안</span>
+      <span class="badge badge-ok">서수원</span>
+      <span class="badge badge-ok">수원</span>
+      <span class="badge badge-ok">운정1관</span>
+      <span class="badge badge-ok">운정2관</span>
+      <span class="badge badge-ok">남동탄</span>
+    </div>
+    <div class="alert alert-info">동일한 캠퍼스+년월 데이터가 이미 있으면 <strong>덮어씁니다.</strong></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📂 엑셀 파일 선택</div>
+    <div class="upload-zone" onclick="document.getElementById('xlfile').click()">
+      <p>📊 _바론네트웍스_인원마감.xlsx 클릭하거나 드래그하여 업로드</p>
+      <input type="file" id="xlfile" accept=".xlsx,.xls" onchange="loadExcel(this.files[0])">
+    </div>
+    <div id="file-status"></div>
+  </div>
+
+  <div id="preview-section" style="display:none">
+    <div class="card">
+      <div class="card-title">👁 가져올 데이터 미리보기</div>
+      <div id="preview-info" class="alert alert-info" style="margin-bottom:12px"></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>캠퍼스</th><th>년도</th><th>월</th>
+            <th class="r">신입</th><th class="r">퇴원</th><th class="r">현재원</th>
+          </tr></thead>
+          <tbody id="preview-body"></tbody>
+          <tfoot><tr id="preview-foot"></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🚀 Firestore에 저장</div>
+      <div class="row">
+        <button class="btn btn-primary" id="import-btn" onclick="doImport()">전체 데이터 가져오기</button>
+        <span id="import-count" style="font-size:13px;color:#6b7194"></span>
+      </div>
+      <div class="progress" id="prog-wrap" style="display:none">
+        <div class="progress-bar" id="prog-bar" style="width:0%"></div>
+      </div>
+      <div id="import-result"></div>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Firebase Config (index.html 과 동일) ──
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCcOf8TI7NWGKhov78n6UTpzdCWWkbBKKc",
+  authDomain: "varon-accounts.firebaseapp.com",
+  projectId: "varon-accounts",
+  storageBucket: "varon-accounts.firebasestorage.app",
+  messagingSenderId: "285378160282",
+  appId: "1:285378160282:web:0646596888d89dcafce123"
+};
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+
+// 캠퍼스 행 인덱스 (0-based, 실제 데이터 행)
+const CAMPUS_ROWS = ['장안','서수원','수원','운정1관','운정2관','남동탄'];
+
+// 월 컬럼 정의: [colIndex, monthNum]
+// 25년/26년 시트의 겨울학기 12월 = 전년도 12월
+const MONTH_COLS = [
+  {ci:2, m:12},  // 전년도 12월
+  {ci:3, m:1},{ci:4, m:2},{ci:5, m:3},{ci:6, m:4},{ci:7, m:5},
+  {ci:8, m:6},{ci:9, m:7},{ci:10, m:8},{ci:11, m:9},{ci:12, m:10},{ci:13, m:11}
+];
+
+let importData = []; // {campus, year, month, newIn, withdraw, current}
+
+function n(v){ const x=parseInt(v); return isNaN(x)?0:Math.max(0,x); }
+
+function parseYearSheet(ws, sheetYear){
+  // aoa 변환
+  const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:true});
+  const records = [];
+
+  // 신입 섹션: rows 4-9 (0-indexed)
+  // 퇴원 섹션: rows 14-19
+  // 현재원 섹션: rows 24-29
+  const NEWIN_START=4, WD_START=14, CUR_START=24;
+
+  CAMPUS_ROWS.forEach((campus, ci)=>{
+    const newInRow = aoa[NEWIN_START+ci] || [];
+    const wdRow    = aoa[WD_START+ci]    || [];
+    const curRow   = aoa[CUR_START+ci]   || [];
+
+    MONTH_COLS.forEach(({ci:col, m:month})=>{
+      const newIn    = n(newInRow[col]);
+      const withdraw = n(wdRow[col]);
+      const current  = n(curRow[col]);
+
+      // 빈 행 스킵 (신입+퇴원+현재원 모두 0이면)
+      if(newIn===0 && withdraw===0 && current===0) return;
+
+      // 12월은 전년도
+      const recYear = (month===12) ? sheetYear-1 : sheetYear;
+
+      records.push({campus, year:recYear, month, newIn, withdraw, current});
+    });
+  });
+  return records;
+}
+
+function loadExcel(file){
+  if(!file) return;
+  document.getElementById('file-status').innerHTML=`<div class="alert alert-info">읽는 중: ${file.name}</div>`;
+
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      importData = [];
+
+      // 25년, 26년 시트 파싱
+      const sheetMap = {'25년':2025,'26년':2026};
+      Object.entries(sheetMap).forEach(([name,yr])=>{
+        if(wb.SheetNames.includes(name)){
+          const ws = wb.Sheets[name];
+          const parsed = parseYearSheet(ws, yr);
+          importData.push(...parsed);
+          addLog(`${name} 시트: ${parsed.length}건 파싱`);
+        }
+      });
+
+      // 중복 제거 (campus+year+month 기준, 나중 것 우선)
+      const map = {};
+      importData.forEach(r=>{ map[`${r.campus}_${r.year}_${r.month}`]=r; });
+      importData = Object.values(map);
+      importData.sort((a,b)=>a.year!==b.year?a.year-b.year:a.month!==b.month?a.month-b.month:CAMPUS_ROWS.indexOf(a.campus)-CAMPUS_ROWS.indexOf(b.campus));
+
+      showPreview();
+      document.getElementById('file-status').innerHTML=`<div class="alert alert-success">✅ 파싱 완료 — 총 ${importData.length}건</div>`;
+    }catch(err){
+      document.getElementById('file-status').innerHTML=`<div class="alert alert-error">❌ 오류: ${err.message}</div>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showPreview(){
+  document.getElementById('preview-section').style.display='';
+
+  const totalNew=importData.reduce((s,r)=>s+r.newIn,0);
+  const totalWd=importData.reduce((s,r)=>s+r.withdraw,0);
+  document.getElementById('preview-info').innerHTML=
+    `총 <strong>${importData.length}건</strong> (${[...new Set(importData.map(r=>r.year))].join('·')}년 / 캠퍼스 ${[...new Set(importData.map(r=>r.campus))].length}개) — 신입 합계 ${totalNew.toLocaleString()}, 퇴원 합계 ${totalWd.toLocaleString()}`;
+  document.getElementById('import-count').textContent=`총 ${importData.length}건 저장 예정`;
+
+  const tbody = document.getElementById('preview-body');
+  tbody.innerHTML = importData.map(r=>`<tr>
+    <td><strong>${r.campus}</strong></td>
+    <td>${r.year}</td><td>${r.month}월</td>
+    <td class="r">${r.newIn}</td>
+    <td class="r">${r.withdraw}</td>
+    <td class="r">${r.current.toLocaleString()}</td>
+  </tr>`).join('');
+
+  document.getElementById('preview-foot').innerHTML=`
+    <td colspan="3">합계</td>
+    <td class="r">${totalNew.toLocaleString()}</td>
+    <td class="r">${importData.reduce((s,r)=>s+r.withdraw,0).toLocaleString()}</td>
+    <td class="r">—</td>`;
+}
+
+function makeGrades(r){
+  // 학년 데이터가 없으므로 합계를 "초1" 한 행에 모두 저장
+  // 나머지 학년은 0 — 캠퍼스/월 분석은 정상 동작, 학년별 분석은 역사 데이터 미지원
+  const grades=[];
+  const gradeNames=['초1','초2','초3','초4','초5','초6','중1','중2','중3'];
+  gradeNames.forEach((g,i)=>{
+    grades.push({
+      grade:g,
+      prev: i===0?0:0, newIn:i===0?r.newIn:0, transIn:0,
+      withdraw:i===0?r.withdraw:0, transOut:0, graduate:0,
+      current:i===0?r.current:0, notes:''
+    });
+  });
+  // 전월마감원은 current로 역산 (current = prev+newIn-withdraw 이므로 prev = current-newIn+withdraw)
+  grades[0].prev = Math.max(0, r.current - r.newIn + r.withdraw);
+  return grades;
+}
+
+async function doImport(){
+  const btn = document.getElementById('import-btn');
+  btn.disabled=true;
+  const progWrap=document.getElementById('prog-wrap');
+  const progBar=document.getElementById('prog-bar');
+  const result=document.getElementById('import-result');
+  progWrap.style.display='';
+  result.innerHTML='';
+  document.getElementById('log').style.display='block';
+
+  let done=0, errors=0;
+  const total=importData.length;
+
+  for(const r of importData){
+    try{
+      // 기존 문서 확인 (campus+year+month)
+      const q=await db.collection('records')
+        .where('campus','==',r.campus).where('year','==',r.year).where('month','==',r.month)
+        .limit(1).get();
+
+      const payload={
+        campus:r.campus, year:r.year, month:r.month,
+        quarter:Math.ceil(r.month/3),
+        grades:makeGrades(r),
+        isHistoricalImport:true,
+        updatedAt:Date.now(), updatedBy:'IMPORT'
+      };
+
+      if(!q.empty){
+        await db.collection('records').doc(q.docs[0].id).set(payload);
+        addLog(`✏️ 덮어씀: ${r.campus} ${r.year}/${r.month}`);
+      }else{
+        await db.collection('records').add({...payload, createdAt:Date.now(), createdBy:'IMPORT'});
+        addLog(`➕ 신규: ${r.campus} ${r.year}/${r.month}`);
+      }
+      done++;
+    }catch(err){
+      errors++;
+      addLog(`❌ 오류: ${r.campus} ${r.year}/${r.month} — ${err.message}`);
+    }
+    progBar.style.width=`${Math.round((done+errors)/total*100)}%`;
+  }
+
+  result.innerHTML=errors===0
+    ?`<div class="alert alert-success">🎉 완료! ${done}건 저장되었습니다. <a href="https://benu2one-rgb.github.io/varon-accounts/" target="_blank" style="color:#1d9e75;font-weight:600">앱으로 이동 →</a></div>`
+    :`<div class="alert alert-warn">⚠️ ${done}건 성공, ${errors}건 실패. 아래 로그를 확인하세요.</div>`;
+  btn.disabled=false;
+}
+
+function addLog(msg){
+  const log=document.getElementById('log');
+  log.innerHTML+=msg+'<br>';
+  log.scrollTop=log.scrollHeight;
+}
+
+// 드래그앤드롭
+document.querySelector('.upload-zone').addEventListener('dragover',e=>{e.preventDefault();});
+document.querySelector('.upload-zone').addEventListener('drop',e=>{e.preventDefault();loadExcel(e.dataTransfer.files[0]);});
+</script>
+</body>
+</html>
