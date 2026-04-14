@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>바론네트웍스 통합 관리 시스템</title>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --navy:#0f3460;--navy2:#1a4a7a;--navy3:#e8eef8;
@@ -151,7 +152,20 @@ select.f-select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px
 .grade-entry-table tfoot td{padding:8px 8px;background:var(--gray2);font-weight:700;border-top:2px solid var(--border);text-align:center;color:var(--navy)}
 .grade-entry-table tfoot td:first-child{text-align:left;padding-left:12px}
 .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
-.overflow-x{overflow-x:auto}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray2);margin-bottom:16px}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--navy);background:var(--navy3)}
+.upload-zone .icon{font-size:32px;margin-bottom:8px}
+.upload-zone p{font-size:13px;color:var(--text2)}
+.upload-zone strong{color:var(--navy)}
+.upload-zone input[type=file]{display:none}
+.upload-result{background:var(--teal2);border:1px solid #b8e8d9;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.upload-result .icon{font-size:20px}
+.upload-result .info{flex:1}
+.upload-result .info strong{display:block;font-size:13px;color:var(--teal)}
+.upload-result .info span{font-size:12px;color:var(--text2)}
+.upload-err{background:var(--red2);border:1px solid #f5c6c4;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--red)}
+.divider-or{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text2);font-size:12px}
+.divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:var(--border)}
 
 /* ── ADMIN ── */
 .admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
@@ -204,12 +218,13 @@ select.f-select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px
 // FIREBASE CONFIG — Replace with your own Firebase project config
 // ================================================================
 const FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCcOf8TI7NWGKhov78n6UTpzdCWWkbBKKc",
+  authDomain: "varon-accounts.firebaseapp.com",
+  projectId: "varon-accounts",
+  storageBucket: "varon-accounts.firebasestorage.app",
+  messagingSenderId: "285378160282",
+  appId: "1:285378160282:web:0646596888d89dcafce123",
+  measurementId: "G-C54RKFVYSD"
 };
 
 // ================================================================
@@ -878,22 +893,43 @@ function renderInput(){
   const totals={prev:sum(g,x=>x.prev||0),newIn:sum(g,x=>x.newIn||0),transIn:sum(g,x=>x.transIn||0),withdraw:sum(g,x=>x.withdraw||0),transOut:sum(g,x=>x.transOut||0),graduate:sum(g,x=>x.graduate||0),current:sum(g,x=>calcGradeCurrent(x))};
 
   return `<div class="page-header">
-    <div><div class="page-title">데이터 입력</div><div class="page-sub">월별 캠퍼스 현황을 입력합니다</div></div>
+    <div><div class="page-title">데이터 입력</div><div class="page-sub">엑셀 업로드 또는 직접 입력으로 월별 캠퍼스 현황을 등록합니다</div></div>
+    <button class="btn btn-success" onclick="downloadPrefillTemplate()">⬇ 입력 양식 다운로드</button>
   </div>
+
+  <!-- Excel Upload Zone -->
   <div class="form-section">
-    <div class="form-section-title">기본 정보</div>
+    <div class="form-section-title">📂 엑셀 파일 업로드</div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('excel-file-input').click()"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleExcelDrop(event)">
+      <div class="icon">📊</div>
+      <p><strong>마감양식 엑셀 파일을 클릭하거나 드래그하여 업로드</strong></p>
+      <p style="margin-top:4px;font-size:12px">지원 형식: .xlsx · 한 번에 1개 파일</p>
+      <input type="file" id="excel-file-input" accept=".xlsx,.xls" onchange="handleExcelUpload(this.files[0])">
+    </div>
+    <div id="upload-status"></div>
+  </div>
+
+  <div class="divider-or">또는 직접 입력</div>
+
+  <!-- Manual Entry -->
+  <div class="form-section">
+    <div class="form-section-title">✏️ 직접 입력</div>
     <div class="form-row">
       <label>캠퍼스</label>
-      <select class="input-sm" style="width:140px" onchange="setInputField('campus',this.value)">${campusOpts||'<option value="">캠퍼스 없음</option>'}</select>
+      <select class="input-sm" style="width:140px" id="sel-campus" onchange="setInputField('campus',this.value)">${campusOpts||'<option value="">캠퍼스 없음</option>'}</select>
       <label style="margin-left:12px">년도</label>
-      <select class="input-sm" onchange="setInputField('year',this.value)">${yearOpts}</select>
+      <select class="input-sm" id="sel-year" onchange="setInputField('year',this.value)">${yearOpts}</select>
       <label style="margin-left:8px">월</label>
-      <select class="input-sm" onchange="setInputField('month',this.value)">${monthOpts}</select>
+      <select class="input-sm" id="sel-month" onchange="setInputField('month',this.value)">${monthOpts}</select>
       <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="loadExistingInput()">기존 데이터 불러오기</button>
     </div>
   </div>
+
   <div class="form-section">
-    <div class="form-section-title">학년별 현황 입력</div>
+    <div class="form-section-title">학년별 현황</div>
     <div class="overflow-x">
     <table class="grade-entry-table">
       <thead><tr>
@@ -1152,6 +1188,180 @@ async function doDeleteCampus(id){
   setAlert('캠퍼스가 삭제되었습니다.','success');
   renderCurrentView();
 }
+
+// ================================================================
+// EXCEL UPLOAD & TEMPLATE DOWNLOAD
+// ================================================================
+
+// 엑셀 파일 파싱
+// 양식 구조:
+//   Row 0: 빈 행
+//   Row 1 (header): '', 캠퍼스, 년도, 분기, 월, 학년, 전월마감원, 신입, 전입, 퇴원, 전출, 졸업, 현재원, 기타 특이 사항
+//   Rows 2~10: 초1~중3 데이터 행
+function parseExcelData(workbook){
+  const sheetName = workbook.SheetNames[0];
+  const ws = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+
+  // 캠퍼스/년도/월은 B~E 열(index 1~4), 병합셀 고려하여 비어있지 않은 첫 번째 값 사용
+  const dataRows = rows.slice(2, 11); // 초1~중3 (9개 행)
+  if(dataRows.length < 1) throw new Error('데이터 행을 찾을 수 없습니다. (초1~중3 행 필요)');
+
+  const firstVal=(colIdx)=>{
+    for(const r of dataRows){ const v=String(r[colIdx]||'').trim(); if(v) return v; }
+    return '';
+  };
+
+  const campusName = firstVal(1);
+  const yearStr    = firstVal(2);
+  const monthStr   = firstVal(4);
+
+  if(!campusName) throw new Error('캠퍼스명이 비어 있습니다. (B열 확인)');
+  if(!yearStr)    throw new Error('년도가 비어 있습니다. (C열 확인)');
+  if(!monthStr)   throw new Error('월이 비어 있습니다. (E열 확인)');
+
+  const year  = parseInt(yearStr);
+  const month = parseInt(monthStr);
+  if(isNaN(year)||isNaN(month)) throw new Error(`년도/월 형식 오류: 년도=${yearStr}, 월=${monthStr}`);
+
+  const grades = dataRows.map((row, i)=>{
+    const grade = String(row[5]||GRADES[i]||'').trim();
+    const p=(n)=>{ const v=parseInt(String(row[n]||'').replace(/[^0-9-]/g,'')); return isNaN(v)?0:Math.max(0,v); };
+    const prev=p(6), newIn=p(7), transIn=p(8), withdraw=p(9), transOut=p(10), graduate=p(11);
+    const excelCurrent=p(12);
+    const calcedCurrent=Math.max(0,prev+newIn+transIn-withdraw-transOut-graduate);
+    return { grade, prev, newIn, transIn, withdraw, transOut, graduate,
+      current: excelCurrent||calcedCurrent, notes: String(row[13]||'').trim() };
+  });
+
+  return { campusName, year, month, quarter: Math.ceil(month/3), grades };
+}
+
+function applyParsedData(parsed){
+  const { campusName, year, month, quarter, grades } = parsed;
+
+  // 캠퍼스 매칭 (완전일치 우선, 없으면 유사 매칭)
+  const matchedCampus = S.campuses.find(c=>c.name===campusName)
+    || S.campuses.find(c=>campusName.includes(c.name)||c.name.includes(campusName));
+
+  if(!matchedCampus){
+    throw new Error(`캠퍼스 '${campusName}'을(를) 시스템에서 찾을 수 없습니다.\n관리자에서 먼저 캠퍼스를 등록해 주세요.`);
+  }
+
+  S.inputCampus = matchedCampus.name;
+  S.inputYear   = year;
+  S.inputMonth  = month;
+  S.inputGrades = GRADES.map(g=>{
+    const found = grades.find(x=>x.grade===g);
+    return found || {grade:g,prev:0,newIn:0,transIn:0,withdraw:0,transOut:0,graduate:0,notes:''};
+  });
+}
+
+function handleExcelUpload(file){
+  if(!file) return;
+  const statusEl = document.getElementById('upload-status');
+  if(!statusEl) return;
+
+  if(!file.name.match(/\.(xlsx|xls)$/i)){
+    statusEl.innerHTML=`<div class="upload-err">⚠️ .xlsx 또는 .xls 파일만 지원합니다.</div>`;
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb   = XLSX.read(data, {type:'array', cellDates:false});
+      const parsed = parseExcelData(wb);
+      applyParsedData(parsed);
+
+      // 성공 메시지 표시 후 폼 재렌더
+      const existing = S.records.find(r=>r.campus===parsed.campusName&&r.year===parsed.year&&r.month===parsed.month);
+      statusEl.innerHTML=`<div class="upload-result">
+        <div class="icon">✅</div>
+        <div class="info">
+          <strong>${esc(parsed.campusName)} ${parsed.year}년 ${parsed.month}월 데이터를 읽었습니다.</strong>
+          <span>${existing?'⚠️ 기존 데이터가 있습니다. 저장하면 덮어씁니다.':'신규 데이터입니다.'} · 아래 내용을 확인 후 저장하세요.</span>
+        </div>
+      </div>`;
+      // 폼 테이블만 업데이트
+      renderCurrentView();
+      // 업로드 성공 메시지 다시 표시 (렌더 후)
+      const s2=document.getElementById('upload-status');
+      if(s2) s2.innerHTML=`<div class="upload-result">
+        <div class="icon">✅</div>
+        <div class="info">
+          <strong>${esc(parsed.campusName)} ${parsed.year}년 ${parsed.month}월 데이터 읽기 완료</strong>
+          <span>${existing?'⚠️ 기존 데이터 덮어쓰기 예정':'신규 데이터'} · 학년별 내용 확인 후 저장하세요.</span>
+        </div>
+      </div>`;
+    }catch(err){
+      statusEl.innerHTML=`<div class="upload-err">❌ 파싱 오류: ${esc(err.message)}</div>`;
+    }
+  };
+  reader.onerror = ()=>{ statusEl.innerHTML=`<div class="upload-err">❌ 파일을 읽을 수 없습니다.</div>`; };
+  reader.readAsArrayBuffer(file);
+}
+
+function handleExcelDrop(event){
+  event.preventDefault();
+  document.getElementById('upload-zone')?.classList.remove('drag-over');
+  const file = event.dataTransfer?.files?.[0];
+  if(file) handleExcelUpload(file);
+}
+
+// 양식 다운로드 — 업로드된 원본 양식과 동일한 구조
+// 캠퍼스·년도·분기·월 병합셀 + 학년 9행
+function downloadTemplate(prefill=false){
+  if(typeof XLSX==='undefined'){ alert('SheetJS 라이브러리가 로드되지 않았습니다.'); return; }
+
+  const campus  = prefill && S.inputCampus ? S.inputCampus : '';
+  const yr      = prefill ? S.inputYear  : '';
+  const mo      = prefill ? S.inputMonth : '';
+  const qr      = (mo&&yr) ? Math.ceil(mo/3) : '';
+  const fname   = campus ? `마감양식_${campus}_${yr}년${String(mo).padStart(2,'0')}월.xlsx` : '마감양식_기본_.xlsx';
+
+  // AOA: row0=blank, row1=header, rows2-10=data
+  const aoa = [
+    Array(14).fill(''),  // row 0 (1행: 빈 행)
+    ['','캠퍼스','년도','분기','월','학년','전월마감원','신입','전입','퇴원','전출','졸업','현재원','기타 특이 사항'],
+    ...GRADES.map((g,i)=>[
+      '',
+      i===0 ? campus : '',   // B열: 캠퍼스 (첫 행만, 나머지는 병합)
+      i===0 ? yr     : '',   // C열: 년도
+      i===0 ? qr     : '',   // D열: 분기
+      i===0 ? mo     : '',   // E열: 월
+      g,                     // F열: 학년
+      '','','','','','','','' // G-N: 입력 셀
+    ])
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // 병합셀: 캠퍼스(B3:B11), 년도(C3:C11), 분기(D3:D11), 월(E3:E11)
+  // 0-indexed: row2~10, col 1~4
+  ws['!merges'] = [
+    {s:{r:2,c:1}, e:{r:10,c:1}},
+    {s:{r:2,c:2}, e:{r:10,c:2}},
+    {s:{r:2,c:3}, e:{r:10,c:3}},
+    {s:{r:2,c:4}, e:{r:10,c:4}},
+  ];
+
+  // 열 너비
+  ws['!cols'] = [
+    {wch:3},{wch:14},{wch:8},{wch:6},{wch:6},{wch:8},
+    {wch:12},{wch:8},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:22}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  XLSX.writeFile(wb, fname);
+}
+
+// 헤더의 양식 다운로드 버튼 → 빈 양식
+// 데이터 입력 페이지의 다운로드 버튼 → 현재 캠퍼스/기간 prefill
+function downloadBlankTemplate(){ downloadTemplate(false); }
+function downloadPrefillTemplate(){ downloadTemplate(true); }
 
 // ================================================================
 // INIT
