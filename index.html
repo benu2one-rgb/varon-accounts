@@ -1060,7 +1060,6 @@ async function deleteAllData(){
   const alertEl=document.getElementById('seed-alert');
   if(!confirm('⚠️ 전체 데이터를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다!')) return;
   if(!confirm('🗑️ 정말로 삭제하시겠습니까?\n\n확인을 누르면 모든 데이터가 영구 삭제됩니다.')) return;
-이 작업은 되돌릴 수 없습니다!')) return;
   alertEl.innerHTML='<div class="alert alert-info">⏳ 전체 데이터 삭제 중...</div>';
   try{
     const snap=await db.collection('records').get();
