@@ -3,349 +3,222 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>바론네트웍스 운영 관리 시스템</title>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<title>바론네트웍스 통합 관리 시스템</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  --org:#F97316;--org-dk:#C25C10;--org-lt:#FFF7ED;
-  --tif:#0ABAB5;--tif-dk:#089490;--tif-lt:#F0FDFB;
-  --bg:#FAFAF8;--card:#fff;--bdr:#E2E8F0;--txt:#1E293B;--mut:#64748B;--rad:10px;
+  --navy:#0f3460;--navy2:#1a4a7a;--navy3:#e8eef8;
+  --teal:#1d9e75;--teal2:#eaf7f2;
+  --red:#c0392b;--red2:#fdeaea;
+  --amber:#e67e22;--amber2:#fef6ec;
+  --blue:#2980b9;--blue2:#eaf4fb;
+  --gray:#6b7194;--gray2:#f5f6fa;--gray3:#e4e7f0;
+  --surface:#fff;--border:#e0e4ef;--text:#1a1f36;--text2:#6b7194;
+  --shadow:0 2px 8px rgba(15,52,96,.08);
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--txt);}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--gray2);color:var(--text);font-size:14px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:inherit;font-size:14px}
+input,select,textarea{font-family:inherit;font-size:14px}
 
-/* LOGIN */
-#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#FFF7ED 0%,#F0FDFB 100%);}
-.login-box{background:#fff;border-radius:20px;padding:48px 40px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.12);}
-.login-logo{text-align:center;margin-bottom:28px;}
-.login-title{font-size:19px;font-weight:800;color:var(--txt);margin-top:14px;line-height:1.4;}
-.login-sub{font-size:12px;color:var(--mut);margin-top:4px;}
-.form-group{margin-bottom:14px;}
-.form-label{display:block;font-size:12px;font-weight:700;color:var(--mut);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
-.form-input{width:100%;padding:10px 14px;border:1.5px solid var(--bdr);border-radius:8px;font-size:14px;outline:none;transition:border-color .2s;}
-.form-input:focus{border-color:var(--org);}
-.btn-pri{width:100%;padding:12px;background:var(--org);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:800;cursor:pointer;transition:background .2s;margin-top:4px;}
-.btn-pri:hover{background:var(--org-dk);}
-.login-err{color:#EF4444;font-size:13px;margin-top:8px;text-align:center;min-height:18px;}
+/* ── LAYOUT ── */
+#app{min-height:100vh}
+.app-shell{display:flex;flex-direction:column;min-height:100vh}
 
-/* HEADER */
-.header{background:#fff;border-bottom:1px solid var(--bdr);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06);}
-.header-left{display:flex;align-items:center;gap:10px;}
-.header-title{font-size:15px;font-weight:800;color:var(--txt);}
-.header-right{display:flex;align-items:center;gap:10px;}
-.header-user{font-size:13px;color:var(--mut);}
-.btn-logout{padding:5px 12px;border:1.5px solid var(--bdr);border-radius:6px;background:#fff;font-size:12px;cursor:pointer;color:var(--mut);}
-.btn-logout:hover{border-color:var(--org);color:var(--org);}
+/* ── HEADER ── */
+.header{background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.header-logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:32px;height:32px;background:var(--teal);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.logo-text{font-size:15px;font-weight:600;letter-spacing:-.3px}
+.logo-sub{font-size:11px;opacity:.6;margin-top:1px}
+.header-nav{display:flex;gap:4px}
+.nav-item{padding:6px 16px;border-radius:6px;color:rgba(255,255,255,.7);border:none;background:none;transition:all .15s;font-size:13px;font-weight:500}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.15);color:#fff}
+.header-user{display:flex;align-items:center;gap:10px;font-size:13px;opacity:.9}
+.user-badge{background:rgba(255,255,255,.15);padding:3px 10px;border-radius:12px;font-size:12px}
+.btn-logout{padding:5px 12px;border:1px solid rgba(255,255,255,.3);border-radius:6px;background:none;color:rgba(255,255,255,.8);font-size:12px}
+.btn-logout:hover{background:rgba(255,255,255,.1)}
 
-/* NAV */
-.nav-bar{background:#fff;border-bottom:1px solid var(--bdr);padding:0 20px;display:flex;gap:2px;overflow-x:auto;}
-.nav-btn{padding:13px 16px;font-size:13px;font-weight:600;color:var(--mut);border:none;background:transparent;cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;transition:all .2s;}
-.nav-btn:hover{color:var(--org);}
-.nav-btn.active{color:var(--org);border-bottom-color:var(--org);font-weight:800;}
+/* ── CONTENT ── */
+.content{flex:1;padding:24px;max-width:1280px;margin:0 auto;width:100%}
 
-/* CONTENT */
-.content{flex:1;padding:20px 24px;max-width:1440px;width:100%;margin:0 auto;}
-.tab-content{display:none;}
-.tab-content.active{display:block;}
+/* ── FILTER BAR ── */
+.filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;box-shadow:var(--shadow)}
+.filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:8px}
+.filter-label{font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
+.filter-divider{width:1px;height:24px;background:var(--border);margin:0 4px}
+.filter-type-btn{padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--gray2);color:var(--text2);font-size:12px;font-weight:500;transition:all .15s}
+.filter-type-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+select.f-select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);min-width:80px}
+select.f-select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 2px rgba(15,52,96,.12)}
 
-/* SECTION TITLE */
-.sec-title{font-size:18px;font-weight:800;color:var(--txt);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-.sec-title::before{content:'';width:4px;height:20px;background:var(--org);border-radius:2px;display:inline-block;}
+/* ── TABS ── */
+.tab-bar{display:flex;gap:4px;background:var(--gray2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:20px;width:fit-content}
+.tab-btn{padding:8px 20px;border-radius:7px;border:none;background:none;color:var(--text2);font-weight:500;font-size:13px;transition:all .15s}
+.tab-btn.active{background:var(--surface);color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)}
 
-/* FILTER BAR */
-.filter-bar{background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
-.fg{display:flex;flex-direction:column;gap:4px;}
-.fl{font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;}
-select.fi,input.fi{padding:7px 10px;border:1.5px solid var(--bdr);border-radius:6px;font-size:13px;background:#fff;color:var(--txt);cursor:pointer;outline:none;}
-select.fi:focus,input.fi:focus{border-color:var(--tif);}
-.btn-go{padding:7px 18px;background:var(--org);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;}
-.btn-go:hover{background:var(--org-dk);}
-.btn-tif{padding:7px 18px;background:var(--tif);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;}
-.btn-tif:hover{background:var(--tif-dk);}
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.stat-card.blue{border-left:3px solid var(--blue)}
+.stat-card.green{border-left:3px solid var(--teal)}
+.stat-card.red{border-left:3px solid var(--red)}
+.stat-card.amber{border-left:3px solid var(--amber)}
+.stat-card.navy{border-left:3px solid var(--navy)}
+.stat-lbl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.stat-val{font-size:28px;font-weight:700;color:var(--text);line-height:1}
+.stat-sub{font-size:12px;color:var(--text2);margin-top:4px}
+.stat-note{font-size:11px;color:var(--text2);margin-top:2px}
 
-/* PERIOD TABS */
-.ptabs{display:flex;border:1.5px solid var(--bdr);border-radius:8px;overflow:hidden;width:fit-content;}
-.ptab{padding:6px 14px;font-size:13px;font-weight:600;border:none;background:#fff;cursor:pointer;color:var(--mut);}
-.ptab.active{background:var(--org);color:#fff;}
+/* ── TOGGLE STRIP ── */
+.toggle-strip{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.toggle-label{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.toggle-group{display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.toggle-btn{padding:5px 12px;border:none;background:var(--gray2);color:var(--text2);font-size:12px;font-weight:500;transition:all .15s;border-right:1px solid var(--border)}
+.toggle-btn:last-child{border-right:none}
+.toggle-btn.active{background:var(--navy);color:#fff}
 
-/* STATS CARDS */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:16px;}
-.stat-card{background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 16px;}
-.stat-label{font-size:11px;font-weight:700;color:var(--mut);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;}
-.stat-cum{font-size:22px;font-weight:900;color:var(--org);}
-.stat-avg{font-size:13px;font-weight:600;color:var(--tif);margin-top:3px;}
-.stat-unit{font-size:11px;color:var(--mut);}
+/* ── CHARTS ── */
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:16px;margin-bottom:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow)}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:.04em}
+.chart-wrap{position:relative;width:100%;height:260px}
 
-/* CHART GRID */
-.chart-row{display:grid;gap:14px;margin-bottom:14px;}
-.chart-row.cols-2{grid-template-columns:1fr 1fr;}
-.chart-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
-.chart-row.cols-1{grid-template-columns:1fr;}
-@media(max-width:1000px){.chart-row.cols-3{grid-template-columns:1fr 1fr;}}
-@media(max-width:700px){.chart-row.cols-2,.chart-row.cols-3{grid-template-columns:1fr;}}
-.chart-card{background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:16px 18px;}
-.chart-title{font-size:13px;font-weight:800;color:var(--txt);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bdr);}
-.chart-wrap{position:relative;height:240px;}
-.chart-wrap.tall{height:300px;}
+/* ── TABLE ── */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px}
+.table-card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.table-card-title{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:var(--text2);background:var(--gray2);border-bottom:1px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
+.data-table thead th.num{text-align:right}
+.data-table tbody td{padding:10px 12px;border-bottom:1px solid var(--gray3);color:var(--text)}
+.data-table tbody td.num{text-align:right;font-variant-numeric:tabular-nums}
+.data-table tbody tr:last-child td{border-bottom:none}
+.data-table tbody tr:hover td{background:var(--gray2)}
+.data-table tfoot td{padding:10px 12px;font-weight:700;background:var(--gray2);border-top:2px solid var(--border);color:var(--navy)}
+.data-table tfoot td.num{text-align:right}
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.pill.up{background:var(--teal2);color:var(--teal)}
+.pill.dn{background:var(--red2);color:var(--red)}
+.pill.neu{background:var(--gray3);color:var(--gray)}
+.pill.blue{background:var(--blue2);color:var(--blue)}
+.rate-badge{font-variant-numeric:tabular-nums}
 
-/* TABLE */
-.tbl-card{background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:16px 18px;margin-bottom:14px;overflow-x:auto;}
-.tbl-title{font-size:13px;font-weight:800;color:var(--txt);margin-bottom:12px;}
-table{width:100%;border-collapse:collapse;font-size:12px;}
-th{background:#F8FAFC;padding:7px 10px;text-align:center;font-weight:700;color:var(--mut);border-bottom:2px solid var(--bdr);white-space:nowrap;}
-td{padding:7px 10px;text-align:center;border-bottom:1px solid #F1F5F9;}
-tr:hover td{background:#FFFBF5;}
-.th-org{background:var(--org-lt);color:var(--org);font-weight:800;}
-.th-tif{background:var(--tif-lt);color:var(--tif-dk);font-weight:800;}
-.td-bold{font-weight:700;color:var(--txt);}
-.td-avg{color:var(--tif);font-weight:600;}
+/* ── LOGIN ── */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f0e8}
+.login-box{background:#fff;border-radius:20px;padding:48px 44px;width:400px;box-shadow:0 8px 40px rgba(0,0,0,.08)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .shield{width:80px;height:80px;margin:0 auto 16px;position:relative}
+.login-logo .shield svg{width:80px;height:80px}
+.login-logo .title{font-size:20px;font-weight:700;color:#1a1f36;line-height:1.3}
+.login-logo .sub{font-size:12px;color:#6b7194;margin-top:6px;letter-spacing:.02em}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.form-control{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);transition:border-color .15s}
+.form-control:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(15,52,96,.1)}
+.btn{padding:10px 20px;border-radius:8px;border:1px solid var(--border);font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy);width:100%;justify-content:center}
+.btn-primary:hover{background:var(--navy2)}
+.btn-secondary{background:var(--surface);color:var(--text)}
+.btn-secondary:hover{background:var(--gray2)}
+.btn-danger{background:var(--red2);color:var(--red);border-color:#f5c6c4}
+.btn-danger:hover{background:#fbd5d3}
+.btn-success{background:var(--teal2);color:var(--teal);border-color:#b8e8d9}
+.btn-success:hover{background:#d4f0e8}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:6px}
+.error-msg{background:var(--red2);color:var(--red);padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
 
-/* ADMIN */
-.admin-grid{display:grid;grid-template-columns:3fr 2fr;gap:16px;}
-@media(max-width:800px){.admin-grid{grid-template-columns:1fr;}}
-.user-card{background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:18px;}
-.card-title{font-size:14px;font-weight:800;margin-bottom:14px;color:var(--txt);}
-.user-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F1F5F9;}
-.u-info{display:flex;flex-direction:column;gap:2px;}
-.u-name{font-size:13px;font-weight:700;}
-.u-email{font-size:11px;color:var(--mut);}
-.u-meta{font-size:11px;color:var(--mut);}
-.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:800;}
-.badge-admin{background:var(--org-lt);color:var(--org);}
-.badge-user{background:var(--tif-lt);color:var(--tif-dk);}
-.badge-del{background:#FEE2E2;color:#DC2626;}
-.btn-del{padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;}
-.btn-del:hover{background:#FEF2F2;}
+/* ── FORMS ── */
+.form-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow)}
+.form-section-title{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.form-row{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.form-row label{font-size:12px;font-weight:600;color:var(--text2);min-width:80px}
+.input-sm{padding:7px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);width:100px}
+.input-sm:focus{outline:none;border-color:var(--navy)}
+.input-xs{width:70px;padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);text-align:center}
+.input-xs:focus{outline:none;border-color:var(--navy)}
+.grade-entry-table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
+.grade-entry-table th{padding:8px 8px;font-size:11px;font-weight:600;color:var(--text2);background:var(--gray2);border-bottom:1px solid var(--border);text-align:center;text-transform:uppercase;letter-spacing:.04em}
+.grade-entry-table th:first-child{text-align:left;padding-left:12px}
+.grade-entry-table td{padding:6px 6px;border-bottom:1px solid var(--gray3);text-align:center}
+.grade-entry-table td:first-child{text-align:left;padding-left:12px;font-weight:600;color:var(--navy)}
+.grade-entry-table td.calc{background:var(--navy3);font-weight:700;color:var(--navy)}
+.grade-entry-table tfoot td{padding:8px 8px;background:var(--gray2);font-weight:700;border-top:2px solid var(--border);text-align:center;color:var(--navy)}
+.grade-entry-table tfoot td:first-child{text-align:left;padding-left:12px}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray2);margin-bottom:16px}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--navy);background:var(--navy3)}
+.upload-zone .icon{font-size:32px;margin-bottom:8px}
+.upload-zone p{font-size:13px;color:var(--text2)}
+.upload-zone strong{color:var(--navy)}
+.upload-zone input[type=file]{display:none}
+.upload-result{background:var(--teal2);border:1px solid #b8e8d9;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.upload-result .icon{font-size:20px}
+.upload-result .info{flex:1}
+.upload-result .info strong{display:block;font-size:13px;color:var(--teal)}
+.upload-result .info span{font-size:12px;color:var(--text2)}
+.upload-err{background:var(--red2);border:1px solid #f5c6c4;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--red)}
+.divider-or{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text2);font-size:12px}
+.divider-or::before,.divider-or::after{content:'';flex:1;height:1px;background:var(--border)}
 
-/* INPUT FORM */
-.input-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
-.input-table-wrap{background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:16px;overflow-x:auto;margin-bottom:14px;}
-.input-table input[type=number]{width:62px;padding:4px;border:1px solid var(--bdr);border-radius:4px;text-align:center;font-size:12px;}
-.input-table input[type=number]:focus{border-color:var(--org);outline:none;}
-.btn-save{padding:9px 24px;background:var(--org);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:800;cursor:pointer;}
-.btn-save:hover{background:var(--org-dk);}
-.btn-seed{padding:9px 20px;border:1.5px solid var(--tif);border-radius:7px;background:#fff;color:var(--tif);font-size:13px;font-weight:700;cursor:pointer;}
-.btn-seed:hover{background:var(--tif-lt);}
+/* ── ADMIN ── */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.user-table-row .actions{display:flex;gap:6px;opacity:0;transition:opacity .15s}
+.user-table-row:hover .actions{opacity:1}
+.campus-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.campus-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--navy3);color:var(--navy);border-radius:14px;font-size:12px;font-weight:500}
+.campus-tag .remove-tag{background:none;border:none;color:var(--text2);line-height:1;padding:0 2px;font-size:14px;cursor:pointer}
+.campus-tag .remove-tag:hover{color:var(--red)}
+.add-row{display:flex;gap:8px;margin-top:10px}
 
-/* ALERTS */
-.alert{padding:10px 14px;border-radius:7px;font-size:13px;margin-bottom:10px;}
-.alert-ok{background:#ECFDF5;color:#059669;border:1px solid #A7F3D0;}
-.alert-err{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA;}
-.alert-info{background:var(--tif-lt);color:var(--tif-dk);border:1px solid #99F6E4;}
+/* ── SETUP ── */
+.setup-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy)}
+.setup-box{background:var(--surface);border-radius:16px;padding:40px;width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.setup-step{margin-bottom:20px;padding:16px;background:var(--gray2);border-radius:10px;border:1px solid var(--border)}
 
-/* UTILS */
-.hidden{display:none!important;}
-.loading{text-align:center;padding:50px;color:var(--mut);font-size:14px;}
-.mt8{margin-top:8px;}
-.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;}
-::-webkit-scrollbar{width:5px;height:5px;}
-::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px;}
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty-state .icon{font-size:40px;margin-bottom:12px;opacity:.5}
+.empty-state p{font-size:14px}
+
+/* ── MISC ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:700;color:var(--text)}
+.page-sub{font-size:13px;color:var(--text2);margin-top:2px}
+.alert{padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:12px}
+.alert-success{background:var(--teal2);color:var(--teal)}
+.alert-error{background:var(--red2);color:var(--red)}
+.alert-info{background:var(--blue2);color:var(--blue)}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-page{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:var(--gray2);color:var(--text2)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-admin{background:#fff3cd;color:#856404}
+.badge-user{background:var(--blue2);color:var(--blue)}
+@media(max-width:768px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .charts-grid{grid-template-columns:1fr}
+  .admin-grid{grid-template-columns:1fr}
+  .content{padding:12px}
+  .header-nav{display:none}
+}
 </style>
 </head>
 <body>
-
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div class="login-box">
-    <div class="login-logo">
-      <svg width="72" height="72" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#FFB347"/>
-            <stop offset="55%" stop-color="#F97316"/>
-            <stop offset="100%" stop-color="#C2601A"/>
-          </linearGradient>
-          <linearGradient id="lg2" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#4CD9D4"/>
-            <stop offset="100%" stop-color="#089490"/>
-          </linearGradient>
-          <filter id="sf1"><feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#00000035"/></filter>
-        </defs>
-        <path d="M36 3 L67 16 L67 43 Q67 62 36 70 Q5 62 5 43 L5 16 Z" fill="url(#lg1)" filter="url(#sf1)"/>
-        <path d="M36 3 L67 16 L67 18 L36 5 L5 18 L5 16 Z" fill="rgba(255,255,255,0.32)"/>
-        <path d="M5 16 L5 43 Q5 62 36 70 L36 68.5 Q6.5 61 6.5 43 L6.5 17 Z" fill="rgba(0,0,0,0.12)"/>
-        <path d="M36 10 L60 20 L60 41 Q60 56 36 63 Q12 56 12 41 L12 20 Z" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.2"/>
-        <text x="36" y="42" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="12" font-weight="900" fill="white" letter-spacing="1">VARON</text>
-        <circle cx="36" cy="8" r="4.5" fill="url(#lg2)"/>
-        <circle cx="36" cy="8" r="2" fill="white" opacity="0.6"/>
-      </svg>
-      <div class="login-title">바론네트웍스<br>운영 관리 시스템</div>
-      <div class="login-sub">VARON Networks Operation Management System</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">이메일</label>
-      <input type="email" id="loginEmail" class="form-input" placeholder="이메일 입력">
-    </div>
-    <div class="form-group">
-      <label class="form-label">비밀번호</label>
-      <input type="password" id="loginPw" class="form-input" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <button class="btn-pri" onclick="doLogin()">로그인</button>
-    <div id="loginErr" class="login-err"></div>
-  </div>
-</div>
-
-<!-- MAIN APP -->
-<div id="mainApp" style="display:none;flex-direction:column;min-height:100vh;">
-  <header class="header">
-    <div class="header-left">
-      <svg width="36" height="36" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="hlg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFB347"/><stop offset="100%" stop-color="#F97316"/></linearGradient>
-          <linearGradient id="hlg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4CD9D4"/><stop offset="100%" stop-color="#089490"/></linearGradient>
-        </defs>
-        <path d="M36 3 L67 16 L67 43 Q67 62 36 70 Q5 62 5 43 L5 16 Z" fill="url(#hlg)"/>
-        <path d="M36 3 L67 16 L67 18 L36 5 L5 18 L5 16 Z" fill="rgba(255,255,255,0.28)"/>
-        <text x="37" y="48" text-anchor="middle" font-family="Arial Black,sans-serif" font-size="13" font-weight="900" fill="white" letter-spacing="0.5">VARON</text>
-        <circle cx="36" cy="8" r="4" fill="url(#hlg2)"/>
-      </svg>
-      <span class="header-title">바론네트웍스 운영 관리 시스템</span>
-    </div>
-    <div class="header-right">
-      <span class="header-user" id="headerUserInfo"></span>
-      <button class="btn-logout" onclick="doLogout()">로그아웃</button>
-    </div>
-  </header>
-
-  <nav class="nav-bar">
-    <button class="nav-btn" id="nav-compare" onclick="showTab('compare')">📊 전 캠퍼스 비교</button>
-    <button class="nav-btn" id="nav-campus" onclick="showTab('campus')">🏫 캠퍼스별 분석</button>
-    <button class="nav-btn" id="nav-grade" onclick="showTab('grade')">📚 학년별 분석</button>
-    <button class="nav-btn" id="nav-input" onclick="showTab('input')">✏️ 데이터 입력</button>
-    <button class="nav-btn" id="nav-admin" onclick="showTab('admin')">⚙️ 관리자</button>
-  </nav>
-
-  <main class="content" style="flex:1;">
-
-    <!-- ===== 전 캠퍼스 비교 ===== -->
-    <div id="tab-compare" class="tab-content">
-      <div class="sec-title">전 캠퍼스 비교 <span style="font-size:12px;font-weight:500;color:#0ABAB5;margin-left:8px;">관리자 전용</span></div>
-      <div class="filter-bar" id="cmp-filter">
-        <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="cmp-sy"></select></div>
-        <div class="fg"><div class="fl">시작 학기</div><select class="fi" id="cmp-ss"><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
-        <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">→</div>
-        <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="cmp-ey"></select></div>
-        <div class="fg"><div class="fl">종료 학기</div><select class="fi" id="cmp-es"><option>가을</option><option>겨울</option><option>봄</option><option>여름</option></select></div>
-        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderCompare()">조회</button></div>
-      </div>
-      <div id="cmp-stats" class="stats-grid"></div>
-      <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title">📊 캠퍼스별 신입 / 퇴원 (마지막 = 바론 전체 평균)</div><div class="chart-wrap tall"><canvas id="ch-cmp-bar"></canvas></div></div></div>
-      <div class="chart-row cols-2">
-        <div class="chart-card"><div class="chart-title">📈 월별 신입 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-in"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title">📉 월별 퇴원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-out"></canvas></div></div>
-      </div>
-      <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title">📉 캠퍼스별 퇴원율 추이</div><div class="chart-wrap"><canvas id="ch-cmp-rate"></canvas></div></div></div>
-      <div id="cmp-table"></div>
-    </div>
-
-    <!-- ===== 캠퍼스별 분석 ===== -->
-    <div id="tab-campus" class="tab-content">
-      <div class="sec-title">캠퍼스별 분석</div>
-      <div class="filter-bar">
-        <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="cs-campus"></select></div>
-        <div class="fg">
-          <div class="fl">기간 유형</div>
-          <div class="ptabs">
-            <button class="ptab active" id="cs-pt-monthly" onclick="setCsPeriod('monthly')">월별</button>
-            <button class="ptab" id="cs-pt-semester" onclick="setCsPeriod('semester')">학기별</button>
-          </div>
-        </div>
-        <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="cs-sy"></select></div>
-        <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
-        <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="cs-ey"></select></div>
-        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderCampus()">조회</button></div>
-      </div>
-      <div id="cs-stats" class="stats-grid"></div>
-      <div class="chart-row cols-3" id="cs-charts">
-        <div class="chart-card"><div class="chart-title" id="cs-ch1-title">📈 신입</div><div class="chart-wrap"><canvas id="ch-cs-in"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title" id="cs-ch2-title">📉 퇴원</div><div class="chart-wrap"><canvas id="ch-cs-out"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title" id="cs-ch3-title">📊 퇴원율</div><div class="chart-wrap"><canvas id="ch-cs-rate"></canvas></div></div>
-      </div>
-      <div class="chart-row cols-2">
-        <div id="cs-grade-table"></div>
-        <div class="chart-card"><div class="chart-title">🍩 학년별 분포</div><div class="chart-wrap"><canvas id="ch-cs-pie"></canvas></div></div>
-      </div>
-    </div>
-
-    <!-- ===== 학년별 분석 ===== -->
-    <div id="tab-grade" class="tab-content">
-      <div class="sec-title">학년별 분석</div>
-      <div class="filter-bar">
-        <div class="fg"><div class="fl">학년</div><select class="fi" id="gr-grade"></select></div>
-        <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="gr-sy"></select></div>
-        <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
-        <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="gr-ey"></select></div>
-        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderGrade()">조회</button></div>
-      </div>
-      <div id="gr-stats" class="stats-grid"></div>
-      <div class="chart-row cols-2">
-        <div class="chart-card"><div class="chart-title" id="gr-ch1-title">📊 선택학년 캠퍼스별 신입</div><div class="chart-wrap"><canvas id="ch-gr-in"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title" id="gr-ch2-title">📊 선택학년 캠퍼스별 퇴원</div><div class="chart-wrap"><canvas id="ch-gr-out"></canvas></div></div>
-      </div>
-      <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title" id="gr-ch3-title">📉 선택학년 퇴원율 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-gr-rate"></canvas></div></div></div>
-      <div id="gr-all-tables"></div>
-    </div>
-
-    <!-- ===== 데이터 입력 ===== -->
-    <div id="tab-input" class="tab-content">
-      <div class="sec-title">데이터 입력</div>
-      <div class="filter-bar">
-        <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="inp-campus"></select></div>
-        <div class="fg"><div class="fl">연도</div><select class="fi" id="inp-year"></select></div>
-        <div class="fg"><div class="fl">학기</div><select class="fi" id="inp-sem"><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
-        <div class="fg"><div class="fl">월</div><select class="fi" id="inp-month"></select></div>
-        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-tif" onclick="loadInputData()">불러오기</button></div>
-      </div>
-      <div id="inp-alert"></div>
-      <div class="input-table-wrap">
-        <table class="input-table" id="inp-table">
-          <thead><tr><th>학년</th><th>전월마감원</th><th>신입</th><th>전입</th><th>퇴원</th><th>전출</th><th>졸업</th><th>현재원</th><th>특이사항</th></tr></thead>
-          <tbody id="inp-tbody"></tbody>
-        </table>
-      </div>
-      <button class="btn-save" onclick="saveInputData()">저장</button>
-    </div>
-
-    <!-- ===== 관리자 ===== -->
-    <div id="tab-admin" class="tab-content">
-      <div class="sec-title">관리자</div>
-      <div class="admin-grid">
-        <div class="user-card">
-          <div class="card-title">👥 사용자 관리 목록</div>
-          <div id="user-list"><div class="loading">로딩 중...</div></div>
-        </div>
-        <div>
-          <div class="user-card" style="margin-bottom:14px;">
-            <div class="card-title">➕ 신규 사용자 추가</div>
-            <div id="add-user-alert"></div>
-            <div class="fg" style="margin-bottom:10px;"><div class="fl">이름</div><input type="text" id="nu-name" class="form-input" placeholder="이름 입력"></div>
-            <div class="fg" style="margin-bottom:10px;"><div class="fl">이메일</div><input type="email" id="nu-email" class="form-input" placeholder="이메일 입력"></div>
-            <div class="fg" style="margin-bottom:10px;"><div class="fl">비밀번호</div><input type="password" id="nu-pw" class="form-input" placeholder="초기 비밀번호 설정"></div>
-            <div class="fg" style="margin-bottom:10px;"><div class="fl">역할</div><select id="nu-role" class="form-input"><option value="user">일반 사용자</option><option value="admin">관리자</option></select></div>
-            <div class="fg" style="margin-bottom:14px;"><div class="fl">담당 캠퍼스</div><select id="nu-campus" class="form-input"></select></div>
-            <div class="fg" style="margin-bottom:10px;"><div class="fl">관리자 비밀번호 (재확인)</div><input type="password" id="nu-admin-pw" class="form-input" placeholder="현재 관리자 비밀번호"></div>
-            <button class="btn-save" onclick="addUser()">사용자 생성</button>
-          </div>
-          <div class="user-card">
-            <div class="card-title">💾 데이터 관리</div>
-            <p style="font-size:12px;color:var(--mut);margin-bottom:12px;">기존 데이터를 초기화하고 남동탄 데이터를 새로 불러옵니다.</p>
-            <button class="btn-seed" onclick="seedNandongtan()">🔄 남동탄 데이터 초기화 및 로드</button>
-            <div id="seed-alert" class="mt8"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </main>
-</div>
+<div id="app"><div class="loading-page"><div class="spinner" style="border-top-color:var(--navy);border-color:var(--border);width:28px;height:28px;border-width:3px"></div><p>로딩 중...</p></div></div>
 
 <script>
-// ====== FIREBASE CONFIG ======
-// ⚠️ 기존 index.html에 있던 Firebase 설정을 아래에 넣어주세요
-const firebaseConfig = {
+// ================================================================
+// FIREBASE CONFIG — Replace with your own Firebase project config
+// ================================================================
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCcOf8TI7NWGKhov78n6UTpzdCWWkbBKKc",
   authDomain: "varon-accounts.firebaseapp.com",
   projectId: "varon-accounts",
@@ -354,629 +227,1235 @@ const firebaseConfig = {
   appId: "1:285378160282:web:0646596888d89dcafce123",
   measurementId: "G-C54RKFVYSD"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
 
-// ====== CONSTANTS ======
+// ================================================================
+// CONSTANTS
+// ================================================================
 const GRADES = ['초1','초2','초3','초4','초5','초6','중1','중2','중3'];
-const SEMS = ['겨울','봄','여름','가을'];
-const SEM_MONTHS = {겨울:['12월','1월','2월'],봄:['3월','4월','5월'],여름:['6월','7월','8월'],가을:['9월','10월','11월']};
-const MO = {1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,11:11,12:12};
-
-const CAM_COLORS = {
-  '남동탄':'#F97316','수원':'#0ABAB5','동탄':'#8B5CF6',
-  '평택':'#EC4899','오산':'#10B981','화성':'#F59E0B',
-  '용인':'#3B82F6','광교':'#14B8A6','바론':'#374151'
+const SEASONS = {winter:'겨울(12~2월)',spring:'봄(3~5월)',summer:'여름(6~8월)',fall:'가을(9~11월)'};
+const SEASON_MONTHS = {
+  winter:[12,1,2], spring:[3,4,5], summer:[6,7,8], fall:[9,10,11]
 };
-const YR_COLORS = ['#F97316','#0ABAB5','#8B5CF6','#EC4899','#10B981','#F59E0B','#3B82F6','#14B8A6'];
+const CY = new Date().getFullYear(), CM = new Date().getMonth()+1;
+const CHART_COLORS = ['#0f3460','#1d9e75','#e67e22','#c0392b','#2980b9','#8e44ad','#16a085','#d35400'];
 
-function getCColor(name){return CAM_COLORS[name]||'#94A3B8';}
-function getCColorA(name,a){const c=getCColor(name);const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
+// ================================================================
+// STATE
+// ================================================================
+const S = {
+  user: null, campuses: [], records: [], users: [],
+  view: 'loading', // loading|setup|login|dashboard|input|admin
+  dashTab: 'overview', // overview|campus|grade
+  filterType: 'period', // period|season
+  periodStart: {y:CY, m:1}, periodEnd: {y:CY, m:CM},
+  season: 'spring', seasonYear: CY,
+  campusFilter: 'all', gradeFilter: '초1',
+  inputCampus: '', inputYear: CY, inputMonth: CM,
+  inputGrades: [],
+  newInMode: 'combined', // pure|combined
+  withdrawMode: 'combined',
+  alert: null,
+  loading: false
+};
 
-// Semester score for ordering
-function semScore(year,sem){return parseInt(year)*10+SEMS.indexOf(sem);}
+let db;
+const charts = {};
 
-// Month sort key (calendar)
-function monthKey(year,semester,month){
-  const yr=parseInt(year), mo=parseInt(month.replace('월',''));
-  if(semester==='겨울'&&mo===12) return (yr-1)*100+12;
-  return yr*100+mo;
+// ================================================================
+// UTILS
+// ================================================================
+async function sha256(msg) {
+  const buf = new TextEncoder().encode(msg);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-function monthLabel(year,semester,month){
-  const yr=parseInt(year),mo=parseInt(month.replace('월',''));
-  if(semester==='겨울'&&mo===12) return `${yr-1}.12`;
-  return `${yr}.${mo}`;
+
+function esc(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function sum(arr, fn){ return arr.reduce((s,x)=>s+(fn?fn(x):x),0); }
+
+function yearRange(from=2023){ const yrs=[]; for(let y=CY;y>=from;y--) yrs.push(y); return yrs; }
+
+function getSeason(m){ if([12,1,2].includes(m)) return 'winter'; if([3,4,5].includes(m)) return 'spring'; if([6,7,8].includes(m)) return 'summer'; return 'fall'; }
+
+function getSeasonDateRange(season, year){
+  // Returns [{year, month}] for the given season+year
+  const months = SEASON_MONTHS[season];
+  return months.map(m => ({
+    year: season==='winter' && m===12 ? year : season==='winter' ? year : year,
+    month: m
+  }));
+  // For winter Y: Dec(Y-1), Jan(Y), Feb(Y) -> year means Jan/Feb year
 }
 
-// ====== STATE ======
-let currentUser=null, allRecords=[], csPeriodType='monthly';
-const charts={};
+function getSeasonMonthPairs(season, year){
+  if(season==='winter') return [[year-1,12],[year,1],[year,2]];
+  return SEASON_MONTHS[season].map(m=>[year,m]);
+}
 
-function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
-function mkChart(id,cfg){destroyChart(id);const el=document.getElementById(id);if(!el)return;charts[id]=new Chart(el.getContext('2d'),cfg);return charts[id];}
-
-// ====== AUTH ======
-auth.onAuthStateChanged(async user=>{
-  if(user){
-    const snap=await db.collection('users').doc(user.uid).get();
-    currentUser=snap.exists?{uid:user.uid,email:user.email,...snap.data()}:{uid:user.uid,email:user.email,role:'user',name:'',campus:''};
-    await loadRecords();
-    showApp();
-    initDropdowns();
-    showTab('campus');
+function inFilter(r){
+  if(S.filterType==='period'){
+    const d=r.year*100+r.month;
+    return d>=S.periodStart.y*100+S.periodStart.m && d<=S.periodEnd.y*100+S.periodEnd.m;
   } else {
-    showLogin();
-  }
-});
-
-function showLogin(){document.getElementById('loginScreen').style.display='flex';document.getElementById('mainApp').style.display='none';}
-function showApp(){
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('mainApp').style.display='flex';
-  document.getElementById('headerUserInfo').textContent=`${currentUser.name||''} (${currentUser.role==='admin'?'관리자':currentUser.campus||'사용자'})`;
-  if(currentUser.role!=='admin'){
-    document.getElementById('nav-compare').classList.add('hidden');
-    document.getElementById('nav-admin').classList.add('hidden');
+    const pairs=getSeasonMonthPairs(S.season,S.seasonYear);
+    return pairs.some(([y,m])=>r.year===y&&r.month===m);
   }
 }
+
+function filteredRecords(){
+  let recs = S.records.filter(inFilter);
+  if(S.campusFilter!=='all') recs=recs.filter(r=>r.campus===S.campusFilter);
+  return recs;
+}
+
+// ── Grade aggregation for a record ──
+function gradeStats(grades, mode_new='combined', mode_wd='combined'){
+  return grades.map(g=>({
+    grade: g.grade,
+    prev: g.prev||0,
+    newIn: mode_new==='pure' ? (g.newIn||0) : (g.newIn||0)+(g.transIn||0),
+    pureNew: g.newIn||0,
+    transIn: g.transIn||0,
+    withdraw: mode_wd==='pure' ? (g.withdraw||0) : (g.withdraw||0)+(g.transOut||0)+(g.graduate||0),
+    pureWd: g.withdraw||0,
+    transOut: g.transOut||0,
+    graduate: g.graduate||0,
+    current: g.current||0,
+    notes: g.notes||''
+  }));
+}
+
+function recordTotals(rec){
+  const gs=gradeStats(rec.grades, S.newInMode, S.withdrawMode);
+  const prev=sum(gs,g=>g.prev), newIn=sum(gs,g=>g.newIn), withdraw=sum(gs,g=>g.withdraw), current=sum(gs,g=>g.current);
+  const baseDenom=prev+(S.newInMode==='pure'?sum(gs,g=>g.pureNew):sum(gs,g=>g.pureNew+g.transIn));
+  const wdRate=baseDenom>0?((withdraw/baseDenom)*100).toFixed(2):'0.00';
+  return {prev,newIn,withdraw,current,wdRate,gs};
+}
+
+function monthKey(y,m){ return `${y}-${String(m).padStart(2,'0')}`; }
+function monthLabel(k){ const [y,m]=k.split('-'); return `${y}.${m}`; }
+
+// Aggregate all filtered records by month
+function byMonth(recs){
+  const map={};
+  recs.forEach(r=>{
+    const k=monthKey(r.year,r.month);
+    if(!map[k]) map[k]={month:k,newIn:0,withdraw:0,current:0,prev:0,wdNumer:0,wdDenom:0};
+    const t=recordTotals(r);
+    map[k].newIn+=t.newIn; map[k].withdraw+=t.withdraw; map[k].current+=t.current; map[k].prev+=t.prev;
+    // Withdrawal rate numerator/denominator for aggregated rate
+    const gs=gradeStats(r.grades,'combined','combined');
+    map[k].wdNumer+=sum(gs,g=>g.withdraw); map[k].wdDenom+=sum(gs,g=>g.prev+g.pureNew+g.transIn);
+  });
+  return Object.values(map).sort((a,b)=>a.month.localeCompare(b.month));
+}
+
+// Aggregate by campus
+function byCampus(recs){
+  const map={};
+  recs.forEach(r=>{
+    if(!map[r.campus]) map[r.campus]={campus:r.campus,newIn:0,withdraw:0,current:0,prev:0,wdNumer:0,wdDenom:0,months:0};
+    const t=recordTotals(r);
+    map[r.campus].newIn+=t.newIn; map[r.campus].withdraw+=t.withdraw; map[r.campus].prev+=t.prev; map[r.campus].months++;
+    const gs=gradeStats(r.grades,'combined','combined');
+    map[r.campus].wdNumer+=sum(gs,g=>g.withdraw); map[r.campus].wdDenom+=sum(gs,g=>g.prev+g.pureNew+g.transIn);
+    // latest current
+    if(!map[r.campus]._latest || r.year*100+r.month > map[r.campus]._latest)
+      { map[r.campus].current=t.current; map[r.campus]._latest=r.year*100+r.month; }
+  });
+  return Object.values(map).map(c=>({...c, wdRate:c.wdDenom>0?((c.wdNumer/c.wdDenom)*100).toFixed(2):'0.00'}));
+}
+
+// Aggregate by grade across all records
+function byGrade(recs){
+  const map={};
+  GRADES.forEach(g=>{ map[g]={grade:g,newIn:0,withdraw:0,current:0,prev:0,wdNumer:0,wdDenom:0}; });
+  recs.forEach(r=>{
+    const gs=gradeStats(r.grades,S.newInMode,S.withdrawMode);
+    gs.forEach(g=>{
+      if(!map[g.grade]) map[g.grade]={grade:g.grade,newIn:0,withdraw:0,current:0,prev:0,wdNumer:0,wdDenom:0};
+      map[g.grade].newIn+=g.newIn; map[g.grade].withdraw+=g.withdraw; map[g.grade].prev+=g.prev;
+      map[g.grade].wdNumer+=(S.withdrawMode==='pure'?g.pureWd:g.pureWd+g.transOut+g.graduate);
+      map[g.grade].wdDenom+=g.prev+g.pureNew+g.transIn;
+    });
+    // latest current per grade
+    const latestGs=gradeStats(r.grades,'combined','combined');
+    latestGs.forEach(g=>{ map[g.grade].current+=g.current; });
+  });
+  return GRADES.map(g=>({...map[g], wdRate:map[g].wdDenom>0?((map[g].wdNumer/map[g].wdDenom)*100).toFixed(2):'0.00'}));
+}
+
+// Withdrawal rate by campus by month
+function wdRateByCampusMonth(recs){
+  const campusList = [...new Set(recs.map(r=>r.campus))].sort();
+  const months = [...new Set(recs.map(r=>monthKey(r.year,r.month)))].sort();
+  const data={};
+  campusList.forEach(c=>{data[c]={};months.forEach(m=>{data[c][m]=null;});});
+  recs.forEach(r=>{
+    const k=monthKey(r.year,r.month);
+    const gs=gradeStats(r.grades,'combined','combined');
+    const numer=sum(gs,g=>g.withdraw); const denom=sum(gs,g=>g.prev+g.pureNew+g.transIn);
+    data[r.campus][k]=denom>0?parseFloat(((numer/denom)*100).toFixed(2)):0;
+  });
+  return {campusList,months,data};
+}
+
+// ================================================================
+// SESSION
+// ================================================================
+function saveSession(user){ localStorage.setItem('baron_session', JSON.stringify(user)); }
+function clearSession(){ localStorage.removeItem('baron_session'); }
+function getSession(){ try{ return JSON.parse(localStorage.getItem('baron_session')||'null'); }catch(e){return null;} }
+
+// ================================================================
+// FIRESTORE OPS
+// ================================================================
+async function loadAllData(){
+  try {
+    const [uSnap,cSnap,rSnap] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('campuses').get(),
+      db.collection('records').get()
+    ]);
+    S.users = uSnap.docs.map(d=>({id:d.id,...d.data()}));
+    S.campuses = cSnap.docs.map(d=>({id:d.id,...d.data()}));
+    S.records = rSnap.docs.map(d=>({id:d.id,...d.data()}));
+  } catch(e){ console.error('Load error',e); }
+}
+
+async function saveRecord(data){
+  // Upsert by campus+year+month
+  const existing = S.records.find(r=>r.campus===data.campus&&r.year===data.year&&r.month===data.month);
+  const payload = {...data, updatedAt: Date.now(), updatedBy: S.user.displayId};
+  if(existing){
+    await db.collection('records').doc(existing.id).set(payload);
+    S.records = S.records.map(r=>r.id===existing.id?{id:existing.id,...payload}:r);
+  } else {
+    const ref = await db.collection('records').add({...payload, createdAt:Date.now(), createdBy:S.user.displayId});
+    S.records.push({id:ref.id,...payload});
+  }
+}
+
+async function deleteRecord(id){
+  await db.collection('records').doc(id).delete();
+  S.records = S.records.filter(r=>r.id!==id);
+}
+
+async function saveCampus(name){
+  const ref = await db.collection('campuses').add({name, createdAt:Date.now()});
+  S.campuses.push({id:ref.id,name});
+}
+
+async function deleteCampus(id){
+  await db.collection('campuses').doc(id).delete();
+  S.campuses = S.campuses.filter(c=>c.id!==id);
+}
+
+async function createUser(displayId, password, role, campuses){
+  const hash = await sha256(password);
+  const data = {displayId, passwordHash:hash, role, campuses:campuses||[], active:true, createdAt:Date.now()};
+  const existing = S.users.find(u=>u.displayId===displayId);
+  if(existing){ await db.collection('users').doc(existing.id).set(data); S.users=S.users.map(u=>u.id===existing.id?{id:existing.id,...data}:u); }
+  else { const ref=await db.collection('users').add(data); S.users.push({id:ref.id,...data}); }
+}
+
+async function deleteUser(id){
+  await db.collection('users').doc(id).delete();
+  S.users = S.users.filter(u=>u.id!==id);
+}
+
+async function toggleUserActive(id){
+  const u = S.users.find(u=>u.id===id);
+  if(!u) return;
+  await db.collection('users').doc(id).update({active:!u.active});
+  S.users = S.users.map(x=>x.id===id?{...x,active:!x.active}:x);
+}
+
+// ================================================================
+// AUTH
+// ================================================================
+async function login(displayId, password){
+  const hash = await sha256(password);
+  const user = S.users.find(u=>u.displayId===displayId && u.passwordHash===hash && u.active!==false);
+  if(!user) throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.');
+  S.user = user;
+  saveSession(user);
+  return user;
+}
+
+// ================================================================
+// CHART MANAGEMENT
+// ================================================================
+function destroyChart(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+function mkChart(id,config){ destroyChart(id); const c=document.getElementById(id); if(c) charts[id]=new Chart(c,config); }
+
+function chartColors(n){ return CHART_COLORS.slice(0,n); }
+
+// ================================================================
+// RENDER ENGINE
+// ================================================================
+function render(html){ document.getElementById('app').innerHTML=html; }
+function setAlert(msg,type='success'){ S.alert={msg,type}; setTimeout(()=>{S.alert=null;renderCurrentView();},3000); }
+
+function renderCurrentView(){
+  if(S.view==='loading') return render(renderLoading());
+  if(S.view==='setup') return render(renderSetup());
+  if(S.view==='login') return render(renderLogin());
+  if(S.view==='dashboard') return render(renderShell(renderDashboard()));
+  if(S.view==='input') return render(renderShell(renderInput()));
+  if(S.view==='admin') return render(renderShell(renderAdmin()));
+}
+
+function renderLoading(){ return `<div class="loading-page"><div class="spinner" style="border-top-color:var(--navy);border-color:var(--border);width:28px;height:28px;border-width:3px"></div><p>로딩 중...</p></div>`; }
+
+function renderAlert(){
+  if(!S.alert) return '';
+  return `<div class="alert alert-${S.alert.type}" style="margin-bottom:16px">${esc(S.alert.msg)}</div>`;
+}
+
+function renderShell(content){
+  const isAdmin = S.user?.role==='admin';
+  return `<div class="app-shell">
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-mark">V</div>
+      <div><div class="logo-text">바론네트웍스</div><div class="logo-sub">통합 관리 시스템</div></div>
+    </div>
+    <nav class="header-nav">
+      <button class="nav-item${S.view==='dashboard'?' active':''}" onclick="navTo('dashboard')">대시보드</button>
+      <button class="nav-item${S.view==='input'?' active':''}" onclick="navTo('input')">데이터 입력</button>
+      ${isAdmin?`<button class="nav-item${S.view==='admin'?' active':''}" onclick="navTo('admin')">관리자</button>`:''}
+    </nav>
+    <div class="header-user">
+      <span>${esc(S.user?.displayId||'')}</span>
+      <span class="user-badge badge badge-${S.user?.role==='admin'?'admin':'user'}">${S.user?.role==='admin'?'관리자':'사용자'}</span>
+      <button class="btn-logout" onclick="doLogout()">로그아웃</button>
+    </div>
+  </header>
+  <main class="content">${renderAlert()}${content}</main>
+</div>`;
+}
+
+// ================================================================
+// LOGIN VIEW
+// ================================================================
+function renderLogin(){
+  return `<div class="login-page">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="shield">
+        <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+          <defs>
+            <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#f59e0b"/>
+              <stop offset="100%" style="stop-color:#ea580c"/>
+            </linearGradient>
+          </defs>
+          <path d="M40 5 L72 18 L72 43 C72 60 57 72 40 77 C23 72 8 60 8 43 L8 18 Z" fill="url(#sg)"/>
+          <circle cx="40" cy="21" r="4" fill="rgba(255,255,255,0.35)"/>
+          <text x="40" y="53" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="800" fill="#fff" letter-spacing="1.5">VARON</text>
+        </svg>
+      </div>
+      <div class="title">바론네트웍스<br>운영 관리 시스템</div>
+      <div class="sub">VARON Networks Operation Management System</div>
+    </div>
+    <div id="login-err" class="error-msg"></div>
+    <div class="form-group"><label>이메일 / 아이디</label><input class="form-control" id="login-id" placeholder="아이디 입력" autocomplete="username"></div>
+    <div class="form-group"><label>비밀번호</label><input class="form-control" type="password" id="login-pw" placeholder="비밀번호 입력" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn" style="width:100%;background:#f97316;border:none;color:#fff;font-size:16px;font-weight:700;padding:14px;border-radius:10px;justify-content:center" onclick="doLogin()">로그인</button>
+  </div>
+</div>`;
+}
+
+// ================================================================
+// SETUP VIEW (first run)
+// ================================================================
+function renderSetup(){
+  return `<div class="setup-page">
+  <div class="setup-box">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="width:52px;height:52px;background:var(--navy);border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;margin:0 auto 10px">B</div>
+      <div style="font-size:17px;font-weight:700;color:var(--text)">최초 관리자 설정</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px">ADMIN1, ADMIN2 계정 비밀번호를 설정하세요</div>
+    </div>
+    <div id="setup-err" class="error-msg"></div>
+    <div class="setup-step">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px">▸ ADMIN1 비밀번호</div>
+      <input class="form-control" type="password" id="setup-pw1" placeholder="ADMIN1 비밀번호">
+      <input class="form-control" type="password" id="setup-pw1c" placeholder="비밀번호 확인" style="margin-top:8px">
+    </div>
+    <div class="setup-step">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px">▸ ADMIN2 비밀번호</div>
+      <input class="form-control" type="password" id="setup-pw2" placeholder="ADMIN2 비밀번호">
+      <input class="form-control" type="password" id="setup-pw2c" placeholder="비밀번호 확인" style="margin-top:8px">
+    </div>
+    <button class="btn btn-primary" onclick="doSetup()" style="margin-top:8px">관리자 계정 생성</button>
+  </div>
+</div>`;
+}
+
+// ================================================================
+// FILTER BAR
+// ================================================================
+function renderFilterBar(showCampus=true, showGrade=false){
+  const yearOpts = yearRange(2023).map(y=>`<option value="${y}"${(S.filterType==='period'?S.periodEnd.y:S.seasonYear)===y?' selected':''}>${y}년</option>`).join('');
+  const syOpts = yearRange(2023).map(y=>`<option value="${y}"${S.periodStart.y===y?' selected':''}>${y}년</option>`).join('');
+  const mOpts = (sel)=>Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}"${sel===m?' selected':''}>${m}월</option>`).join('');
+  const campusOpts = `<option value="all">전체 캠퍼스</option>${S.campuses.map(c=>`<option value="${esc(c.name)}"${S.campusFilter===c.name?' selected':''}>${esc(c.name)}</option>`).join('')}`;
+  const gradeOpts = GRADES.map(g=>`<option value="${g}"${S.gradeFilter===g?' selected':''}>${g}</option>`).join('');
+  const syearOpts = yearRange(2023).map(y=>`<option value="${y}"${S.seasonYear===y?' selected':''}>${y}년</option>`).join('');
+  const seasonOpts = Object.entries(SEASONS).map(([k,v])=>`<option value="${k}"${S.season===k?' selected':''}>${v}</option>`).join('');
+
+  return `<div class="filter-bar">
+  <div class="filter-row">
+    <div class="filter-group">
+      <span class="filter-label">기간 유형</span>
+      <button class="filter-type-btn${S.filterType==='period'?' active':''}" onclick="setFilterType('period')">기간 선택</button>
+      <button class="filter-type-btn${S.filterType==='season'?' active':''}" onclick="setFilterType('season')">학기 선택</button>
+    </div>
+    <div class="filter-divider"></div>
+    ${S.filterType==='period'?`
+    <div class="filter-group">
+      <span class="filter-label">시작</span>
+      <select class="f-select" onchange="setPeriod('sy',this.value)">${syOpts}</select>
+      <select class="f-select" onchange="setPeriod('sm',this.value)">${mOpts(S.periodStart.m)}</select>
+    </div>
+    <span class="filter-sep" style="color:var(--text2)">~</span>
+    <div class="filter-group">
+      <span class="filter-label">종료</span>
+      <select class="f-select" onchange="setPeriod('ey',this.value)">${yearRange(2023).map(y=>`<option value="${y}"${S.periodEnd.y===y?' selected':''}>${y}년</option>`).join('')}</select>
+      <select class="f-select" onchange="setPeriod('em',this.value)">${mOpts(S.periodEnd.m)}</select>
+    </div>
+    `:
+    `<div class="filter-group">
+      <span class="filter-label">학기</span>
+      <select class="f-select" onchange="setSeason('season',this.value)">${seasonOpts}</select>
+      <select class="f-select" onchange="setSeason('year',this.value)">${syearOpts}</select>
+    </div>`
+    }
+    <div class="filter-divider"></div>
+    ${showCampus?`<div class="filter-group"><span class="filter-label">캠퍼스</span><select class="f-select" onchange="setCampusFilter(this.value)">${campusOpts}</select></div>`:''}
+    ${showGrade?`<div class="filter-group"><span class="filter-label">학년</span><select class="f-select" onchange="setGradeFilter(this.value)">${gradeOpts}</select></div>`:''}
+  </div>
+</div>`;
+}
+
+function renderToggleStrip(){
+  return `<div class="toggle-strip">
+  <span class="toggle-label">신입</span>
+  <div class="toggle-group">
+    <button class="toggle-btn${S.newInMode==='pure'?' active':''}" onclick="setMode('new','pure')">순수 신입</button>
+    <button class="toggle-btn${S.newInMode==='combined'?' active':''}" onclick="setMode('new','combined')">전입 포함</button>
+  </div>
+  <span class="toggle-label" style="margin-left:12px">퇴원</span>
+  <div class="toggle-group">
+    <button class="toggle-btn${S.withdrawMode==='pure'?' active':''}" onclick="setMode('wd','pure')">순수 퇴원</button>
+    <button class="toggle-btn${S.withdrawMode==='combined'?' active':''}" onclick="setMode('wd','combined')">전출·졸업 포함</button>
+  </div>
+</div>`;
+}
+
+// ================================================================
+// DASHBOARD VIEW
+// ================================================================
+function renderDashboard(){
+  const tabs = [{id:'overview',label:'전 캠퍼스 비교'},{id:'campus',label:'캠퍼스별 분석'},{id:'grade',label:'학년별 분석'}];
+  return `
+  <div class="page-header"><div><div class="page-title">대시보드</div><div class="page-sub">기간을 선택하여 분원 현황을 분석합니다</div></div></div>
+  <div class="tab-bar">${tabs.map(t=>`<button class="tab-btn${S.dashTab===t.id?' active':''}" onclick="setDashTab('${t.id}')">${t.label}</button>`).join('')}</div>
+  ${S.dashTab==='overview'?renderFilterBar(false)+renderOverview():
+    S.dashTab==='campus'?renderFilterBar(true)+renderCampusView():
+    renderFilterBar(false,true)+renderGradeView()}`;
+}
+
+// ── OVERVIEW TAB ──
+function renderOverview(){
+  const recs = filteredRecords();
+  if(!recs.length) return renderToggleStrip()+`<div class="empty-state"><div class="icon">📊</div><p>선택한 기간에 데이터가 없습니다.</p></div>`;
+  const cs = byCampus(recs);
+  const months = byMonth(recs);
+  const totalNewIn=sum(cs,c=>c.newIn), totalWd=sum(cs,c=>c.withdraw);
+  const totalCurrent=sum(cs,c=>c.current);
+  const avgWdRate = cs.length?((sum(cs,c=>parseFloat(c.wdRate||0))/cs.length).toFixed(2)):'0.00';
+  const wdData=wdRateByCampusMonth(recs);
+
+  const html=`${renderToggleStrip()}
+  <div class="stats-grid">
+    <div class="stat-card blue"><div class="stat-lbl">${S.newInMode==='pure'?'순수 신입':'신입 (전입포함)'}</div><div class="stat-val">${totalNewIn.toLocaleString()}</div><div class="stat-sub">명</div></div>
+    <div class="stat-card red"><div class="stat-lbl">${S.withdrawMode==='pure'?'순수 퇴원':'퇴원 (전출포함)'}</div><div class="stat-val">${totalWd.toLocaleString()}</div><div class="stat-sub">명</div></div>
+    <div class="stat-card navy"><div class="stat-lbl">현재원 합계</div><div class="stat-val">${totalCurrent.toLocaleString()}</div><div class="stat-sub">명 (최신 기준)</div></div>
+    <div class="stat-card amber"><div class="stat-lbl">평균 퇴원율</div><div class="stat-val">${avgWdRate}<span style="font-size:18px">%</span></div><div class="stat-note">전 캠퍼스 평균</div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">캠퍼스별 신입 / 퇴원</div><div class="chart-wrap"><canvas id="ch-campus-bar" role="img" aria-label="캠퍼스별 신입 퇴원 막대 차트"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">월별 신입 / 퇴원 추이</div><div class="chart-wrap"><canvas id="ch-monthly-bar" role="img" aria-label="월별 신입 퇴원 추이"></canvas></div></div>
+    <div class="chart-card full"><div class="chart-title">캠퍼스별 퇴원율 추이</div><div class="chart-wrap" style="height:280px"><canvas id="ch-wdrate-line" role="img" aria-label="캠퍼스별 퇴원율 추이 라인 차트"></canvas></div></div>
+  </div>
+  <div class="table-card">
+    <div class="table-card-header"><span class="table-card-title">캠퍼스별 상세 현황</span></div>
+    <div class="overflow-x">
+    <table class="data-table">
+      <thead><tr>
+        <th>캠퍼스</th>
+        <th class="num">${S.newInMode==='pure'?'순수신입':'신입(전입포함)'}</th>
+        <th class="num">${S.withdrawMode==='pure'?'순수퇴원':'퇴원(전출포함)'}</th>
+        <th class="num">순증감</th>
+        <th class="num">현재원</th>
+        <th class="num">퇴원율</th>
+      </tr></thead>
+      <tbody>${cs.map(c=>{const net=c.newIn-c.withdraw;return`<tr>
+        <td><strong>${esc(c.campus)}</strong></td>
+        <td class="num"><span class="pill blue">+${c.newIn}</span></td>
+        <td class="num"><span class="pill dn">-${c.withdraw}</span></td>
+        <td class="num"><span class="pill ${net>0?'up':net<0?'dn':'neu'}">${net>0?'+':''}${net}</span></td>
+        <td class="num"><strong>${c.current.toLocaleString()}</strong></td>
+        <td class="num"><span class="rate-badge">${c.wdRate}%</span></td>
+      </tr>`;}).join('')}</tbody>
+      <tfoot><tr>
+        <td>합계</td>
+        <td class="num">${totalNewIn}</td>
+        <td class="num">${totalWd}</td>
+        <td class="num">${totalNewIn-totalWd>0?'+':''}${totalNewIn-totalWd}</td>
+        <td class="num">${totalCurrent}</td>
+        <td class="num">${avgWdRate}%</td>
+      </tr></tfoot>
+    </table></div>
+  </div>`;
+
+  setTimeout(()=>{
+    // Campus bar chart
+    mkChart('ch-campus-bar',{type:'bar',data:{labels:cs.map(c=>c.campus),datasets:[
+      {label:'신입',data:cs.map(c=>c.newIn),backgroundColor:'#2980b9',borderRadius:4},
+      {label:'퇴원',data:cs.map(c=>c.withdraw),backgroundColor:'#c0392b',borderRadius:4}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top'}},scales:{x:{ticks:{font:{size:12}}},y:{beginAtZero:true}}}});
+    // Monthly trend
+    mkChart('ch-monthly-bar',{type:'bar',data:{labels:months.map(m=>monthLabel(m.month)),datasets:[
+      {label:'신입',data:months.map(m=>m.newIn),backgroundColor:'rgba(41,128,185,.7)',borderRadius:3},
+      {label:'퇴원',data:months.map(m=>m.withdraw),backgroundColor:'rgba(192,57,43,.7)',borderRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top'}},scales:{x:{ticks:{maxRotation:45,font:{size:11}}},y:{beginAtZero:true}}}});
+    // WD rate line chart
+    const colors=chartColors(wdData.campusList.length);
+    mkChart('ch-wdrate-line',{type:'line',data:{labels:wdData.months.map(monthLabel),datasets:wdData.campusList.map((c,i)=>({
+      label:c,data:wdData.months.map(m=>wdData.data[c][m]),
+      borderColor:colors[i],backgroundColor:'transparent',borderWidth:2,pointRadius:4,tension:.3,spanGaps:true
+    }))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{ticks:{maxRotation:45,font:{size:11}}},y:{beginAtZero:true,ticks:{callback:v=>`${v}%`}}}}});
+  },50);
+  return html;
+}
+
+// ── CAMPUS TAB ──
+function renderCampusView(){
+  const recs = filteredRecords();
+  const campusName = S.campusFilter==='all'?(S.campuses[0]?.name||'')  :S.campusFilter;
+  const campRecs = recs.filter(r=>S.campusFilter==='all'?true:r.campus===campusName);
+  if(!campRecs.length) return renderToggleStrip()+`<div class="empty-state"><div class="icon">🏫</div><p>선택한 캠퍼스·기간에 데이터가 없습니다.</p></div>`;
+
+  const months=byMonth(campRecs);
+  const grades=byGrade(campRecs);
+  const totalNewIn=sum(months,m=>m.newIn),totalWd=sum(months,m=>m.withdraw);
+  const totalCurrent=months.length?months[months.length-1].current:0;
+  const wdNumer=sum(campRecs,r=>sum(gradeStats(r.grades,'combined','combined'),g=>g.withdraw));
+  const wdDenom=sum(campRecs,r=>sum(gradeStats(r.grades,'combined','combined'),g=>g.prev+g.pureNew+g.transIn));
+  const wdRate=wdDenom>0?((wdNumer/wdDenom)*100).toFixed(2):'0.00';
+
+  const html=`${renderToggleStrip()}
+  <div class="stats-grid">
+    <div class="stat-card blue"><div class="stat-lbl">${S.newInMode==='pure'?'순수 신입':'신입 (전입포함)'}</div><div class="stat-val">${totalNewIn}</div></div>
+    <div class="stat-card red"><div class="stat-lbl">${S.withdrawMode==='pure'?'순수 퇴원':'퇴원 (전출포함)'}</div><div class="stat-val">${totalWd}</div></div>
+    <div class="stat-card navy"><div class="stat-lbl">현재원</div><div class="stat-val">${totalCurrent}</div></div>
+    <div class="stat-card amber"><div class="stat-lbl">퇴원율</div><div class="stat-val">${wdRate}<span style="font-size:18px">%</span></div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">월별 신입 / 퇴원 추이</div><div class="chart-wrap"><canvas id="ch-c-trend" role="img" aria-label="캠퍼스 월별 추이"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">월별 퇴원율 추이</div><div class="chart-wrap"><canvas id="ch-c-wdrate" role="img" aria-label="캠퍼스 퇴원율 추이"></canvas></div></div>
+  </div>
+  <div class="table-card">
+    <div class="table-card-header"><span class="table-card-title">학년별 현황</span></div>
+    <div class="overflow-x">
+    <table class="data-table">
+      <thead><tr>
+        <th>학년</th>
+        <th class="num">순수 신입</th><th class="num">전입</th><th class="num">신입 합계</th>
+        <th class="num">순수 퇴원</th><th class="num">전출</th><th class="num">졸업</th><th class="num">퇴원 합계</th>
+        <th class="num">현재원</th><th class="num">퇴원율</th>
+      </tr></thead>
+      <tbody>${grades.map(g=>`<tr>
+        <td><strong>${g.grade}</strong></td>
+        <td class="num">${g.pureNew||0}</td><td class="num">${g.transIn||0}</td>
+        <td class="num"><span class="pill blue">+${g.newIn}</span></td>
+        <td class="num">${g.pureWd||0}</td><td class="num">${g.transOut||0}</td><td class="num">${g.graduate||0}</td>
+        <td class="num"><span class="pill dn">-${g.withdraw}</span></td>
+        <td class="num">${g.current}</td>
+        <td class="num">${g.wdRate}%</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr>
+        <td>합계</td>
+        <td class="num">${sum(grades,g=>g.pureNew||0)}</td><td class="num">${sum(grades,g=>g.transIn||0)}</td>
+        <td class="num">${totalNewIn}</td>
+        <td class="num">${sum(grades,g=>g.pureWd||0)}</td><td class="num">${sum(grades,g=>g.transOut||0)}</td><td class="num">${sum(grades,g=>g.graduate||0)}</td>
+        <td class="num">${totalWd}</td>
+        <td class="num">${totalCurrent}</td>
+        <td class="num">${wdRate}%</td>
+      </tr></tfoot>
+    </table></div>
+  </div>`;
+
+  setTimeout(()=>{
+    const wdRates=months.map(m=>{
+      const mr=campRecs.filter(r=>monthKey(r.year,r.month)===m.month);
+      const n=sum(mr,r=>sum(gradeStats(r.grades,'combined','combined'),g=>g.withdraw));
+      const d=sum(mr,r=>sum(gradeStats(r.grades,'combined','combined'),g=>g.prev+g.pureNew+g.transIn));
+      return d>0?parseFloat(((n/d)*100).toFixed(2)):0;
+    });
+    mkChart('ch-c-trend',{type:'bar',data:{labels:months.map(m=>monthLabel(m.month)),datasets:[
+      {label:'신입',data:months.map(m=>m.newIn),backgroundColor:'rgba(41,128,185,.8)',borderRadius:4},
+      {label:'퇴원',data:months.map(m=>m.withdraw),backgroundColor:'rgba(192,57,43,.8)',borderRadius:4}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{ticks:{maxRotation:45,font:{size:11}}},y:{beginAtZero:true}}}});
+    mkChart('ch-c-wdrate',{type:'line',data:{labels:months.map(m=>monthLabel(m.month)),datasets:[
+      {label:'퇴원율',data:wdRates,borderColor:'#e67e22',backgroundColor:'rgba(230,126,34,.1)',fill:true,borderWidth:2,pointRadius:4,tension:.3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{ticks:{maxRotation:45,font:{size:11}}},y:{beginAtZero:true,ticks:{callback:v=>`${v}%`}}}}});
+  },50);
+  return html;
+}
+
+// ── GRADE TAB ──
+function renderGradeView(){
+  const allRecs = S.records.filter(inFilter);
+  if(!allRecs.length) return renderToggleStrip()+`<div class="empty-state"><div class="icon">📚</div><p>선택한 기간에 데이터가 없습니다.</p></div>`;
+
+  // Per-grade totals across all campuses
+  const grades=byGrade(allRecs);
+  const selectedGrade = grades.find(g=>g.grade===S.gradeFilter)||grades[0];
+
+  // Per grade, campus breakdown
+  const campusGradeMap={};
+  allRecs.forEach(r=>{
+    if(!campusGradeMap[r.campus]) campusGradeMap[r.campus]={campus:r.campus};
+    const g=gradeStats(r.grades,S.newInMode,S.withdrawMode).find(x=>x.grade===S.gradeFilter);
+    if(g){
+      if(!campusGradeMap[r.campus].newIn) campusGradeMap[r.campus]={campus:r.campus,newIn:0,withdraw:0,current:0,wdNumer:0,wdDenom:0};
+      campusGradeMap[r.campus].newIn+=g.newIn; campusGradeMap[r.campus].withdraw+=g.withdraw;
+      campusGradeMap[r.campus].current+=g.current;
+      campusGradeMap[r.campus].wdNumer+=g.pureWd+g.transOut+g.graduate; campusGradeMap[r.campus].wdDenom+=g.prev+g.pureNew+g.transIn;
+    }
+  });
+  const campusGrades=Object.values(campusGradeMap).filter(c=>c.newIn!==undefined).map(c=>({...c,wdRate:c.wdDenom>0?((c.wdNumer/c.wdDenom)*100).toFixed(2):'0.00'}));
+
+  // Monthly trend for selected grade
+  const monthGradeMap={};
+  allRecs.forEach(r=>{
+    const k=monthKey(r.year,r.month);
+    if(!monthGradeMap[k]) monthGradeMap[k]={month:k,newIn:0,withdraw:0,wdNumer:0,wdDenom:0};
+    const g=gradeStats(r.grades,S.newInMode,S.withdrawMode).find(x=>x.grade===S.gradeFilter);
+    if(g){ monthGradeMap[k].newIn+=g.newIn; monthGradeMap[k].withdraw+=g.withdraw; monthGradeMap[k].wdNumer+=g.pureWd+g.transOut+g.graduate; monthGradeMap[k].wdDenom+=g.prev+g.pureNew+g.transIn; }
+  });
+  const monthGrade=Object.values(monthGradeMap).sort((a,b)=>a.month.localeCompare(b.month)).map(m=>({...m,wdRate:m.wdDenom>0?((m.wdNumer/m.wdDenom)*100).toFixed(2):'0.00'}));
+
+  const html=`${renderToggleStrip()}
+  <div class="stats-grid">
+    <div class="stat-card blue"><div class="stat-lbl">${S.gradeFilter} 신입</div><div class="stat-val">${selectedGrade?.newIn||0}</div></div>
+    <div class="stat-card red"><div class="stat-lbl">${S.gradeFilter} 퇴원</div><div class="stat-val">${selectedGrade?.withdraw||0}</div></div>
+    <div class="stat-card navy"><div class="stat-lbl">${S.gradeFilter} 현재원</div><div class="stat-val">${selectedGrade?.current||0}</div></div>
+    <div class="stat-card amber"><div class="stat-lbl">${S.gradeFilter} 퇴원율</div><div class="stat-val">${selectedGrade?.wdRate||'0.00'}<span style="font-size:18px">%</span></div></div>
+  </div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">${esc(S.gradeFilter)} 캠퍼스별 신입 / 퇴원</div><div class="chart-wrap"><canvas id="ch-g-campus" role="img" aria-label="학년별 캠퍼스 비교"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">${esc(S.gradeFilter)} 월별 퇴원율 추이</div><div class="chart-wrap"><canvas id="ch-g-wdrate" role="img" aria-label="학년 퇴원율 추이"></canvas></div></div>
+  </div>
+  <div class="table-card">
+    <div class="table-card-header"><span class="table-card-title">전 학년 비교</span></div>
+    <div class="overflow-x">
+    <table class="data-table">
+      <thead><tr>
+        <th>학년</th><th class="num">신입</th><th class="num">퇴원</th><th class="num">순증감</th><th class="num">현재원</th><th class="num">퇴원율</th>
+      </tr></thead>
+      <tbody>${grades.map(g=>{const net=g.newIn-g.withdraw;return`<tr style="${g.grade===S.gradeFilter?'background:var(--navy3)':''}">
+        <td><strong>${g.grade}</strong></td>
+        <td class="num"><span class="pill blue">+${g.newIn}</span></td>
+        <td class="num"><span class="pill dn">-${g.withdraw}</span></td>
+        <td class="num"><span class="pill ${net>0?'up':net<0?'dn':'neu'}">${net>0?'+':''}${net}</span></td>
+        <td class="num">${g.current}</td>
+        <td class="num">${g.wdRate}%</td>
+      </tr>`;}).join('')}</tbody>
+    </table></div>
+  </div>`;
+
+  setTimeout(()=>{
+    mkChart('ch-g-campus',{type:'bar',data:{labels:campusGrades.map(c=>c.campus),datasets:[
+      {label:'신입',data:campusGrades.map(c=>c.newIn),backgroundColor:'rgba(41,128,185,.8)',borderRadius:4},
+      {label:'퇴원',data:campusGrades.map(c=>c.withdraw),backgroundColor:'rgba(192,57,43,.8)',borderRadius:4}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}});
+    mkChart('ch-g-wdrate',{type:'line',data:{labels:monthGrade.map(m=>monthLabel(m.month)),datasets:[
+      {label:'퇴원율',data:monthGrade.map(m=>parseFloat(m.wdRate)),borderColor:'#c0392b',backgroundColor:'rgba(192,57,43,.1)',fill:true,borderWidth:2,pointRadius:4,tension:.3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{ticks:{maxRotation:45,font:{size:11}}},y:{beginAtZero:true,ticks:{callback:v=>`${v}%`}}}}});
+  },50);
+  return html;
+}
+
+// ================================================================
+// DATA INPUT VIEW
+// ================================================================
+function renderInput(){
+  const campusOpts=S.campuses.map(c=>`<option value="${esc(c.name)}"${S.inputCampus===c.name?' selected':''}>${esc(c.name)}</option>`).join('');
+  const yearOpts=yearRange(2023).map(y=>`<option value="${y}"${S.inputYear===y?' selected':''}>${y}년</option>`).join('');
+  const monthOpts=Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}"${S.inputMonth===m?' selected':''}>${m}월</option>`).join('');
+
+  const g=S.inputGrades;
+  const totals={prev:sum(g,x=>x.prev||0),newIn:sum(g,x=>x.newIn||0),transIn:sum(g,x=>x.transIn||0),withdraw:sum(g,x=>x.withdraw||0),transOut:sum(g,x=>x.transOut||0),graduate:sum(g,x=>x.graduate||0),current:sum(g,x=>calcGradeCurrent(x))};
+
+  return `<div class="page-header">
+    <div><div class="page-title">데이터 입력</div><div class="page-sub">엑셀 업로드 또는 직접 입력으로 월별 캠퍼스 현황을 등록합니다</div></div>
+    <button class="btn btn-success" onclick="downloadPrefillTemplate()">⬇ 입력 양식 다운로드</button>
+  </div>
+
+  <!-- Excel Upload Zone -->
+  <div class="form-section">
+    <div class="form-section-title">📂 엑셀 파일 업로드</div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('excel-file-input').click()"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleExcelDrop(event)">
+      <div class="icon">📊</div>
+      <p><strong>마감양식 엑셀 파일을 클릭하거나 드래그하여 업로드</strong></p>
+      <p style="margin-top:4px;font-size:12px">지원 형식: .xlsx · 한 번에 1개 파일</p>
+      <input type="file" id="excel-file-input" accept=".xlsx,.xls" onchange="handleExcelUpload(this.files[0])">
+    </div>
+    <div id="upload-status"></div>
+  </div>
+
+  <div class="divider-or">또는 직접 입력</div>
+
+  <!-- Manual Entry -->
+  <div class="form-section">
+    <div class="form-section-title">✏️ 직접 입력</div>
+    <div class="form-row">
+      <label>캠퍼스</label>
+      <select class="input-sm" style="width:140px" id="sel-campus" onchange="setInputField('campus',this.value)">${campusOpts||'<option value="">캠퍼스 없음</option>'}</select>
+      <label style="margin-left:12px">년도</label>
+      <select class="input-sm" id="sel-year" onchange="setInputField('year',this.value)">${yearOpts}</select>
+      <label style="margin-left:8px">월</label>
+      <select class="input-sm" id="sel-month" onchange="setInputField('month',this.value)">${monthOpts}</select>
+      <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="loadExistingInput()">기존 데이터 불러오기</button>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">학년별 현황</div>
+    <div class="overflow-x">
+    <table class="grade-entry-table">
+      <thead><tr>
+        <th>학년</th><th>전월마감원</th><th>신입</th><th>전입</th><th>퇴원</th><th>전출</th><th>졸업</th><th>현재원 (자동)</th><th>특이사항</th>
+      </tr></thead>
+      <tbody>${g.map((row,i)=>`<tr>
+        <td>${esc(row.grade)}</td>
+        <td><input type="number" class="input-xs" value="${row.prev||0}" min="0" onchange="updateGradeField(${i},'prev',this.value)"></td>
+        <td><input type="number" class="input-xs" value="${row.newIn||0}" min="0" onchange="updateGradeField(${i},'newIn',this.value)"></td>
+        <td><input type="number" class="input-xs" value="${row.transIn||0}" min="0" onchange="updateGradeField(${i},'transIn',this.value)"></td>
+        <td><input type="number" class="input-xs" value="${row.withdraw||0}" min="0" onchange="updateGradeField(${i},'withdraw',this.value)"></td>
+        <td><input type="number" class="input-xs" value="${row.transOut||0}" min="0" onchange="updateGradeField(${i},'transOut',this.value)"></td>
+        <td><input type="number" class="input-xs" value="${row.graduate||0}" min="0" onchange="updateGradeField(${i},'graduate',this.value)"></td>
+        <td class="calc">${calcGradeCurrent(row)}</td>
+        <td><input type="text" style="width:120px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" value="${esc(row.notes||'')}" onchange="updateGradeField(${i},'notes',this.value)"></td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr>
+        <td>합계</td>
+        <td>${totals.prev}</td><td>${totals.newIn}</td><td>${totals.transIn}</td>
+        <td>${totals.withdraw}</td><td>${totals.transOut}</td><td>${totals.graduate}</td>
+        <td>${totals.current}</td><td></td>
+      </tr></tfoot>
+    </table></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" onclick="navTo('dashboard')">취소</button>
+    <button class="btn btn-primary" onclick="doSaveRecord()">저장</button>
+  </div>`;
+}
+
+function calcGradeCurrent(g){
+  return Math.max(0,(g.prev||0)+(g.newIn||0)+(g.transIn||0)-(g.withdraw||0)-(g.transOut||0)-(g.graduate||0));
+}
+
+function initInputGrades(existingRecord){
+  if(existingRecord){
+    S.inputGrades = GRADES.map(gr=>{
+      const eg=existingRecord.grades.find(x=>x.grade===gr);
+      return eg||{grade:gr,prev:0,newIn:0,transIn:0,withdraw:0,transOut:0,graduate:0,notes:''};
+    });
+  } else {
+    S.inputGrades = GRADES.map(g=>({grade:g,prev:0,newIn:0,transIn:0,withdraw:0,transOut:0,graduate:0,notes:''}));
+  }
+}
+
+// ================================================================
+// ADMIN VIEW
+// ================================================================
+function renderAdmin(){
+  if(S.user?.role!=='admin') return `<div class="empty-state"><div class="icon">🔒</div><p>접근 권한이 없습니다.</p></div>`;
+  const campusOpts=S.campuses.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+  return `<div class="page-header"><div><div class="page-title">관리자</div><div class="page-sub">사용자 및 캠퍼스 관리</div></div>
+    <button class="btn btn-secondary" onclick="reloadData()">🔄 데이터 새로고침</button></div>
+  <div class="admin-grid">
+    <!-- User Management -->
+    <div class="form-section" style="grid-column:1/-1">
+      <div class="form-section-title">사용자 관리</div>
+      <div class="overflow-x">
+      <table class="data-table">
+        <thead><tr><th>아이디</th><th>역할</th><th>접근 캠퍼스</th><th>상태</th><th>작업</th></tr></thead>
+        <tbody>${S.users.map(u=>`<tr class="user-table-row">
+          <td><strong>${esc(u.displayId)}</strong></td>
+          <td><span class="badge badge-${u.role==='admin'?'admin':'user'}">${u.role==='admin'?'관리자':'사용자'}</span></td>
+          <td style="font-size:12px">${u.campuses&&u.campuses.length?u.campuses.map(c=>`<span class="pill blue" style="margin:2px 2px">${esc(c)}</span>`).join(''):'<span style="color:var(--text2)">전체</span>'}</td>
+          <td><span class="pill ${u.active!==false?'up':'dn'}">${u.active!==false?'활성':'비활성'}</span></td>
+          <td><div class="actions" style="opacity:1;display:flex;gap:6px">
+            <button class="btn btn-sm btn-secondary" onclick="doToggleUser('${u.id}')">${u.active!==false?'비활성화':'활성화'}</button>
+            ${u.displayId!=='ADMIN1'&&u.displayId!=='ADMIN2'?`<button class="btn btn-sm btn-danger" onclick="doDeleteUser('${u.id}')">삭제</button>`:''}
+          </div></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+    <!-- Add User -->
+    <div class="form-section">
+      <div class="form-section-title">신규 사용자 추가</div>
+      <div class="form-group"><label>아이디</label><input class="form-control" id="nu-id" placeholder="로그인 아이디"></div>
+      <div class="form-group"><label>비밀번호</label><input class="form-control" type="password" id="nu-pw" placeholder="비밀번호"></div>
+      <div class="form-group"><label>역할</label><select class="form-control" id="nu-role"><option value="user">사용자</option><option value="admin">관리자</option></select></div>
+      <div class="form-group">
+        <label>접근 캠퍼스</label>
+        <select class="form-control" id="nu-campus-select">${campusOpts}</select>
+        <div id="nu-campus-tags" class="campus-tags"></div>
+        <button class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="addCampusToNewUser()">캠퍼스 추가</button>
+      </div>
+      <div id="nu-err" class="alert alert-error" style="display:none"></div>
+      <button class="btn btn-primary" onclick="doCreateUser()">사용자 생성</button>
+    </div>
+    <!-- Campus Management -->
+    <div class="form-section">
+      <div class="form-section-title">캠퍼스 관리</div>
+      <div class="campus-tags">${S.campuses.map(c=>`<span class="campus-tag">${esc(c.name)}<button class="remove-tag" onclick="doDeleteCampus('${c.id}')">×</button></span>`).join('')}</div>
+      <div class="add-row">
+        <input class="form-control" id="new-campus-name" placeholder="새 캠퍼스명" style="flex:1">
+        <button class="btn btn-success" onclick="doAddCampus()">추가</button>
+      </div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="testFirestore()">🔌 Firebase 연결 테스트</button>
+    </div>
+  </div>`;
+}
+
+// ================================================================
+// EVENT HANDLERS
+// ================================================================
+let newUserCampuses=[];
 
 async function doLogin(){
-  const e=document.getElementById('loginEmail').value, p=document.getElementById('loginPw').value;
-  document.getElementById('loginErr').textContent='';
-  try{await auth.signInWithEmailAndPassword(e,p);}
-  catch(err){document.getElementById('loginErr').textContent='이메일 또는 비밀번호를 확인해주세요.';}
-}
-async function doLogout(){await auth.signOut();}
-
-// ====== DATA ======
-async function loadRecords(){
-  const snap=await db.collection('records').get();
-  allRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
-}
-
-function getYears(){return [...new Set(allRecords.map(r=>r.year))].sort();}
-function getCampuses(){return [...new Set(allRecords.map(r=>r.campus))].sort();}
-
-function filterRecs({campus,grade,startYear,startSem,endYear,endSem}={}){
-  return allRecords.filter(r=>{
-    if(campus&&r.campus!==campus) return false;
-    if(grade&&r.grade!==grade) return false;
-    if(startYear&&startSem&&semScore(r.year,r.semester)<semScore(startYear,startSem)) return false;
-    if(endYear&&endSem&&semScore(r.year,r.semester)>semScore(endYear,endSem)) return false;
-    return true;
-  });
+  const id=document.getElementById('login-id')?.value?.trim();
+  const pw=document.getElementById('login-pw')?.value;
+  const err=document.getElementById('login-err');
+  if(!id||!pw){if(err){err.textContent='아이디와 비밀번호를 입력하세요';err.style.display='block';}return;}
+  try{
+    await login(id,pw);
+    await loadAllData();
+    S.view='dashboard';
+    renderCurrentView();
+  }catch(e){if(err){err.textContent=e.message;err.style.display='block';}}
 }
 
-function calcStats(recs){
-  let nI=0,tI=0,wd=0,tO=0,gr=0,mo=new Set();
-  recs.forEach(r=>{nI+=r.newIn||0;tI+=r.transferIn||0;wd+=r.withdrawal||0;tO+=r.transferOut||0;gr+=r.graduation||0;mo.add(monthKey(r.year,r.semester,r.month));});
-  const mc=mo.size||1;
-  return{newIn:nI,transferIn:tI,withdrawal:wd,transferOut:tO,graduation:gr,
-    pureIn:nI,totalIn:nI+tI,pureOut:wd,totalOut:wd+tO+gr,monthCount:mc,
-    avgNewIn:(nI/mc).toFixed(1),avgTotalIn:((nI+tI)/mc).toFixed(1),
-    avgPureOut:(wd/mc).toFixed(1),avgTotalOut:((wd+tO+gr)/mc).toFixed(1)};
+async function doSetup(){
+  const pw1=document.getElementById('setup-pw1')?.value;
+  const pw1c=document.getElementById('setup-pw1c')?.value;
+  const pw2=document.getElementById('setup-pw2')?.value;
+  const pw2c=document.getElementById('setup-pw2c')?.value;
+  const err=document.getElementById('setup-err');
+  if(!pw1||!pw2){err.textContent='모든 비밀번호를 입력하세요';err.style.display='block';return;}
+  if(pw1!==pw1c||pw2!==pw2c){err.textContent='비밀번호 확인이 일치하지 않습니다';err.style.display='block';return;}
+  try{
+    await createUser('ADMIN1',pw1,'admin',[]);
+    await createUser('ADMIN2',pw2,'admin',[]);
+    S.view='login';
+    renderCurrentView();
+  }catch(e){err.textContent='오류: '+e.message;err.style.display='block';}
 }
 
-// ====== DROPDOWNS INIT ======
-function initDropdowns(){
-  const years=getYears();
-  const campuses=getCampuses();
-  const minY=years[0]||'2024', maxY=years[years.length-1]||'2026';
-  
-  // Compare tab
-  fillYearSelect('cmp-sy',years,minY);fillYearSelect('cmp-ey',years,maxY);
-  
-  // Campus tab
-  fillCampusSelect('cs-campus',campuses,currentUser.role!=='admin'?currentUser.campus:null);
-  fillYearSelect('cs-sy',years,minY);fillYearSelect('cs-ey',years,maxY);
-  
-  // Grade tab
-  const gSel=document.getElementById('gr-grade');GRADES.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;gSel.appendChild(o);});
-  fillYearSelect('gr-sy',years,minY);fillYearSelect('gr-ey',years,maxY);
-  
-  // Input tab
-  fillCampusSelect('inp-campus',campuses,currentUser.role!=='admin'?currentUser.campus:null);
-  const curY=new Date().getFullYear();
-  for(let y=curY-1;y<=curY+1;y++){const o=document.createElement('option');o.value=String(y);o.textContent=y+'년';o.selected=(y===curY);document.getElementById('inp-year').appendChild(o);}
-  updateInpMonths();document.getElementById('inp-sem').onchange=updateInpMonths;
-  
-  // Admin campus
-  fillCampusSelect('nu-campus',campuses,null);
-  
-  // Lock campus for non-admin
-  if(currentUser.role!=='admin'){
-    document.getElementById('cs-campus').disabled=true;
-    document.getElementById('inp-campus').disabled=true;
+function doLogout(){ clearSession(); S.user=null; S.records=[]; S.users=[]; S.campuses=[]; S.view='login'; renderCurrentView(); }
+
+function navTo(view){
+  S.view=view;
+  if(view==='input'){
+    if(S.campuses.length) S.inputCampus=S.campuses[0].name;
+    initInputGrades(null);
+  }
+  renderCurrentView();
+}
+
+function setDashTab(tab){ S.dashTab=tab; renderCurrentView(); }
+function setFilterType(t){ S.filterType=t; renderCurrentView(); }
+function setPeriod(key,val){
+  if(key==='sy') S.periodStart.y=+val;
+  else if(key==='sm') S.periodStart.m=+val;
+  else if(key==='ey') S.periodEnd.y=+val;
+  else if(key==='em') S.periodEnd.m=+val;
+  renderCurrentView();
+}
+function setSeason(key,val){ if(key==='season') S.season=val; else S.seasonYear=+val; renderCurrentView(); }
+function setCampusFilter(v){ S.campusFilter=v; renderCurrentView(); }
+function setGradeFilter(v){ S.gradeFilter=v; renderCurrentView(); }
+function setMode(type,mode){ if(type==='new') S.newInMode=mode; else S.withdrawMode=mode; renderCurrentView(); }
+
+function setInputField(field,val){
+  if(field==='campus') S.inputCampus=val;
+  else if(field==='year') S.inputYear=+val;
+  else if(field==='month') S.inputMonth=+val;
+  // Don't re-render to avoid losing input focus
+}
+
+function loadExistingInput(){
+  const existing=S.records.find(r=>r.campus===S.inputCampus&&r.year===S.inputYear&&r.month===S.inputMonth);
+  initInputGrades(existing);
+  renderCurrentView();
+}
+
+function updateGradeField(i,field,val){
+  if(field==='notes') S.inputGrades[i].notes=val;
+  else S.inputGrades[i][field]=parseInt(val)||0;
+  // Update current cell only
+  const rows=document.querySelectorAll('.grade-entry-table tbody tr');
+  if(rows[i]){
+    const calcTd=rows[i].querySelector('.calc');
+    if(calcTd) calcTd.textContent=calcGradeCurrent(S.inputGrades[i]);
+  }
+  // Update totals
+  const tf=document.querySelector('.grade-entry-table tfoot tr');
+  if(tf){
+    const g=S.inputGrades;
+    const cells=tf.querySelectorAll('td');
+    if(cells[1]) cells[1].textContent=sum(g,x=>x.prev||0);
+    if(cells[2]) cells[2].textContent=sum(g,x=>x.newIn||0);
+    if(cells[3]) cells[3].textContent=sum(g,x=>x.transIn||0);
+    if(cells[4]) cells[4].textContent=sum(g,x=>x.withdraw||0);
+    if(cells[5]) cells[5].textContent=sum(g,x=>x.transOut||0);
+    if(cells[6]) cells[6].textContent=sum(g,x=>x.graduate||0);
+    if(cells[7]) cells[7].textContent=sum(g,x=>calcGradeCurrent(x));
   }
 }
 
-function fillYearSelect(id,years,selected){
-  const el=document.getElementById(id);el.innerHTML='';
-  years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y+'년';o.selected=(y===selected);el.appendChild(o);});
-}
-function fillCampusSelect(id,campuses,locked){
-  const el=document.getElementById(id);el.innerHTML='';
-  if(!locked){campuses.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;el.appendChild(o);});}
-  else{const o=document.createElement('option');o.value=locked;o.textContent=locked;el.appendChild(o);}
-}
-function updateInpMonths(){
-  const sem=document.getElementById('inp-sem').value;
-  const el=document.getElementById('inp-month');el.innerHTML='';
-  SEM_MONTHS[sem].forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;el.appendChild(o);});
+async function doSaveRecord(){
+  if(!S.inputCampus){alert('캠퍼스를 선택해주세요');return;}
+  try{
+    const grades=S.inputGrades.map(g=>({...g,current:calcGradeCurrent(g)}));
+    await saveRecord({campus:S.inputCampus,year:S.inputYear,month:S.inputMonth,quarter:Math.ceil(S.inputMonth/3),grades});
+    setAlert(`${S.inputCampus} ${S.inputYear}년 ${S.inputMonth}월 데이터가 저장되었습니다.`,'success');
+    S.view='dashboard';
+    renderCurrentView();
+  }catch(e){alert('저장 실패: '+e.message);}
 }
 
-// ====== TAB ROUTING ======
-function showTab(tab){
-  if(tab==='compare'&&currentUser?.role!=='admin') return;
-  if(tab==='admin'&&currentUser?.role!=='admin') return;
-  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  const tc=document.getElementById('tab-'+tab);if(tc)tc.classList.add('active');
-  const nb=document.getElementById('nav-'+tab);if(nb)nb.classList.add('active');
-  if(tab==='compare') renderCompare();
-  else if(tab==='campus') renderCampus();
-  else if(tab==='grade') renderGrade();
-  else if(tab==='admin') renderAdmin();
-  else if(tab==='input') renderInputForm();
+function addCampusToNewUser(){
+  const sel=document.getElementById('nu-campus-select');
+  if(!sel||!sel.value) return;
+  if(!newUserCampuses.includes(sel.value)) newUserCampuses.push(sel.value);
+  const tags=document.getElementById('nu-campus-tags');
+  if(tags) tags.innerHTML=newUserCampuses.map(c=>`<span class="campus-tag">${esc(c)}<button class="remove-tag" onclick="removeCampusFromNewUser('${esc(c)}')">×</button></span>`).join('');
+}
+function removeCampusFromNewUser(c){ newUserCampuses=newUserCampuses.filter(x=>x!==c); addCampusToNewUser(); }
+
+async function doCreateUser(){
+  const id=document.getElementById('nu-id')?.value?.trim();
+  const pw=document.getElementById('nu-pw')?.value;
+  const role=document.getElementById('nu-role')?.value;
+  const errEl=document.getElementById('nu-err');
+  if(!id||!pw){errEl.textContent='아이디와 비밀번호를 입력하세요';errEl.style.display='block';return;}
+  if(S.users.find(u=>u.displayId===id)){errEl.textContent='이미 존재하는 아이디입니다';errEl.style.display='block';return;}
+  try{
+    await createUser(id,pw,role,newUserCampuses);
+    newUserCampuses=[];
+    setAlert(`사용자 ${id}가 생성되었습니다.`,'success');
+    renderCurrentView();
+  }catch(e){errEl.textContent='오류: '+e.message;errEl.style.display='block';}
 }
 
-// ====== STATS CARDS HELPER ======
-function renderStats(containerId, stats){
-  const items=[
-    {label:'순수 신입 누계',cum:stats.pureIn,avg:stats.avgNewIn},
-    {label:'전입 포함 신입 누계',cum:stats.totalIn,avg:stats.avgTotalIn},
-    {label:'순수 퇴원 누계',cum:stats.pureOut,avg:stats.avgPureOut},
-    {label:'전출/졸업 포함 퇴원',cum:stats.totalOut,avg:stats.avgTotalOut},
+async function doDeleteUser(id){
+  const u=S.users.find(x=>x.id===id);
+  if(!u||!confirm(`'${u.displayId}' 사용자를 삭제하시겠습니까?`)) return;
+  await deleteUser(id);
+  setAlert('사용자가 삭제되었습니다.','success');
+  renderCurrentView();
+}
+
+async function doToggleUser(id){
+  await toggleUserActive(id);
+  renderCurrentView();
+}
+
+async function doAddCampus(){
+  const name=document.getElementById('new-campus-name')?.value?.trim();
+  if(!name) return;
+  if(S.campuses.find(c=>c.name===name)){alert('이미 존재하는 캠퍼스명입니다');return;}
+  try{
+    await saveCampus(name);
+    setAlert('✅ 캠퍼스 저장 완료!','success');
+    renderCurrentView();
+  }catch(e){
+    alert('❌ 저장 실패: '+e.message+'\n\nFirebase 보안 규칙을 확인해주세요.');
+  }
+}
+
+async function testFirestore(){
+  try{
+    await db.collection('_test').add({t:Date.now()});
+    alert('✅ Firebase 연결 정상! 캠퍼스를 다시 추가해보세요.');
+    await db.collection('_test').get().then(s=>s.forEach(d=>d.ref.delete()));
+  }catch(e){
+    alert('❌ Firebase 연결 실패: '+e.message);
+  }
+}
+
+async function doDeleteCampus(id){
+  const c=S.campuses.find(x=>x.id===id);
+  if(!c||!confirm(`'${c.name}' 캠퍼스를 삭제하시겠습니까?`)) return;
+  await deleteCampus(id);
+  setAlert('캠퍼스가 삭제되었습니다.','success');
+  renderCurrentView();
+}
+
+// ================================================================
+// EXCEL UPLOAD & TEMPLATE DOWNLOAD
+// ================================================================
+
+// 엑셀 파일 파싱
+// 양식 구조:
+//   Row 0: 빈 행
+//   Row 1 (header): '', 캠퍼스, 년도, 분기, 월, 학년, 전월마감원, 신입, 전입, 퇴원, 전출, 졸업, 현재원, 기타 특이 사항
+//   Rows 2~10: 초1~중3 데이터 행
+function parseExcelData(workbook){
+  const sheetName = workbook.SheetNames[0];
+  const ws = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+
+  // 캠퍼스/년도/월은 B~E 열(index 1~4), 병합셀 고려하여 비어있지 않은 첫 번째 값 사용
+  const dataRows = rows.slice(2, 11); // 초1~중3 (9개 행)
+  if(dataRows.length < 1) throw new Error('데이터 행을 찾을 수 없습니다. (초1~중3 행 필요)');
+
+  const firstVal=(colIdx)=>{
+    for(const r of dataRows){ const v=String(r[colIdx]||'').trim(); if(v) return v; }
+    return '';
+  };
+
+  const campusName = firstVal(1);
+  const yearStr    = firstVal(2);
+  const monthStr   = firstVal(4);
+
+  if(!campusName) throw new Error('캠퍼스명이 비어 있습니다. (B열 확인)');
+  if(!yearStr)    throw new Error('년도가 비어 있습니다. (C열 확인)');
+  if(!monthStr)   throw new Error('월이 비어 있습니다. (E열 확인)');
+
+  const year  = parseInt(yearStr);
+  const month = parseInt(monthStr);
+  if(isNaN(year)||isNaN(month)) throw new Error(`년도/월 형식 오류: 년도=${yearStr}, 월=${monthStr}`);
+
+  const grades = dataRows.map((row, i)=>{
+    const grade = String(row[5]||GRADES[i]||'').trim();
+    const p=(n)=>{ const v=parseInt(String(row[n]||'').replace(/[^0-9-]/g,'')); return isNaN(v)?0:Math.max(0,v); };
+    const prev=p(6), newIn=p(7), transIn=p(8), withdraw=p(9), transOut=p(10), graduate=p(11);
+    const excelCurrent=p(12);
+    const calcedCurrent=Math.max(0,prev+newIn+transIn-withdraw-transOut-graduate);
+    return { grade, prev, newIn, transIn, withdraw, transOut, graduate,
+      current: excelCurrent||calcedCurrent, notes: String(row[13]||'').trim() };
+  });
+
+  return { campusName, year, month, quarter: Math.ceil(month/3), grades };
+}
+
+function applyParsedData(parsed){
+  const { campusName, year, month, quarter, grades } = parsed;
+
+  // 캠퍼스 매칭 (완전일치 우선, 없으면 유사 매칭)
+  const matchedCampus = S.campuses.find(c=>c.name===campusName)
+    || S.campuses.find(c=>campusName.includes(c.name)||c.name.includes(campusName));
+
+  if(!matchedCampus){
+    throw new Error(`캠퍼스 '${campusName}'을(를) 시스템에서 찾을 수 없습니다.\n관리자에서 먼저 캠퍼스를 등록해 주세요.`);
+  }
+
+  S.inputCampus = matchedCampus.name;
+  S.inputYear   = year;
+  S.inputMonth  = month;
+  S.inputGrades = GRADES.map(g=>{
+    const found = grades.find(x=>x.grade===g);
+    return found || {grade:g,prev:0,newIn:0,transIn:0,withdraw:0,transOut:0,graduate:0,notes:''};
+  });
+}
+
+function handleExcelUpload(file){
+  if(!file) return;
+  const statusEl = document.getElementById('upload-status');
+  if(!statusEl) return;
+
+  if(!file.name.match(/\.(xlsx|xls)$/i)){
+    statusEl.innerHTML=`<div class="upload-err">⚠️ .xlsx 또는 .xls 파일만 지원합니다.</div>`;
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb   = XLSX.read(data, {type:'array', cellDates:false});
+      const parsed = parseExcelData(wb);
+      applyParsedData(parsed);
+
+      // 성공 메시지 표시 후 폼 재렌더
+      const existing = S.records.find(r=>r.campus===parsed.campusName&&r.year===parsed.year&&r.month===parsed.month);
+      statusEl.innerHTML=`<div class="upload-result">
+        <div class="icon">✅</div>
+        <div class="info">
+          <strong>${esc(parsed.campusName)} ${parsed.year}년 ${parsed.month}월 데이터를 읽었습니다.</strong>
+          <span>${existing?'⚠️ 기존 데이터가 있습니다. 저장하면 덮어씁니다.':'신규 데이터입니다.'} · 아래 내용을 확인 후 저장하세요.</span>
+        </div>
+      </div>`;
+      // 폼 테이블만 업데이트
+      renderCurrentView();
+      // 업로드 성공 메시지 다시 표시 (렌더 후)
+      const s2=document.getElementById('upload-status');
+      if(s2) s2.innerHTML=`<div class="upload-result">
+        <div class="icon">✅</div>
+        <div class="info">
+          <strong>${esc(parsed.campusName)} ${parsed.year}년 ${parsed.month}월 데이터 읽기 완료</strong>
+          <span>${existing?'⚠️ 기존 데이터 덮어쓰기 예정':'신규 데이터'} · 학년별 내용 확인 후 저장하세요.</span>
+        </div>
+      </div>`;
+    }catch(err){
+      statusEl.innerHTML=`<div class="upload-err">❌ 파싱 오류: ${esc(err.message)}</div>`;
+    }
+  };
+  reader.onerror = ()=>{ statusEl.innerHTML=`<div class="upload-err">❌ 파일을 읽을 수 없습니다.</div>`; };
+  reader.readAsArrayBuffer(file);
+}
+
+function handleExcelDrop(event){
+  event.preventDefault();
+  document.getElementById('upload-zone')?.classList.remove('drag-over');
+  const file = event.dataTransfer?.files?.[0];
+  if(file) handleExcelUpload(file);
+}
+
+// 양식 다운로드 — 업로드된 원본 양식과 동일한 구조
+// 캠퍼스·년도·분기·월 병합셀 + 학년 9행
+function downloadTemplate(prefill=false){
+  if(typeof XLSX==='undefined'){ alert('SheetJS 라이브러리가 로드되지 않았습니다.'); return; }
+
+  const campus  = prefill && S.inputCampus ? S.inputCampus : '';
+  const yr      = prefill ? S.inputYear  : '';
+  const mo      = prefill ? S.inputMonth : '';
+  const qr      = (mo&&yr) ? Math.ceil(mo/3) : '';
+  const fname   = campus ? `마감양식_${campus}_${yr}년${String(mo).padStart(2,'0')}월.xlsx` : '마감양식_기본_.xlsx';
+
+  // AOA: row0=blank, row1=header, rows2-10=data
+  const aoa = [
+    Array(14).fill(''),  // row 0 (1행: 빈 행)
+    ['','캠퍼스','년도','분기','월','학년','전월마감원','신입','전입','퇴원','전출','졸업','현재원','기타 특이 사항'],
+    ...GRADES.map((g,i)=>[
+      '',
+      i===0 ? campus : '',   // B열: 캠퍼스 (첫 행만, 나머지는 병합)
+      i===0 ? yr     : '',   // C열: 년도
+      i===0 ? qr     : '',   // D열: 분기
+      i===0 ? mo     : '',   // E열: 월
+      g,                     // F열: 학년
+      '','','','','','','','' // G-N: 입력 셀
+    ])
   ];
-  document.getElementById(containerId).innerHTML=items.map(it=>`
-    <div class="stat-card">
-      <div class="stat-label">${it.label}</div>
-      <div class="stat-cum">${it.cum}<span class="stat-unit">명</span></div>
-      <div class="stat-avg">월평균 ${it.avg}명</div>
-    </div>`).join('');
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // 병합셀: 캠퍼스(B3:B11), 년도(C3:C11), 분기(D3:D11), 월(E3:E11)
+  // 0-indexed: row2~10, col 1~4
+  ws['!merges'] = [
+    {s:{r:2,c:1}, e:{r:10,c:1}},
+    {s:{r:2,c:2}, e:{r:10,c:2}},
+    {s:{r:2,c:3}, e:{r:10,c:3}},
+    {s:{r:2,c:4}, e:{r:10,c:4}},
+  ];
+
+  // 열 너비
+  ws['!cols'] = [
+    {wch:3},{wch:14},{wch:8},{wch:6},{wch:6},{wch:8},
+    {wch:12},{wch:8},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10},{wch:22}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  XLSX.writeFile(wb, fname);
 }
 
-// ====== MONTHLY DATA HELPER ======
-function getMonthlyData(recs,field){
-  // Returns sorted [{key,label,value}]
-  const mp={};
-  recs.forEach(r=>{
-    const k=monthKey(r.year,r.semester,r.month);
-    const lb=monthLabel(r.year,r.semester,r.month);
-    if(!mp[k]) mp[k]={key:k,label:lb,value:0};
-    mp[k].value+=(r[field]||0);
-  });
-  return Object.values(mp).sort((a,b)=>a.key-b.key);
+// 헤더의 양식 다운로드 버튼 → 빈 양식
+// 데이터 입력 페이지의 다운로드 버튼 → 현재 캠퍼스/기간 prefill
+function downloadBlankTemplate(){ downloadTemplate(false); }
+function downloadPrefillTemplate(){ downloadTemplate(true); }
+
+// ================================================================
+// RELOAD DATA
+// ================================================================
+async function reloadData(){
+  try{
+    const [cSnap,rSnap]=await Promise.all([
+      db.collection('campuses').get(),
+      db.collection('records').get()
+    ]);
+    S.campuses=cSnap.docs.map(d=>({id:d.id,...d.data()}));
+    S.records=rSnap.docs.map(d=>({id:d.id,...d.data()}));
+    setAlert(`✅ 새로고침 완료 — 캠퍼스 ${S.campuses.length}개, 데이터 ${S.records.length}건`,'success');
+    renderCurrentView();
+  }catch(e){
+    alert('새로고침 실패: '+e.message);
+  }
 }
 
-function getSemesterData(recs,field){
-  const mp={};
-  recs.forEach(r=>{
-    const k=semScore(r.year,r.semester);
-    const lb=r.year+'년 '+r.semester;
-    if(!mp[k]) mp[k]={key:k,label:lb,values:[],count:0};
-    mp[k].values.push(r[field]||0);
-    mp[k].count++;
-  });
-  return Object.values(mp).sort((a,b)=>a.key-b.key).map(d=>({...d,sum:d.values.reduce((a,b)=>a+b,0),avg:(d.values.reduce((a,b)=>a+b,0)/d.values.length).toFixed(1)}));
-}
+// ================================================================
+// INIT
+// ================================================================
+async function init(){
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  }catch(e){ console.error('Firebase init error',e); }
 
-// ====== 전 캠퍼스 비교 ======
-function renderCompare(){
-  const sy=document.getElementById('cmp-sy')?.value;
-  const ss=document.getElementById('cmp-ss')?.value;
-  const ey=document.getElementById('cmp-ey')?.value;
-  const es=document.getElementById('cmp-es')?.value;
-  if(!sy||!ey) return;
-  
-  const filtered=filterRecs({startYear:sy,startSem:ss,endYear:ey,endSem:es});
-  const campuses=getCampuses();
-  
-  // Stats (all campuses combined)
-  const st=calcStats(filtered);
-  renderStats('cmp-stats',st);
-  
-  // Campus stats
-  const csStats={};
-  campuses.forEach(c=>{ csStats[c]=calcStats(filtered.filter(r=>r.campus===c)); });
-  
-  // Chart 1: Bar - campus 신입/퇴원 + 바론(average)
-  const barLabels=[...campuses,'바론'];
-  const barIn=campuses.map(c=>csStats[c].pureIn);
-  const barOut=campuses.map(c=>csStats[c].pureOut);
-  const avgIn=campuses.length?Math.round(campuses.reduce((a,c)=>a+csStats[c].pureIn,0)/campuses.length):0;
-  const avgOut=campuses.length?Math.round(campuses.reduce((a,c)=>a+csStats[c].pureOut,0)/campuses.length):0;
-  barIn.push(avgIn); barOut.push(avgOut);
-  const barBgIn=campuses.map(c=>getCColorA(c,0.7)).concat(['rgba(55,65,81,0.7)']);
-  const barBgOut=campuses.map(c=>getCColorA(c,0.35)).concat(['rgba(55,65,81,0.35)']);
-  
-  mkChart('ch-cmp-bar',{type:'bar',data:{labels:barLabels,datasets:[
-    {label:'신입',data:barIn,backgroundColor:barBgIn,borderColor:barBgIn.map(c=>c.replace(/,[\d.]+\)$/,',1)')),borderWidth:1.5},
-    {label:'퇴원',data:barOut,backgroundColor:barBgOut,borderColor:barBgOut.map(c=>c.replace(/,[\d.]+\)$/,',1)')),borderWidth:1.5}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}});
-  
-  // Monthly data per campus
-  const allMonthKeys=new Set();
-  const campusMoData={};
-  campuses.forEach(c=>{
-    const recs=filtered.filter(r=>r.campus===c);
-    const md=getMonthlyData(recs,'newIn');
-    const od=getMonthlyData(recs,'withdrawal');
-    const prevD={};
-    getMonthlyData(recs,'prev').forEach(d=>prevD[d.key]=d.value);
-    campusMoData[c]={in:{},out:{},rate:{}};
-    md.forEach(d=>{campusMoData[c].in[d.key]=d.value;allMonthKeys.add(d.key);});
-    od.forEach(d=>{
-      campusMoData[c].out[d.key]=d.value;
-      const pv=prevD[d.key]||0;
-      campusMoData[c].rate[d.key]=pv>0?((d.value/pv)*100).toFixed(1):0;
-      allMonthKeys.add(d.key);
-    });
-  });
-  
-  const sortedKeys=[...allMonthKeys].sort((a,b)=>a-b);
-  const moLabels=sortedKeys.map(k=>{
-    const rec=filtered.find(r=>monthKey(r.year,r.semester,r.month)===k);
-    return rec?monthLabel(rec.year,rec.semester,rec.month):k;
-  });
-  
-  const lineOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}},elements:{point:{radius:2.5},line:{tension:0.35}}};
-  
-  mkChart('ch-cmp-in',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].in[k]||0),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2}))},options:lineOpts});
-  mkChart('ch-cmp-out',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].out[k]||0),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2}))},options:lineOpts});
-  mkChart('ch-cmp-rate',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].rate[k]||0),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2}))},options:{...lineOpts,scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
-  
-  // Detailed table
-  const thead=`<tr><th>캠퍼스</th><th class="th-org">순수신입 누계</th><th class="th-org">월평균</th><th class="th-tif">전입포함 누계</th><th class="th-tif">월평균</th><th class="th-org">순수퇴원 누계</th><th class="th-org">월평균</th><th class="th-tif">전출/졸업포함 누계</th><th class="th-tif">월평균</th></tr>`;
-  const tbody=campuses.map(c=>{const s=csStats[c];return `<tr><td class="td-bold">${c}</td><td>${s.pureIn}</td><td class="td-avg">${s.avgNewIn}</td><td>${s.totalIn}</td><td class="td-avg">${s.avgTotalIn}</td><td>${s.pureOut}</td><td class="td-avg">${s.avgPureOut}</td><td>${s.totalOut}</td><td class="td-avg">${s.avgTotalOut}</td></tr>`;}).join('');
-  const avgRow=`<tr style="background:var(--org-lt);font-weight:700;"><td>바론(평균)</td><td>${avgIn}</td><td>-</td><td>-</td><td>-</td><td>${avgOut}</td><td>-</td><td>-</td><td>-</td></tr>`;
-  document.getElementById('cmp-table').innerHTML=`<div class="tbl-card"><div class="tbl-title">📋 캠퍼스별 상세 현황 (누계 / 월평균)</div><table><thead>${thead}</thead><tbody>${tbody}${avgRow}</tbody></table></div>`;
-}
+  // Check session
+  const session=getSession();
+  try{
+    // Load users first to validate session & check first-run
+    const uSnap=await db.collection('users').get();
+    S.users=uSnap.docs.map(d=>({id:d.id,...d.data()}));
 
-// ====== 캠퍼스별 분석 ======
-function setCsPeriod(type){
-  csPeriodType=type;
-  document.getElementById('cs-pt-monthly').classList.toggle('active',type==='monthly');
-  document.getElementById('cs-pt-semester').classList.toggle('active',type==='semester');
-}
-
-function renderCampus(){
-  const campus=document.getElementById('cs-campus')?.value;
-  const sy=document.getElementById('cs-sy')?.value;
-  const ey=document.getElementById('cs-ey')?.value;
-  if(!campus||!sy||!ey) return;
-  
-  const years=getYears().filter(y=>parseInt(y)>=parseInt(sy)&&parseInt(y)<=parseInt(ey));
-  const recs=allRecords.filter(r=>r.campus===campus&&parseInt(r.year)>=parseInt(sy)&&parseInt(r.year)<=parseInt(ey));
-  
-  const st=calcStats(recs); renderStats('cs-stats',st);
-  
-  if(csPeriodType==='monthly'){
-    // Each year = one line, months on x-axis
-    const months=['1','2','3','4','5','6','7','8','9','10','11','12'].map(m=>m+'월');
-    const datasets_in=[],datasets_out=[],datasets_rate=[];
-    years.forEach((yr,i)=>{
-      const col=YR_COLORS[i%YR_COLORS.length];
-      const yr_recs=recs.filter(r=>r.year===yr);
-      const byMo={};
-      yr_recs.forEach(r=>{const mo=parseInt(r.month.replace('월',''));if(!byMo[mo])byMo[mo]={in:0,out:0,prev:0};byMo[mo].in+=r.newIn||0;byMo[mo].out+=r.withdrawal||0;byMo[mo].prev+=r.prev||0;});
-      const inData=[],outData=[],rateData=[];
-      for(let m=1;m<=12;m++){const d=byMo[m];inData.push(d?d.in:null);outData.push(d?d.out:null);rateData.push(d&&d.prev>0?(d.out/d.prev*100).toFixed(1):null);}
-      const base={label:yr+'년',borderColor:col,backgroundColor:col.replace(')',',0.08)').replace('#','rgba(').replace(/^rgba\(([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i,(_,r,g,b)=>`rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)}`),borderWidth:2,tension:0.35,spanGaps:true};
-      datasets_in.push({...base,data:inData});datasets_out.push({...base,data:outData});datasets_rate.push({...base,data:rateData});
-    });
-    const lo={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}},elements:{point:{radius:3}}};
-    document.getElementById('cs-ch1-title').textContent='📈 연도별 월별 신입';
-    document.getElementById('cs-ch2-title').textContent='📉 연도별 월별 퇴원';
-    document.getElementById('cs-ch3-title').textContent='📊 연도별 월별 퇴원율';
-    mkChart('ch-cs-in',{type:'line',data:{labels:months,datasets:datasets_in},options:lo});
-    mkChart('ch-cs-out',{type:'line',data:{labels:months,datasets:datasets_out},options:lo});
-    mkChart('ch-cs-rate',{type:'line',data:{labels:months,datasets:datasets_rate},options:{...lo,scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
-  } else {
-    // Semester mode
-    const semData={};
-    years.forEach(yr=>{SEMS.forEach(sem=>{
-      const semRecs=recs.filter(r=>r.year===yr&&r.semester===sem);
-      if(semRecs.length){
-        const k=`${yr}년
-${sem}`;
-        const nI=semRecs.reduce((a,r)=>a+(r.newIn||0),0);
-        const wd=semRecs.reduce((a,r)=>a+(r.withdrawal||0),0);
-        const pv=semRecs.reduce((a,r)=>a+(r.prev||0),0);
-        semData[k]={in:nI,out:wd,rate:pv>0?(wd/pv*100).toFixed(1):0,inAvg:(nI/3).toFixed(1),outAvg:(wd/3).toFixed(1)};
+    if(S.users.length===0){
+      S.view='setup'; renderCurrentView(); return;
+    }
+    if(session && S.users.find(u=>u.displayId===session.displayId&&u.passwordHash===session.passwordHash&&u.active!==false)){
+      S.user=session;
+      try{
+        const [cSnap,rSnap]=await Promise.all([
+          db.collection('campuses').get(),
+          db.collection('records').get()
+        ]);
+        S.campuses=cSnap.docs.map(d=>({id:d.id,...d.data()}));
+        S.records=rSnap.docs.map(d=>({id:d.id,...d.data()}));
+        console.log('Loaded campuses:',S.campuses.length,'records:',S.records.length);
+      }catch(loadErr){
+        console.error('Data load error:',loadErr);
+        alert('데이터 로드 실패: '+loadErr.message);
       }
-    });});
-    const sLabels=Object.keys(semData);
-    const lo={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}},elements:{point:{radius:3}}};
-    const col=getCColor(campus);
-    document.getElementById('cs-ch1-title').textContent='📈 학기별 신입 (누계/평균)';
-    document.getElementById('cs-ch2-title').textContent='📉 학기별 퇴원 (누계/평균)';
-    document.getElementById('cs-ch3-title').textContent='📊 학기별 퇴원율';
-    mkChart('ch-cs-in',{type:'bar',data:{labels:sLabels,datasets:[{label:'신입 누계',data:sLabels.map(k=>semData[k].in),backgroundColor:getCColorA(campus,0.6),borderColor:col,borderWidth:1.5},{label:'월평균',data:sLabels.map(k=>semData[k].inAvg),type:'line',borderColor:'#374151',backgroundColor:'transparent',borderWidth:2,tension:0.3}]},options:{...lo,plugins:{legend:{position:'top',display:true}}}});
-    mkChart('ch-cs-out',{type:'bar',data:{labels:sLabels,datasets:[{label:'퇴원 누계',data:sLabels.map(k=>semData[k].out),backgroundColor:getCColorA(campus,0.4),borderColor:col,borderWidth:1.5},{label:'월평균',data:sLabels.map(k=>semData[k].outAvg),type:'line',borderColor:'#374151',backgroundColor:'transparent',borderWidth:2,tension:0.3}]},options:{...lo,plugins:{legend:{position:'top',display:true}}}});
-    mkChart('ch-cs-rate',{type:'line',data:{labels:sLabels,datasets:[{label:'퇴원율',data:sLabels.map(k=>semData[k].rate),borderColor:col,backgroundColor:getCColorA(campus,0.08),borderWidth:2,tension:0.3}]},options:{...lo,scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
-  }
-  
-  // Grade table + pie
-  const gradeStats={};
-  GRADES.forEach(g=>{
-    const gr=recs.filter(r=>r.grade===g);
-    const moSet=new Set(gr.map(r=>monthKey(r.year,r.semester,r.month)));
-    const mc=moSet.size||1;
-    const nI=gr.reduce((a,r)=>a+(r.newIn||0),0);
-    const wd=gr.reduce((a,r)=>a+(r.withdrawal||0),0);
-    const cu=gr.length?gr[gr.length-1].current:0;
-    gradeStats[g]={newIn:nI,withdrawal:wd,current:cu,avgIn:(nI/mc).toFixed(1),avgOut:(wd/mc).toFixed(1)};
-  });
-  
-  document.getElementById('cs-grade-table').innerHTML=`<div class="tbl-card" style="height:100%;"><div class="tbl-title">📊 학년별 현황</div><table><thead><tr><th>학년</th><th class="th-org">신입 누계</th><th class="th-org">월평균</th><th class="th-tif">퇴원 누계</th><th class="th-tif">월평균</th><th>현재원</th></tr></thead><tbody>${GRADES.map(g=>`<tr><td class="td-bold">${g}</td><td>${gradeStats[g].newIn}</td><td class="td-avg">${gradeStats[g].avgIn}</td><td>${gradeStats[g].withdrawal}</td><td class="td-avg">${gradeStats[g].avgOut}</td><td>${gradeStats[g].current}</td></tr>`).join('')}</tbody></table></div>`;
-  
-  const pieData=GRADES.map(g=>gradeStats[g].current);
-  const pieCols=['#F97316','#FB923C','#FDBA74','#0ABAB5','#2DD4BF','#99F6E4','#8B5CF6','#A78BFA','#C4B5FD'];
-  mkChart('ch-cs-pie',{type:'doughnut',data:{labels:GRADES,datasets:[{data:pieData,backgroundColor:pieCols,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'},datalabels:{display:false}},cutout:'55%'}});
-}
-
-// ====== 학년별 분석 ======
-function renderGrade(){
-  const grade=document.getElementById('gr-grade')?.value;
-  const sy=document.getElementById('gr-sy')?.value;
-  const ey=document.getElementById('gr-ey')?.value;
-  if(!grade||!sy||!ey) return;
-  
-  const campuses=getCampuses();
-  const recs=allRecords.filter(r=>r.grade===grade&&parseInt(r.year)>=parseInt(sy)&&parseInt(r.year)<=parseInt(ey));
-  
-  document.getElementById('gr-ch1-title').textContent=`📊 [${grade}] 캠퍼스별 신입`;
-  document.getElementById('gr-ch2-title').textContent=`📊 [${grade}] 캠퍼스별 퇴원`;
-  document.getElementById('gr-ch3-title').textContent=`📉 [${grade}] 캠퍼스별 퇴원율 추이`;
-  
-  const st=calcStats(recs); renderStats('gr-stats',st);
-  
-  // Bar charts: campus on x-axis, cumulative in/out
-  const barIn=campuses.map(c=>recs.filter(r=>r.campus===c).reduce((a,r)=>a+(r.newIn||0),0));
-  const barOut=campuses.map(c=>recs.filter(r=>r.campus===c).reduce((a,r)=>a+(r.withdrawal||0),0));
-  const barOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}};
-  
-  mkChart('ch-gr-in',{type:'bar',data:{labels:campuses,datasets:[{data:barIn,backgroundColor:campuses.map(c=>getCColorA(c,0.7)),borderColor:campuses.map(c=>getCColor(c)),borderWidth:1.5}]},options:barOpts});
-  mkChart('ch-gr-out',{type:'bar',data:{labels:campuses,datasets:[{data:barOut,backgroundColor:campuses.map(c=>getCColorA(c,0.5)),borderColor:campuses.map(c=>getCColor(c)),borderWidth:1.5}]},options:barOpts});
-  
-  // Line: withdrawal rate trend per campus (by semester)
-  const semKeys=new Set();
-  campuses.forEach(c=>{recs.filter(r=>r.campus===c).forEach(r=>semKeys.add(`${r.year}_${r.semester}`));});
-  const sortedSemKeys=[...semKeys].sort((a,b)=>{const [ay,as]=a.split('_');const [by,bs]=b.split('_');return semScore(ay,as)-semScore(by,bs);});
-  const semLabels=sortedSemKeys.map(k=>{const [y,s]=k.split('_');return y+'년 '+s;});
-  
-  const rateDatasets=campuses.map(c=>({
-    label:c,
-    data:sortedSemKeys.map(k=>{
-      const [yr,sem]=k.split('_');
-      const sr=recs.filter(r=>r.campus===c&&r.year===yr&&r.semester===sem);
-      const pv=sr.reduce((a,r)=>a+(r.prev||0),0);
-      const wd=sr.reduce((a,r)=>a+(r.withdrawal||0),0);
-      return pv>0?(wd/pv*100).toFixed(1):null;
-    }),
-    borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2,tension:0.35,spanGaps:true
-  }));
-  mkChart('ch-gr-rate',{type:'line',data:{labels:semLabels,datasets:rateDatasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}},elements:{point:{radius:3}}}});
-  
-  // All grade comparison tables
-  const allYrRecs=allRecords.filter(r=>parseInt(r.year)>=parseInt(sy)&&parseInt(r.year)<=parseInt(ey));
-  let inThead=`<tr><th>캠퍼스</th>${GRADES.map(g=>`<th class="th-org" colspan="2">${g}</th>`).join('')}</tr><tr><th></th>${GRADES.map(()=>'<th>누계</th><th class="td-avg">평균</th>').join('')}</tr>`;
-  let outThead=`<tr><th>캠퍼스</th>${GRADES.map(g=>`<th class="th-tif" colspan="2">${g}</th>`).join('')}</tr><tr><th></th>${GRADES.map(()=>'<th>누계</th><th class="td-avg">평균</th>').join('')}</tr>`;
-  
-  const inRows=campuses.map(c=>{
-    const cols=GRADES.map(g=>{
-      const gr=allYrRecs.filter(r=>r.campus===c&&r.grade===g);
-      const mc=new Set(gr.map(r=>monthKey(r.year,r.semester,r.month))).size||1;
-      const tot=gr.reduce((a,r)=>a+(r.newIn||0),0);
-      return `<td>${tot}</td><td class="td-avg">${(tot/mc).toFixed(1)}</td>`;
-    }).join('');
-    return `<tr><td class="td-bold">${c}</td>${cols}</tr>`;
-  }).join('');
-  
-  const outRows=campuses.map(c=>{
-    const cols=GRADES.map(g=>{
-      const gr=allYrRecs.filter(r=>r.campus===c&&r.grade===g);
-      const mc=new Set(gr.map(r=>monthKey(r.year,r.semester,r.month))).size||1;
-      const tot=gr.reduce((a,r)=>a+(r.withdrawal||0),0);
-      return `<td>${tot}</td><td class="td-avg">${(tot/mc).toFixed(1)}</td>`;
-    }).join('');
-    return `<tr><td class="td-bold">${c}</td>${cols}</tr>`;
-  }).join('');
-  
-  document.getElementById('gr-all-tables').innerHTML=`
-    <div class="tbl-card"><div class="tbl-title">📋 전 학년 캠퍼스별 신입 비교 (누계 / 월평균)</div><table><thead>${inThead}</thead><tbody>${inRows}</tbody></table></div>
-    <div class="tbl-card"><div class="tbl-title">📋 전 학년 캠퍼스별 퇴원 비교 (누계 / 월평균)</div><table><thead>${outThead}</thead><tbody>${outRows}</tbody></table></div>`;
-}
-
-// ====== 데이터 입력 ======
-function renderInputForm(){
-  const tbody=document.getElementById('inp-tbody');
-  tbody.innerHTML=GRADES.map(g=>`
-    <tr>
-      <td style="font-weight:700;text-align:left;padding-left:10px;">${g}</td>
-      <td><input type="number" min="0" id="inp-prev-${g}" class="inp-prev"></td>
-      <td><input type="number" min="0" id="inp-ni-${g}"></td>
-      <td><input type="number" min="0" id="inp-ti-${g}"></td>
-      <td><input type="number" min="0" id="inp-wd-${g}"></td>
-      <td><input type="number" min="0" id="inp-to-${g}"></td>
-      <td><input type="number" min="0" id="inp-gr-${g}"></td>
-      <td><input type="number" min="0" id="inp-cu-${g}" style="background:var(--tif-lt);" readonly></td>
-      <td><input type="text" id="inp-nt-${g}" style="width:120px;padding:4px;border:1px solid var(--bdr);border-radius:4px;font-size:12px;"></td>
-    </tr>`).join('');
-  
-  // Auto-calc current
-  GRADES.forEach(g=>{
-    ['inp-prev-'+g,'inp-ni-'+g,'inp-ti-'+g,'inp-wd-'+g,'inp-to-'+g,'inp-gr-'+g].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.addEventListener('input',()=>calcCurrent(g));
-    });
-  });
-}
-
-function calcCurrent(g){
-  const v=id=>parseInt(document.getElementById(id)?.value)||0;
-  const cu=v('inp-prev-'+g)+v('inp-ni-'+g)+v('inp-ti-'+g)-v('inp-wd-'+g)-v('inp-to-'+g)-v('inp-gr-'+g);
-  const el=document.getElementById('inp-cu-'+g);
-  if(el) el.value=Math.max(0,cu);
-}
-
-async function loadInputData(){
-  const campus=document.getElementById('inp-campus').value;
-  const year=document.getElementById('inp-year').value;
-  const sem=document.getElementById('inp-sem').value;
-  const month=document.getElementById('inp-month').value;
-  
-  renderInputForm();
-  
-  for(const g of GRADES){
-    const rec=allRecords.find(r=>r.campus===campus&&r.year===String(year)&&r.semester===sem&&r.month===month&&r.grade===g);
-    if(rec){
-      document.getElementById('inp-prev-'+g).value=rec.prev||0;
-      document.getElementById('inp-ni-'+g).value=rec.newIn||0;
-      document.getElementById('inp-ti-'+g).value=rec.transferIn||0;
-      document.getElementById('inp-wd-'+g).value=rec.withdrawal||0;
-      document.getElementById('inp-to-'+g).value=rec.transferOut||0;
-      document.getElementById('inp-gr-'+g).value=rec.graduation||0;
-      document.getElementById('inp-cu-'+g).value=rec.current||0;
-      document.getElementById('inp-nt-'+g).value=rec.notes||'';
+      S.view='dashboard';
+    } else {
+      clearSession();
+      S.view='login';
     }
-  }
-  document.getElementById('inp-alert').innerHTML=`<div class="alert alert-info">📂 ${campus} ${year}년 ${sem} ${month} 데이터를 불러왔습니다.</div>`;
-}
-
-async function saveInputData(){
-  const campus=document.getElementById('inp-campus').value;
-  const year=String(document.getElementById('inp-year').value);
-  const sem=document.getElementById('inp-sem').value;
-  const month=document.getElementById('inp-month').value;
-  document.getElementById('inp-alert').innerHTML='';
-  
-  try{
-    const batch=db.batch();
-    for(const g of GRADES){
-      const v=id=>parseInt(document.getElementById(id)?.value)||0;
-      const data={campus,year,semester:sem,month,grade:g,
-        prev:v('inp-prev-'+g),newIn:v('inp-ni-'+g),transferIn:v('inp-ti-'+g),
-        withdrawal:v('inp-wd-'+g),transferOut:v('inp-to-'+g),graduation:v('inp-gr-'+g),
-        current:v('inp-cu-'+g),notes:document.getElementById('inp-nt-'+g)?.value||''};
-      
-      const existing=allRecords.find(r=>r.campus===campus&&r.year===year&&r.semester===sem&&r.month===month&&r.grade===g);
-      const ref=existing?db.collection('records').doc(existing.id):db.collection('records').doc();
-      batch.set(ref,data);
-    }
-    await batch.commit();
-    await loadRecords();
-    initDropdowns();
-    document.getElementById('inp-alert').innerHTML=`<div class="alert alert-ok">✅ 저장 완료! ${campus} ${year}년 ${sem} ${month} 데이터</div>`;
   }catch(e){
-    document.getElementById('inp-alert').innerHTML=`<div class="alert alert-err">❌ 저장 실패: ${e.message}</div>`;
+    console.error('Init error',e);
+    S.view='login';
   }
+  renderCurrentView();
 }
 
-// ====== 관리자 ======
-async function renderAdmin(){
-  if(currentUser?.role!=='admin') return;
-  
-  const snap=await db.collection('users').get();
-  const users=snap.docs.map(d=>({id:d.id,...d.data()}));
-  
-  const html=users.map(u=>{
-    const isActive=u.isActive!==false;
-    const cAt=u.createdAt?.toDate?.()?.toLocaleDateString('ko-KR')||'-';
-    const dAt=u.deletedAt?.toDate?.()?.toLocaleDateString('ko-KR')||null;
-    return `<div class="user-item">
-      <div class="u-info">
-        <div class="u-name">${u.name||'이름없음'} <span class="badge ${u.role==='admin'?'badge-admin':'badge-user'}">${u.role==='admin'?'관리자':'사용자'}</span>${!isActive?'<span class="badge badge-del" style="margin-left:4px;">삭제됨</span>':''}</div>
-        <div class="u-email">${u.email||'-'} · ${u.campus||'캠퍼스 미지정'}</div>
-        <div class="u-meta">등록일: ${cAt}${dAt?` · 삭제일: ${dAt}`:''}</div>
-      </div>
-      ${isActive&&u.id!==currentUser.uid?`<button class="btn-del" onclick="deleteUser('${u.id}','${u.name||''}')">삭제</button>`:''}
-    </div>`;
-  }).join('');
-  
-  document.getElementById('user-list').innerHTML=html||'<div style="padding:20px;color:var(--mut);">등록된 사용자가 없습니다.</div>';
-}
-
-async function addUser(){
-  const name=document.getElementById('nu-name').value.trim();
-  const email=document.getElementById('nu-email').value.trim();
-  const pw=document.getElementById('nu-pw').value;
-  const role=document.getElementById('nu-role').value;
-  const campus=document.getElementById('nu-campus').value;
-  const adminPw=document.getElementById('nu-admin-pw').value;
-  const alertEl=document.getElementById('add-user-alert');
-  
-  if(!name||!email||!pw||!adminPw){alertEl.innerHTML=`<div class="alert alert-err">모든 항목을 입력해주세요.</div>`;return;}
-  
-  alertEl.innerHTML=`<div class="alert alert-info">사용자 생성 중...</div>`;
-  
-  try{
-    // Create Firebase Auth user
-    const cred=await auth.createUserWithEmailAndPassword(email,pw);
-    const newUid=cred.user.uid;
-    
-    // Save user profile to Firestore
-    await db.collection('users').doc(newUid).set({
-      name,email,role,campus,isActive:true,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
-      deletedAt:null
-    });
-    
-    // Sign back in as admin
-    await auth.signInWithEmailAndPassword(currentUser.email,adminPw);
-    
-    alertEl.innerHTML=`<div class="alert alert-ok">✅ ${name} (${email}) 생성 완료!</div>`;
-    document.getElementById('nu-name').value='';document.getElementById('nu-email').value='';
-    document.getElementById('nu-pw').value='';document.getElementById('nu-admin-pw').value='';
-    await renderAdmin();
-  }catch(e){
-    alertEl.innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;
-    // Try to re-login as admin if still logged out
-    if(adminPw) auth.signInWithEmailAndPassword(currentUser.email,adminPw).catch(()=>{});
-  }
-}
-
-async function deleteUser(uid,name){
-  if(!confirm(`"${name}" 사용자를 삭제하시겠습니까?\n(Firestore 기록은 삭제됨으로 표시됩니다)`)) return;
-  await db.collection('users').doc(uid).update({isActive:false,deletedAt:firebase.firestore.FieldValue.serverTimestamp()});
-  await renderAdmin();
-}
-
-// ====== SEED DATA ======
-const SEED_DATA = [{"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초1", "prev": 0, "newIn": 8, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 8, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초2", "prev": 13, "newIn": 6, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 19, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초3", "prev": 36, "newIn": 11, "transferIn": 0, "withdrawal": 1, "transferOut": 1, "graduation": 0, "current": 45, "notes": "수원분원 전출"}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초4", "prev": 53, "newIn": 12, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 64, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초5", "prev": 39, "newIn": 4, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 41, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초6", "prev": 60, "newIn": 2, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 60, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "중1", "prev": 27, "newIn": 4, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 28, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "중2", "prev": 18, "newIn": 2, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 19, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "중3", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 4, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초2", "prev": 15, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 13, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초3", "prev": 39, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 36, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초4", "prev": 57, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 53, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초5", "prev": 43, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 39, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초6", "prev": 63, "newIn": 1, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 60, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "중1", "prev": 28, "newIn": 2, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 27, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "중2", "prev": 20, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "중3", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초2", "prev": 15, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 15, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초3", "prev": 40, "newIn": 2, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 39, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초4", "prev": 56, "newIn": 3, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 57, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초5", "prev": 41, "newIn": 3, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초6", "prev": 65, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 63, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "중1", "prev": 29, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 28, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "중2", "prev": 20, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 20, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "중3", "prev": 5, "newIn": 1, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초2", "prev": 8, "newIn": 7, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 15, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초3", "prev": 31, "newIn": 11, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 40, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초4", "prev": 51, "newIn": 8, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 56, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초5", "prev": 43, "newIn": 4, "transferIn": 0, "withdrawal": 6, "transferOut": 0, "graduation": 0, "current": 41, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초6", "prev": 69, "newIn": 3, "transferIn": 0, "withdrawal": 7, "transferOut": 0, "graduation": 0, "current": 65, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "중1", "prev": 33, "newIn": 1, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "중2", "prev": 21, "newIn": 1, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 20, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "중3", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초1", "prev": 8, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 8, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초2", "prev": 32, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 31, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초3", "prev": 56, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 51, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초4", "prev": 50, "newIn": 0, "transferIn": 0, "withdrawal": 7, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초5", "prev": 72, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 69, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초6", "prev": 33, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 33, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "중1", "prev": 22, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 21, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "중2", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초1", "prev": 8, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 8, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초2", "prev": 32, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 32, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초3", "prev": 59, "newIn": 1, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 56, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초4", "prev": 50, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 50, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초5", "prev": 73, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 72, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초6", "prev": 34, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 33, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "중1", "prev": 22, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 22, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "중2", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초1", "prev": 5, "newIn": 3, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 8, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초2", "prev": 29, "newIn": 3, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 32, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초3", "prev": 50, "newIn": 10, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 59, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초4", "prev": 46, "newIn": 4, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 50, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초5", "prev": 75, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 73, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초6", "prev": 32, "newIn": 2, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 34, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "중1", "prev": 23, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 22, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "중2", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초1", "prev": 5, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초2", "prev": 29, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초3", "prev": 55, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 50, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초4", "prev": 50, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 46, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초5", "prev": 85, "newIn": 0, "transferIn": 0, "withdrawal": 10, "transferOut": 0, "graduation": 0, "current": 75, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초6", "prev": 33, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 32, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "중1", "prev": 24, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 23, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "중2", "prev": 5, "newIn": 1, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초1", "prev": 5, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초2", "prev": 30, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초3", "prev": 55, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 55, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초4", "prev": 52, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 50, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초5", "prev": 86, "newIn": 2, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 85, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초6", "prev": 37, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 33, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "중1", "prev": 26, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 24, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "중2", "prev": 5, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초1", "prev": 5, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초2", "prev": 30, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 30, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초3", "prev": 51, "newIn": 5, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 55, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초4", "prev": 49, "newIn": 5, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 52, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초5", "prev": 83, "newIn": 5, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 86, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초6", "prev": 39, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 37, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "중1", "prev": 27, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 26, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "중2", "prev": 13, "newIn": 1, "transferIn": 0, "withdrawal": 9, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초1", "prev": 7, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초2", "prev": 31, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 30, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초3", "prev": 52, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 51, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초4", "prev": 54, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 49, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초5", "prev": 88, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 83, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초6", "prev": 43, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 39, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "중1", "prev": 27, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 27, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "중2", "prev": 16, "newIn": 1, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 13, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초1", "prev": 6, "newIn": 1, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 7, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초2", "prev": 29, "newIn": 2, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 31, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초3", "prev": 52, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 52, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초4", "prev": 55, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 54, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초5", "prev": 91, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 88, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초6", "prev": 44, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "중1", "prev": 28, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 27, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "중2", "prev": 16, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 16, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초1", "prev": 0, "newIn": 6, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초2", "prev": 19, "newIn": 10, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초3", "prev": 47, "newIn": 7, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 52, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초4", "prev": 45, "newIn": 11, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 55, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초5", "prev": 84, "newIn": 7, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 91, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초6", "prev": 40, "newIn": 6, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 44, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "중1", "prev": 26, "newIn": 3, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 28, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "중2", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 16, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초2", "prev": 21, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 19, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초3", "prev": 50, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초4", "prev": 47, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초5", "prev": 92, "newIn": 0, "transferIn": 0, "withdrawal": 8, "transferOut": 0, "graduation": 0, "current": 84, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초6", "prev": 45, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 40, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "중1", "prev": 25, "newIn": 1, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 26, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "중2", "prev": 17, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초2", "prev": 21, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 21, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초3", "prev": 49, "newIn": 2, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 50, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초4", "prev": 47, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초5", "prev": 93, "newIn": 2, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 92, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초6", "prev": 46, "newIn": 1, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "중1", "prev": 25, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 25, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "중2", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초2", "prev": 18, "newIn": 4, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 21, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초3", "prev": 44, "newIn": 5, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 49, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초4", "prev": 39, "newIn": 11, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초5", "prev": 84, "newIn": 10, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 93, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초6", "prev": 44, "newIn": 4, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 46, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중1", "prev": 23, "newIn": 3, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 25, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중2", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초1", "prev": 18, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초2", "prev": 45, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 44, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초3", "prev": 47, "newIn": 0, "transferIn": 0, "withdrawal": 8, "transferOut": 0, "graduation": 0, "current": 39, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초4", "prev": 89, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 84, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초5", "prev": 47, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 44, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초6", "prev": 26, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 23, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "중1", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초1", "prev": 19, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초2", "prev": 49, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초3", "prev": 47, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초4", "prev": 87, "newIn": 2, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 89, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초5", "prev": 45, "newIn": 2, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초6", "prev": 30, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 26, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "중1", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초1", "prev": 15, "newIn": 4, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 19, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초2", "prev": 46, "newIn": 4, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 49, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초3", "prev": 41, "newIn": 9, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초4", "prev": 76, "newIn": 11, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 87, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초5", "prev": 45, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초6", "prev": 27, "newIn": 3, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 30, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "중1", "prev": 17, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초1", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 15, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초2", "prev": 47, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 46, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초3", "prev": 43, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 41, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초4", "prev": 77, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 76, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초5", "prev": 48, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초6", "prev": 29, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 27, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "중1", "prev": 18, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초1", "prev": 18, "newIn": 1, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초2", "prev": 48, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초3", "prev": 43, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초4", "prev": 77, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 77, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초5", "prev": 49, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 48, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초6", "prev": 29, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "중1", "prev": 18, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초1", "prev": 14, "newIn": 4, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초2", "prev": 41, "newIn": 8, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 48, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초3", "prev": 41, "newIn": 3, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초4", "prev": 66, "newIn": 12, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 77, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초5", "prev": 45, "newIn": 4, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 49, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초6", "prev": 21, "newIn": 9, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "중1", "prev": 16, "newIn": 4, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초1", "prev": 14, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 14, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초2", "prev": 42, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 41, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초3", "prev": 42, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 41, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초4", "prev": 70, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 66, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초5", "prev": 45, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초6", "prev": 22, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 21, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "중1", "prev": 16, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 16, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초1", "prev": 14, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 14, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초2", "prev": 42, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 42, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초3", "prev": 43, "newIn": 1, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 42, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초4", "prev": 73, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 70, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초5", "prev": 45, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초6", "prev": 23, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 22, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "중1", "prev": 16, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 16, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초1", "prev": 1, "newIn": 13, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 14, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초2", "prev": 23, "newIn": 20, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 42, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초3", "prev": 29, "newIn": 15, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초4", "prev": 54, "newIn": 19, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 73, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초5", "prev": 34, "newIn": 12, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초6", "prev": 0, "newIn": 23, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 23, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "중1", "prev": 0, "newIn": 16, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 16, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초1", "prev": 1, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 1, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초2", "prev": 24, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 23, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초3", "prev": 31, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초4", "prev": 54, "newIn": 2, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 54, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초5", "prev": 34, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 34, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초6", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "중1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초1", "prev": 1, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 1, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초2", "prev": 21, "newIn": 4, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 24, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초3", "prev": 27, "newIn": 4, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 31, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초4", "prev": 51, "newIn": 5, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 54, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초5", "prev": 37, "newIn": 1, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 34, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초6", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "중1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초1", "prev": 0, "newIn": 1, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 1, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초2", "prev": 15, "newIn": 8, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 21, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초3", "prev": 17, "newIn": 10, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 27, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초4", "prev": 41, "newIn": 11, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 51, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초5", "prev": 24, "newIn": 15, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 37, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초6", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}];
-
-async function seedNandongtan(){
-  const alertEl=document.getElementById('seed-alert');
-  alertEl.innerHTML='<div class="alert alert-info">⏳ 기존 남동탄 데이터 삭제 중...</div>';
-  
-  try{
-    // Delete existing 남동탄 records
-    const snap=await db.collection('records').where('campus','==','남동탄').get();
-    const batch1=db.batch();
-    snap.docs.forEach(d=>batch1.delete(d.ref));
-    await batch1.commit();
-    
-    alertEl.innerHTML='<div class="alert alert-info">⏳ 새 데이터 업로드 중...</div>';
-    
-    // Upload in batches of 200
-    for(let i=0;i<SEED_DATA.length;i+=200){
-      const batch=db.batch();
-      SEED_DATA.slice(i,i+200).forEach(rec=>{
-        const ref=db.collection('records').doc();
-        batch.set(ref,rec);
-      });
-      await batch.commit();
-    }
-    
-    await loadRecords();
-    initDropdowns();
-    alertEl.innerHTML=`<div class="alert alert-ok">✅ 남동탄 데이터 ${SEED_DATA.length}건 로드 완료!</div>`;
-  }catch(e){
-    alertEl.innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;
-  }
-}
+init();
 </script>
 </body>
 </html>
