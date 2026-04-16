@@ -306,7 +306,7 @@ tr:hover td{background:#FFFBF5;}
       <div style="background:var(--tif-lt);border:1.5px dashed var(--tif);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
         <div>
           <div style="font-size:13px;font-weight:800;color:var(--tif-dk);margin-bottom:4px;">📂 엑셀 파일로 업로드</div>
-          <div style="font-size:11px;color:var(--mut);">기존 마감양식 엑셀 파일을 업로드하면 자동으로 데이터를 읽어옵니다</div>
+          <div style="font-size:11px;color:var(--mut);">기존 마감양식 엑셀 파일의 전체 데이터를 Firebase에 바로 저장합니다</div>
         </div>
         <label style="padding:8px 18px;background:var(--tif);color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
           📤 엑셀 선택
@@ -327,6 +327,18 @@ tr:hover td{background:#FFFBF5;}
     <!-- ===== 관리자 ===== -->
     <div id="tab-admin" class="tab-content">
       <div class="sec-title">관리자</div>
+
+      <!-- 캠퍼스 관리 -->
+      <div class="tbl-card" style="margin-bottom:16px;">
+        <div class="card-title" style="font-size:14px;font-weight:800;margin-bottom:14px;">🏫 캠퍼스 관리</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+          <div class="fg"><div class="fl">캠퍼스 이름</div><input type="text" id="new-campus-name" class="form-input" placeholder="예: 수원" style="width:160px;"></div>
+          <button class="btn-save" onclick="addCampus()" style="padding:8px 18px;">+ 캠퍼스 추가</button>
+        </div>
+        <div id="campus-alert" style="margin-bottom:8px;"></div>
+        <div id="campus-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+      </div>
+
       <div class="admin-grid">
         <div class="user-card">
           <div class="card-title">👥 사용자 관리 목록</div>
@@ -813,86 +825,81 @@ function renderGrade(){
 function handleExcelUpload(event){
   const file = event.target.files[0];
   if(!file) return;
-  document.getElementById('excel-status').textContent = '읽는 중...';
+  const statusEl=document.getElementById('excel-status');
+  statusEl.textContent='읽는 중...';
 
   const reader = new FileReader();
-  reader.onload = function(e){
+  reader.onload = async function(e){
     try{
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, {type:'array'});
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
 
-      // 헤더 찾기 (캠퍼스, 년도, 분기, 월, 학년 등이 있는 행)
+      // 헤더 찾기
       let headerRow = -1;
       for(let i=0;i<rows.length;i++){
         if(rows[i].some(c=>String(c).includes('학년')||String(c).includes('캠퍼스'))){
           headerRow=i; break;
         }
       }
-      if(headerRow===-1){
-        document.getElementById('excel-status').textContent='❌ 형식을 인식할 수 없어요';
-        return;
-      }
+      if(headerRow===-1){statusEl.textContent='❌ 형식을 인식할 수 없어요';return;}
 
       const headers = rows[headerRow].map(h=>String(h).trim());
       const ci = h=>headers.findIndex(x=>x.includes(h));
       const iCampus=ci('캠퍼스'), iYear=ci('년도'), iSem=ci('분기'), iMonth=ci('월'), iGrade=ci('학년');
       const iPrev=ci('전월'), iNewIn=ci('신입'), iTIn=ci('전입'), iWd=ci('퇴원'), iTOut=ci('전출'), iGrad=ci('졸업'), iCur=ci('현재원'), iNote=ci('특이');
 
-      // 데이터 행 파싱
-      const dataRows = rows.slice(headerRow+1).filter(r=>r[iGrade]&&GRADES.includes(String(r[iGrade]).trim()));
-
-      if(!dataRows.length){
-        document.getElementById('excel-status').textContent='❌ 학년 데이터를 찾을 수 없어요';
-        return;
-      }
-
-      // 첫 번째 행에서 캠퍼스/연도/학기/월 자동 설정
-      const firstRow = dataRows[0];
-      const detectedCampus = String(firstRow[iCampus]||'').trim();
-      const detectedYear = String(firstRow[iYear]||'').replace('년','').trim();
-      const detectedSem = String(firstRow[iSem]||'').trim();
-      const detectedMonth = String(firstRow[iMonth]||'').trim();
-
-      // 필터 자동 설정
-      if(detectedCampus){
-        const campusSel=document.getElementById('inp-campus');
-        [...campusSel.options].forEach(o=>{if(o.value===detectedCampus)o.selected=true;});
-      }
-      if(detectedYear){
-        const yearSel=document.getElementById('inp-year');
-        [...yearSel.options].forEach(o=>{if(o.value===detectedYear)o.selected=true;});
-      }
-      if(detectedSem){
-        const semSel=document.getElementById('inp-sem');
-        [...semSel.options].forEach(o=>{if(o.value===detectedSem)o.selected=true;});
-        updateInpMonths();
-      }
-      if(detectedMonth){
-        const moSel=document.getElementById('inp-month');
-        [...moSel.options].forEach(o=>{if(o.value===detectedMonth)o.selected=true;});
-      }
-
-      // 폼 초기화 후 채우기
-      renderInputForm();
-      let filled=0;
-      dataRows.forEach(row=>{
-        const grade=String(row[iGrade]).trim();
-        if(!GRADES.includes(grade)) return;
-        const sv=(i,el)=>{if(i>=0&&row[i]!==''){const e=document.getElementById(el+grade);if(e){e.value=parseInt(row[i])||0;}}};
-        sv(iPrev,'inp-prev-'); sv(iNewIn,'inp-ni-'); sv(iTIn,'inp-ti-');
-        sv(iWd,'inp-wd-'); sv(iTOut,'inp-to-'); sv(iGrad,'inp-gr-');
-        sv(iCur,'inp-cu-');
-        if(iNote>=0&&row[iNote]){const e=document.getElementById('inp-nt-'+grade);if(e)e.value=row[iNote];}
-        // 현재원 재계산
-        calcCurrent(grade);
-        filled++;
+      // 전체 데이터 파싱
+      const dataRows=rows.slice(headerRow+1).filter(r=>{
+        const g=String(r[iGrade]||'').trim();
+        return GRADES.includes(g);
       });
 
-      document.getElementById('excel-status').textContent=`✅ ${filled}개 학년 데이터 불러오기 완료! (${detectedCampus} ${detectedYear}년 ${detectedSem} ${detectedMonth})`;
+      if(!dataRows.length){statusEl.textContent='❌ 학년 데이터를 찾을 수 없어요';return;}
+
+      statusEl.textContent=`⏳ ${dataRows.length}건 Firebase에 저장 중...`;
+
+      // 기존 캠퍼스 데이터 확인 후 전체 저장
+      const safeInt=v=>{const n=parseInt(v);return isNaN(n)?0:n;};
+      let saved=0;
+      for(let i=0;i<dataRows.length;i+=400){
+        const batch=db.batch();
+        dataRows.slice(i,i+400).forEach(row=>{
+          const campus=String(row[iCampus]||'').trim();
+          const year=String(row[iYear]||'').replace('년','').trim();
+          const semester=String(row[iSem]||'').trim();
+          const month=String(row[iMonth]||'').trim();
+          const grade=String(row[iGrade]||'').trim();
+          if(!campus||!year||!semester||!month||!grade) return;
+
+          // 기존 레코드 찾아서 덮어쓰기, 없으면 새로 생성
+          const existing=allRecords.find(r=>
+            String(r.campus).trim()===campus &&
+            String(r.year).replace('년','').trim()===year &&
+            r.semester===semester && r.month===month && r.grade===grade
+          );
+          const ref=existing?db.collection('records').doc(existing.id):db.collection('records').doc();
+          batch.set(ref,{
+            campus,year,semester,month,grade,
+            prev:safeInt(row[iPrev]),newIn:safeInt(row[iNewIn]),
+            transferIn:safeInt(row[iTIn]),withdrawal:safeInt(row[iWd]),
+            transferOut:safeInt(row[iTOut]),graduation:safeInt(row[iGrad]),
+            current:safeInt(row[iCur]),
+            notes:iNote>=0?String(row[iNote]||'').trim():''
+          });
+          saved++;
+        });
+        await batch.commit();
+        statusEl.textContent=`⏳ ${Math.min(i+400,dataRows.length)}/${dataRows.length}건 저장 중...`;
+      }
+
+      await loadRecords();
+      initDropdowns();
+      statusEl.innerHTML=`<span style="color:var(--tif-dk)">✅ 총 ${saved}건 저장 완료!</span>`;
     }catch(err){
-      document.getElementById('excel-status').textContent='❌ 오류: '+err.message;
+      statusEl.textContent='❌ 오류: '+err.message;
+      console.error(err);
     }
   };
   reader.readAsArrayBuffer(file);
@@ -985,9 +992,48 @@ async function saveInputData(){
 }
 
 // ====== 관리자 ======
+// ====== 캠퍼스 관리 ======
+async function loadCampusList(){
+  const snap=await db.collection('campuses').get();
+  const campuses=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const el=document.getElementById('campus-list');
+  if(!el) return;
+  if(!campuses.length){el.innerHTML='<span style="color:var(--mut);font-size:13px;">등록된 캠퍼스가 없습니다.</span>';return;}
+  el.innerHTML=campuses.map(c=>`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--org-lt);border:1px solid var(--bdr);border-radius:8px;padding:7px 12px;">
+      <span style="font-size:13px;font-weight:700;color:var(--org);">🏫 ${c.name}</span>
+      <button onclick="deleteCampus('${c.id}','${c.name}')" style="padding:2px 8px;border:1px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;">삭제</button>
+    </div>`).join('');
+}
+
+async function addCampus(){
+  const name=document.getElementById('new-campus-name').value.trim();
+  const alertEl=document.getElementById('campus-alert');
+  if(!name){alertEl.innerHTML='<div class="alert alert-err">캠퍼스 이름을 입력해주세요.</div>';return;}
+  try{
+    await db.collection('campuses').add({name,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    document.getElementById('new-campus-name').value='';
+    alertEl.innerHTML=`<div class="alert alert-ok">✅ "${name}" 캠퍼스가 추가됐어요!</div>`;
+    await loadCampusList();
+    await loadRecords();
+    initDropdowns();
+  }catch(e){alertEl.innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;}
+}
+
+async function deleteCampus(id,name){
+  if(!confirm(`"${name}" 캠퍼스를 삭제하시겠습니까?`)) return;
+  try{
+    await db.collection('campuses').doc(id).delete();
+    document.getElementById('campus-alert').innerHTML=`<div class="alert alert-ok">✅ "${name}" 삭제 완료!</div>`;
+    await loadCampusList();
+    await loadRecords();
+    initDropdowns();
+  }catch(e){document.getElementById('campus-alert').innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;}
+}
+
 async function renderAdmin(){
   if(currentUser?.role!=='admin') return;
-  
+  await loadCampusList();
   const snap=await db.collection('users').get();
   const users=snap.docs.map(d=>({id:d.id,...d.data()}));
   
