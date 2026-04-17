@@ -8,6 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -374,6 +375,11 @@ tr:hover td{background:#FFFBF5;}
 </div>
 
 <script>
+// ====== CHART.JS DATALABELS PLUGIN 등록 ======
+if(typeof ChartDataLabels !== 'undefined'){
+  Chart.register(ChartDataLabels);
+}
+
 // ====== FIREBASE CONFIG ======
 // ⚠️ 기존 index.html에 있던 Firebase 설정을 아래에 넣어주세요
 const firebaseConfig = {
@@ -396,9 +402,13 @@ const SEM_MONTHS = {겨울:['12월','1월','2월'],봄:['3월','4월','5월'],�
 const MO = {1:1,2:2,3:3,4:4,5:5,6:6,7:7,8:8,9:9,10:10,11:11,12:12};
 
 const CAM_COLORS = {
-  '남동탄':'#F97316','수원':'#0ABAB5','동탄':'#8B5CF6',
-  '평택':'#EC4899','오산':'#10B981','화성':'#F59E0B',
-  '용인':'#3B82F6','광교':'#14B8A6','바론':'#374151'
+  '남동탄':'#E8340A',  // 레드오렌지
+  '서수원':'#0077CC',  // 파랑
+  '수원':'#8B00D4',    // 보라
+  '운정1':'#E91E8C',   // 핑크
+  '운정2':'#00A86B',   // 에메랄드 그린
+  '장안':'#D4820A',    // 황금색
+  '바론':'#374151'     // 다크그레이 (평균)
 };
 const YR_COLORS = ['#F97316','#0ABAB5','#8B5CF6','#EC4899','#10B981','#F59E0B','#3B82F6','#14B8A6'];
 
@@ -625,7 +635,7 @@ function renderCompare(){
   mkChart('ch-cmp-bar',{type:'bar',data:{labels:barLabels,datasets:[
     {label:'신입',data:barIn,backgroundColor:barBgIn,borderColor:barBgIn.map(c=>c.replace(/,[\d.]+\)$/,',1)')),borderWidth:1.5},
     {label:'퇴원',data:barOut,backgroundColor:barBgOut,borderColor:barBgOut.map(c=>c.replace(/,[\d.]+\)$/,',1)')),borderWidth:1.5}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}});
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'},datalabels:{anchor:'end',align:'top',font:{weight:'bold',size:11},formatter:v=>v||''}},scales:{y:{beginAtZero:true}}}});
   
   // Monthly data per campus
   const allMonthKeys=new Set();
@@ -745,7 +755,7 @@ ${sem}`;
   
   const pieData=GRADES.map(g=>gradeStats[g].current);
   const pieCols=['#F97316','#FB923C','#FDBA74','#0ABAB5','#2DD4BF','#99F6E4','#8B5CF6','#A78BFA','#C4B5FD'];
-  mkChart('ch-cs-pie',{type:'doughnut',data:{labels:GRADES,datasets:[{data:pieData,backgroundColor:pieCols,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'},datalabels:{display:false}},cutout:'55%'}});
+  mkChart('ch-cs-pie',{type:'doughnut',data:{labels:GRADES,datasets:[{data:pieData,backgroundColor:pieCols,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'},datalabels:{display:true,formatter:(v,ctx)=>{const total=ctx.dataset.data.reduce((a,b)=>a+b,0);const pct=total>0?Math.round(v/total*100):0;return v>0?v+'명\n('+pct+'%)':'';}  ,color:'#fff',font:{weight:'bold',size:11},textAlign:'center'}},cutout:'55%'}});
 }
 
 // ====== 학년별 분석 ======
@@ -767,10 +777,10 @@ function renderGrade(){
   // Bar charts: campus on x-axis, cumulative in/out
   const barIn=campuses.map(c=>recs.filter(r=>r.campus===c).reduce((a,r)=>a+(r.newIn||0),0));
   const barOut=campuses.map(c=>recs.filter(r=>r.campus===c).reduce((a,r)=>a+(r.withdrawal||0),0));
-  const barOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}};
+  const barOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'top',font:{weight:'bold',size:11},color:'#374151',formatter:v=>v||''}},scales:{y:{beginAtZero:true}}};
   
-  mkChart('ch-gr-in',{type:'bar',data:{labels:campuses,datasets:[{data:barIn,backgroundColor:campuses.map(c=>getCColorA(c,0.7)),borderColor:campuses.map(c=>getCColor(c)),borderWidth:1.5}]},options:barOpts});
-  mkChart('ch-gr-out',{type:'bar',data:{labels:campuses,datasets:[{data:barOut,backgroundColor:campuses.map(c=>getCColorA(c,0.5)),borderColor:campuses.map(c=>getCColor(c)),borderWidth:1.5}]},options:barOpts});
+  mkChart('ch-gr-in',{type:'bar',data:{labels:campuses,datasets:[{data:barIn,backgroundColor:campuses.map(c=>getCColorA(c,0.85)),borderColor:campuses.map(c=>getCColor(c)),borderWidth:2}]},options:barOpts});
+  mkChart('ch-gr-out',{type:'bar',data:{labels:campuses,datasets:[{data:barOut,backgroundColor:campuses.map(c=>getCColorA(c,0.65)),borderColor:campuses.map(c=>getCColor(c)),borderWidth:2}]},options:barOpts});
   
   // Line: withdrawal rate trend per campus (by semester)
   const semKeys=new Set();
