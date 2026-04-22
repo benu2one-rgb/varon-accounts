@@ -522,8 +522,20 @@ function initDropdowns(){
   for(let y=curY-1;y<=curY+1;y++){const o=document.createElement('option');o.value=String(y);o.textContent=y+'년';o.selected=(y===curY);document.getElementById('inp-year').appendChild(o);}
   updateInpMonths();document.getElementById('inp-sem').onchange=updateInpMonths;
   
-  // Admin campus
+  // Admin campus - Firestore에서 직접 불러오기
   fillCampusSelect('nu-campus',campuses,null);
+  // 실시간으로 Firestore 캠퍼스도 반영
+  db.collection('campuses').get().then(snap=>{
+    const fsCampuses=snap.docs.map(d=>d.data().name).filter(Boolean).sort();
+    const allCampuses=[...new Set([...campuses,...fsCampuses])].sort();
+    fillCampusSelect('nu-campus',allCampuses,null);
+    fillCampusSelect('cs-campus',allCampuses,currentUser.role!=='admin'?currentUser.campus:null);
+    fillCampusSelect('inp-campus',allCampuses,currentUser.role!=='admin'?currentUser.campus:null);
+    if(currentUser.role!=='admin'){
+      document.getElementById('cs-campus').disabled=true;
+      document.getElementById('inp-campus').disabled=true;
+    }
+  });
   
   // Lock campus for non-admin
   if(currentUser.role!=='admin'){
