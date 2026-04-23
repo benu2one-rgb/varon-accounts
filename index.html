@@ -255,9 +255,34 @@ tr:hover td{background:#FFFBF5;}
             <button class="ptab" id="cs-pt-semester" onclick="setCsPeriod('semester')">학기별</button>
           </div>
         </div>
-        <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="cs-sy"></select></div>
-        <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
-        <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="cs-ey"></select></div>
+        <!-- 월별 필터 -->
+        <div id="cs-monthly-filters" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="cs-sy"></select></div>
+          <div class="fg"><div class="fl">시작 월</div><select class="fi" id="cs-sm">
+            <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
+            <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
+            <option>9월</option><option>10월</option><option>11월</option><option>12월</option>
+          </select></div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
+          <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="cs-ey"></select></div>
+          <div class="fg"><div class="fl">종료 월</div><select class="fi" id="cs-em">
+            <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
+            <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
+            <option>9월</option><option>10월</option><option>11월</option><option value="12월" selected>12월</option>
+          </select></div>
+        </div>
+        <!-- 학기별 필터 -->
+        <div id="cs-semester-filters" style="display:none;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="cs-sem-sy"></select></div>
+          <div class="fg"><div class="fl">시작 학기</div><select class="fi" id="cs-sem-ss">
+            <option>겨울</option><option>봄</option><option>여름</option><option>가을</option>
+          </select></div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
+          <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="cs-sem-ey"></select></div>
+          <div class="fg"><div class="fl">종료 학기</div><select class="fi" id="cs-sem-es">
+            <option>겨울</option><option>봄</option><option>여름</option><option>가을</option>
+          </select></div>
+        </div>
         <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderCampus()">조회</button></div>
       </div>
       <div id="cs-stats" class="stats-grid"></div>
@@ -511,6 +536,7 @@ function initDropdowns(){
   // Campus tab
   fillCampusSelect('cs-campus',campuses,currentUser.role!=='admin'?currentUser.campus:null);
   fillYearSelect('cs-sy',years,minY);fillYearSelect('cs-ey',years,maxY);
+  fillYearSelect('cs-sem-sy',years,minY);fillYearSelect('cs-sem-ey',years,maxY);
   
   // Grade tab
   const gSel=document.getElementById('gr-grade');GRADES.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;gSel.appendChild(o);});
@@ -692,16 +718,70 @@ function setCsPeriod(type){
   csPeriodType=type;
   document.getElementById('cs-pt-monthly').classList.toggle('active',type==='monthly');
   document.getElementById('cs-pt-semester').classList.toggle('active',type==='semester');
+  document.getElementById('cs-monthly-filters').style.display=type==='monthly'?'flex':'none';
+  document.getElementById('cs-semester-filters').style.display=type==='semester'?'flex':'none';
+}
+
+// 겨울학기 월 계산: N년 겨울 = N-1년 12월, N년 1월, N년 2월
+function getSemMonths(year, sem){
+  const y=parseInt(year);
+  if(sem==='겨울') return [{year:String(y-1),month:'12월'},{year:String(y),month:'1월'},{year:String(y),month:'2월'}];
+  if(sem==='봄')   return [{year:String(y),month:'3월'},{year:String(y),month:'4월'},{year:String(y),month:'5월'}];
+  if(sem==='여름') return [{year:String(y),month:'6월'},{year:String(y),month:'7월'},{year:String(y),month:'8월'}];
+  if(sem==='가을') return [{year:String(y),month:'9월'},{year:String(y),month:'10월'},{year:String(y),month:'11월'}];
+  return [];
+}
+
+function semNumericScore(year,sem){
+  // 겨울학기는 해당 연도의 1~2월 + 전년도 12월이므로 정렬 기준 보정
+  const y=parseInt(year);
+  if(sem==='겨울') return y*100+1;
+  if(sem==='봄')   return y*100+3;
+  if(sem==='여름') return y*100+6;
+  if(sem==='가을') return y*100+9;
+  return y*100;
 }
 
 function renderCampus(){
   const campus=document.getElementById('cs-campus')?.value;
-  const sy=document.getElementById('cs-sy')?.value;
-  const ey=document.getElementById('cs-ey')?.value;
-  if(!campus||!sy||!ey) return;
-  
-  const years=getYears().filter(y=>parseInt(y)>=parseInt(sy)&&parseInt(y)<=parseInt(ey));
-  const recs=allRecords.filter(r=>r.campus===campus&&parseInt(r.year)>=parseInt(sy)&&parseInt(r.year)<=parseInt(ey));
+  if(!campus) return;
+  let recs=[];
+
+  if(csPeriodType==='monthly'){
+    const sy=document.getElementById('cs-sy')?.value;
+    const smRaw=document.getElementById('cs-sm')?.value||'1월';
+    const ey=document.getElementById('cs-ey')?.value;
+    const emRaw=document.getElementById('cs-em')?.value||'12월';
+    if(!sy||!ey) return;
+    const sm=parseInt(smRaw.replace('월',''));
+    const em=parseInt(emRaw.replace('월',''));
+    const startKey=parseInt(sy)*100+sm;
+    const endKey=parseInt(ey)*100+em;
+    recs=allRecords.filter(r=>{
+      if(r.campus!==campus) return false;
+      const yr=parseInt(r.year);
+      const mo=parseInt(r.month.replace('월',''));
+      // 겨울학기 12월은 전년도 소속
+      const actualYr=(r.semester==='겨울'&&mo===12)?yr:yr;
+      const key=actualYr*100+mo;
+      return key>=startKey&&key<=endKey;
+    });
+  } else {
+    const sy=document.getElementById('cs-sem-sy')?.value;
+    const ss=document.getElementById('cs-sem-ss')?.value;
+    const ey=document.getElementById('cs-sem-ey')?.value;
+    const es=document.getElementById('cs-sem-es')?.value;
+    if(!sy||!ss||!ey||!es) return;
+    const startScore=semNumericScore(sy,ss);
+    const endScore=semNumericScore(ey,es);
+    recs=allRecords.filter(r=>{
+      if(r.campus!==campus) return false;
+      const sc=semNumericScore(r.year,r.semester);
+      return sc>=startScore&&sc<=endScore;
+    });
+  }
+
+  const years=[...new Set(recs.map(r=>r.year))].sort();
   
   const st=calcStats(recs); renderStats('cs-stats',st);
   
