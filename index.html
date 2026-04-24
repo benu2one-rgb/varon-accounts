@@ -357,6 +357,19 @@ tr:hover td{background:#FFFBF5;}
         <table class="input-table" id="inp-table">
           <thead><tr><th>학년</th><th>전월마감원</th><th>신입</th><th>전입</th><th>퇴원</th><th>전출</th><th>졸업</th><th>현재원</th><th>특이사항</th></tr></thead>
           <tbody id="inp-tbody"></tbody>
+          <tfoot>
+            <tr style="background:var(--org-lt);font-weight:800;border-top:2px solid var(--org);">
+              <td style="padding:8px 10px;text-align:left;font-size:12px;color:var(--org);">합계</td>
+              <td id="sum-prev" style="padding:8px 10px;text-align:center;font-size:13px;color:var(--org);">0</td>
+              <td id="sum-ni" style="padding:8px 10px;text-align:center;font-size:13px;color:var(--org);">0</td>
+              <td id="sum-ti" style="padding:8px 10px;text-align:center;font-size:13px;color:var(--org);">0</td>
+              <td id="sum-wd" style="padding:8px 10px;text-align:center;font-size:13px;color:var(--org);">0</td>
+              <td id="sum-to" style="padding:8px 10px;text-align:center;font-size:13px;color:var(--org);">0</td>
+              <td id="sum-gr" style="padding:8px 10px;text-align:center;font-size:13px;color:var(--org);">0</td>
+              <td id="sum-cu" style="padding:8px 10px;text-align:center;font-size:13px;color:var(--tif-dk);font-weight:900;">0</td>
+              <td style="padding:8px 10px;"></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
       <button class="btn-save" onclick="saveInputData()">저장</button>
@@ -1082,6 +1095,24 @@ function calcCurrent(g){
   const cu=v('inp-prev-'+g)+v('inp-ni-'+g)+v('inp-ti-'+g)-v('inp-wd-'+g)-v('inp-to-'+g)-v('inp-gr-'+g);
   const el=document.getElementById('inp-cu-'+g);
   if(el) el.value=Math.max(0,cu);
+  updateInputTotals();
+}
+
+function updateInputTotals(){
+  const v=id=>parseInt(document.getElementById(id)?.value)||0;
+  let prev=0,ni=0,ti=0,wd=0,to=0,gr=0,cu=0;
+  GRADES.forEach(g=>{
+    prev+=v('inp-prev-'+g);
+    ni+=v('inp-ni-'+g);
+    ti+=v('inp-ti-'+g);
+    wd+=v('inp-wd-'+g);
+    to+=v('inp-to-'+g);
+    gr+=v('inp-gr-'+g);
+    cu+=v('inp-cu-'+g);
+  });
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  set('sum-prev',prev);set('sum-ni',ni);set('sum-ti',ti);
+  set('sum-wd',wd);set('sum-to',to);set('sum-gr',gr);set('sum-cu',cu);
 }
 
 async function loadInputData(){
@@ -1106,6 +1137,7 @@ async function loadInputData(){
     }
   }
   document.getElementById('inp-alert').innerHTML=`<div class="alert alert-info">📂 ${campus} ${year}년 ${sem} ${month} 데이터를 불러왔습니다.</div>`;
+  updateInputTotals();
 }
 
 async function saveInputData(){
