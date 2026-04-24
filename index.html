@@ -411,6 +411,29 @@ tr:hover td{background:#FFFBF5;}
   </main>
 </div>
 
+<!-- 사용자 수정 모달 -->
+<div id="edit-user-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px 32px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    <div style="font-size:16px;font-weight:800;margin-bottom:20px;color:var(--txt);">✏️ 사용자 정보 수정</div>
+    <input type="hidden" id="edit-uid">
+    <div class="fg" style="margin-bottom:12px;"><div class="fl">이름</div><input type="text" id="edit-name" class="form-input"></div>
+    <div class="fg" style="margin-bottom:12px;"><div class="fl">역할</div>
+      <select id="edit-role" class="form-input">
+        <option value="user">일반 사용자</option>
+        <option value="admin">관리자</option>
+      </select>
+    </div>
+    <div class="fg" style="margin-bottom:20px;"><div class="fl">담당 캠퍼스</div>
+      <select id="edit-campus" class="form-input"></select>
+    </div>
+    <div id="edit-user-alert" style="margin-bottom:12px;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeEditModal()" style="padding:9px 20px;border:1.5px solid var(--bdr);border-radius:7px;background:#fff;font-size:13px;cursor:pointer;color:var(--mut);">취소</button>
+      <button onclick="saveEditUser()" class="btn-save">저장</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ====== CHART.JS DATALABELS PLUGIN 등록 ======
 if(typeof ChartDataLabels !== 'undefined'){
@@ -1154,6 +1177,44 @@ async function deleteCampus(id,name){
   }catch(e){document.getElementById('campus-alert').innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;}
 }
 
+// ====== 사용자 수정 모달 ======
+async function openEditModal(uid,name,role,campus){
+  document.getElementById('edit-uid').value=uid;
+  document.getElementById('edit-name').value=name;
+  document.getElementById('edit-role').value=role;
+  document.getElementById('edit-user-alert').innerHTML='';
+
+  // 캠퍼스 목록 채우기
+  const snap=await db.collection('campuses').get();
+  const campuses=snap.docs.map(d=>d.data().name).filter(Boolean).sort();
+  const sel=document.getElementById('edit-campus');
+  sel.innerHTML=campuses.map(cp=>`<option value="${cp}" ${cp===campus?'selected':''}>${cp}</option>`).join('');
+
+  const modal=document.getElementById('edit-user-modal');
+  modal.style.display='flex';
+}
+
+function closeEditModal(){
+  document.getElementById('edit-user-modal').style.display='none';
+}
+
+async function saveEditUser(){
+  const uid=document.getElementById('edit-uid').value;
+  const name=document.getElementById('edit-name').value.trim();
+  const role=document.getElementById('edit-role').value;
+  const campus=document.getElementById('edit-campus').value;
+  const alertEl=document.getElementById('edit-user-alert');
+
+  if(!name){alertEl.innerHTML='<div class="alert alert-err">이름을 입력해주세요.</div>';return;}
+  try{
+    await db.collection('users').doc(uid).update({name,role,campus});
+    alertEl.innerHTML='<div class="alert alert-ok">✅ 수정 완료!</div>';
+    setTimeout(()=>{closeEditModal();renderAdmin();},800);
+  }catch(e){
+    alertEl.innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;
+  }
+}
+
 async function renderAdmin(){
   if(currentUser?.role!=='admin') return;
   await loadCampusList();
@@ -1170,7 +1231,10 @@ async function renderAdmin(){
         <div class="u-email">${u.email||'-'} · ${u.campus||'캠퍼스 미지정'}</div>
         <div class="u-meta">등록일: ${cAt}${dAt?` · 삭제일: ${dAt}`:''}</div>
       </div>
-      ${isActive&&u.id!==currentUser.uid?`<button class="btn-del" onclick="deleteUser('${u.id}','${u.name||''}')">삭제</button>`:''}
+      <div style="display:flex;gap:6px;">
+        ${isActive?`<button onclick="openEditModal('${u.id}','${u.name||''}','${u.role||'user'}','${u.campus||''}')" style="padding:4px 10px;border:1.5px solid var(--tif);border-radius:5px;background:#fff;color:var(--tif-dk);font-size:11px;cursor:pointer;">수정</button>`:''}
+        ${isActive&&u.id!==currentUser.uid?`<button class="btn-del" onclick="deleteUser('${u.id}','${u.name||''}')">삭제</button>`:''}
+      </div>
     </div>`;
   }).join('');
   
