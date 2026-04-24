@@ -303,8 +303,20 @@ tr:hover td{background:#FFFBF5;}
       <div class="filter-bar">
         <div class="fg"><div class="fl">학년</div><select class="fi" id="gr-grade"></select></div>
         <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="gr-sy"></select></div>
+        <div class="fg"><div class="fl">시작 분기</div><select class="fi" id="gr-ss">
+          <option value="겨울">겨울 (전년12~2월)</option>
+          <option value="봄" selected>봄 (3~5월)</option>
+          <option value="여름">여름 (6~8월)</option>
+          <option value="가을">가을 (9~11월)</option>
+        </select></div>
         <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
         <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="gr-ey"></select></div>
+        <div class="fg"><div class="fl">종료 분기</div><select class="fi" id="gr-es">
+          <option value="겨울">겨울 (전년12~2월)</option>
+          <option value="봄">봄 (3~5월)</option>
+          <option value="여름">여름 (6~8월)</option>
+          <option value="가을" selected>가을 (9~11월)</option>
+        </select></div>
         <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderGrade()">조회</button></div>
       </div>
       <div id="gr-stats" class="stats-grid"></div>
@@ -854,11 +866,20 @@ ${sem}`;
 function renderGrade(){
   const grade=document.getElementById('gr-grade')?.value;
   const sy=document.getElementById('gr-sy')?.value;
+  const ss=document.getElementById('gr-ss')?.value;
   const ey=document.getElementById('gr-ey')?.value;
+  const es=document.getElementById('gr-es')?.value;
   if(!grade||!sy||!ey) return;
-  
+
+  const startScore=semNumericScore(sy,ss||'봄');
+  const endScore=semNumericScore(ey,es||'가을');
+
   const campuses=getCampuses();
-  const recs=allRecords.filter(r=>r.grade===grade&&parseInt(r.year)>=parseInt(sy)&&parseInt(r.year)<=parseInt(ey));
+  const recs=allRecords.filter(r=>{
+    if(r.grade!==grade) return false;
+    const sc=semNumericScore(r.year,r.semester);
+    return sc>=startScore&&sc<=endScore;
+  });
   
   document.getElementById('gr-ch1-title').textContent=`📊 [${grade}] 캠퍼스별 신입`;
   document.getElementById('gr-ch2-title').textContent=`📊 [${grade}] 캠퍼스별 퇴원`;
