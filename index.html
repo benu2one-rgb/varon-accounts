@@ -877,7 +877,7 @@ ${sem}`;
     document.getElementById('cs-ch2-title').textContent='📉 학기별 퇴원 (누계/평균)';
     document.getElementById('cs-ch3-title').textContent='📊 학기별 퇴원율';
     // 분기별 색상 적용 (신입: 따뜻한, 퇴원: 차가운)
-    const semNames=sLabels.map(k=>k.split(' ')[1]); // '봄','여름' 등
+    const semNames=sLabels.map(k=>k.includes('\n')?k.split('\n')[1]:SEMS.find(s=>k.endsWith(s))||'봄');
     const inBgColors=semNames.map(s=>SEM_IN_COLORS[s]||'#FB923C');
     const outBgColors=semNames.map(s=>SEM_OUT_COLORS[s]||'#60A5FA');
     const loLabel={...lo,plugins:{legend:{position:'top',display:true},datalabels:{anchor:'end',align:'top',font:{weight:'bold',size:10},color:'#374151',formatter:v=>v||''}}};
