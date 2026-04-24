@@ -484,6 +484,8 @@ const CAM_COLORS = {
   '바론':'#9E9E9E'     // 미디엄 그레이 (평균)
 };
 const YR_COLORS = ['#F97316','#0ABAB5','#8B5CF6','#EC4899','#10B981','#F59E0B','#3B82F6','#14B8A6'];
+const SEM_IN_COLORS  = {겨울:'#C084FC', 봄:'#FB923C', 여름:'#FCD34D', 가을:'#F87171'};
+const SEM_OUT_COLORS = {겨울:'#818CF8', 봄:'#34D399', 여름:'#22D3EE', 가을:'#60A5FA'};
 
 function getCColor(name){return CAM_COLORS[name]||'#94A3B8';}
 function getCColorA(name,a){const c=getCColor(name);const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
@@ -874,8 +876,13 @@ ${sem}`;
     document.getElementById('cs-ch1-title').textContent='📈 학기별 신입 (누계/평균)';
     document.getElementById('cs-ch2-title').textContent='📉 학기별 퇴원 (누계/평균)';
     document.getElementById('cs-ch3-title').textContent='📊 학기별 퇴원율';
-    mkChart('ch-cs-in',{type:'bar',data:{labels:sLabels,datasets:[{label:'신입 누계',data:sLabels.map(k=>semData[k].in),backgroundColor:getCColorA(campus,0.6),borderColor:col,borderWidth:1.5},{label:'월평균',data:sLabels.map(k=>semData[k].inAvg),type:'line',borderColor:'#374151',backgroundColor:'transparent',borderWidth:2,tension:0.3}]},options:{...lo,plugins:{legend:{position:'top',display:true}}}});
-    mkChart('ch-cs-out',{type:'bar',data:{labels:sLabels,datasets:[{label:'퇴원 누계',data:sLabels.map(k=>semData[k].out),backgroundColor:getCColorA(campus,0.4),borderColor:col,borderWidth:1.5},{label:'월평균',data:sLabels.map(k=>semData[k].outAvg),type:'line',borderColor:'#374151',backgroundColor:'transparent',borderWidth:2,tension:0.3}]},options:{...lo,plugins:{legend:{position:'top',display:true}}}});
+    // 분기별 색상 적용 (신입: 따뜻한, 퇴원: 차가운)
+    const semNames=sLabels.map(k=>k.split(' ')[1]); // '봄','여름' 등
+    const inBgColors=semNames.map(s=>SEM_IN_COLORS[s]||'#FB923C');
+    const outBgColors=semNames.map(s=>SEM_OUT_COLORS[s]||'#60A5FA');
+    const loLabel={...lo,plugins:{legend:{position:'top',display:true},datalabels:{anchor:'end',align:'top',font:{weight:'bold',size:10},color:'#374151',formatter:v=>v||''}}};
+    mkChart('ch-cs-in',{type:'bar',data:{labels:sLabels,datasets:[{label:'신입 누계',data:sLabels.map(k=>semData[k].in),backgroundColor:inBgColors,borderColor:inBgColors,borderWidth:1.5},{label:'월평균',data:sLabels.map(k=>semData[k].inAvg),type:'line',borderColor:'#374151',backgroundColor:'transparent',borderWidth:2,tension:0.3,datalabels:{display:false}}]},options:loLabel});
+    mkChart('ch-cs-out',{type:'bar',data:{labels:sLabels,datasets:[{label:'퇴원 누계',data:sLabels.map(k=>semData[k].out),backgroundColor:outBgColors,borderColor:outBgColors,borderWidth:1.5},{label:'월평균',data:sLabels.map(k=>semData[k].outAvg),type:'line',borderColor:'#374151',backgroundColor:'transparent',borderWidth:2,tension:0.3,datalabels:{display:false}}]},options:loLabel});
     mkChart('ch-cs-rate',{type:'line',data:{labels:sLabels,datasets:[{label:'퇴원율',data:sLabels.map(k=>semData[k].rate),borderColor:col,backgroundColor:getCColorA(campus,0.08),borderWidth:2,tension:0.3}]},options:{...lo,scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
   }
   
@@ -891,7 +898,12 @@ ${sem}`;
     gradeStats[g]={newIn:nI,withdrawal:wd,current:cu,avgIn:(nI/mc).toFixed(1),avgOut:(wd/mc).toFixed(1)};
   });
   
-  document.getElementById('cs-grade-table').innerHTML=`<div class="tbl-card" style="height:100%;"><div class="tbl-title">📊 학년별 현황</div><table><thead><tr><th>학년</th><th class="th-org">신입 누계</th><th class="th-org">월평균</th><th class="th-tif">퇴원 누계</th><th class="th-tif">월평균</th><th>현재원</th></tr></thead><tbody>${GRADES.map(g=>`<tr><td class="td-bold">${g}</td><td>${gradeStats[g].newIn}</td><td class="td-avg">${gradeStats[g].avgIn}</td><td>${gradeStats[g].withdrawal}</td><td class="td-avg">${gradeStats[g].avgOut}</td><td>${gradeStats[g].current}</td></tr>`).join('')}</tbody></table></div>`;
+  const totalNewIn=GRADES.reduce((a,g)=>a+gradeStats[g].newIn,0);
+  const totalWd=GRADES.reduce((a,g)=>a+gradeStats[g].withdrawal,0);
+  const totalCu=GRADES.reduce((a,g)=>a+gradeStats[g].current,0);
+  const avgIn=(GRADES.reduce((a,g)=>a+parseFloat(gradeStats[g].avgIn),0)/GRADES.length).toFixed(1);
+  const avgOut=(GRADES.reduce((a,g)=>a+parseFloat(gradeStats[g].avgOut),0)/GRADES.length).toFixed(1);
+  document.getElementById('cs-grade-table').innerHTML=`<div class="tbl-card" style="height:100%;"><div class="tbl-title">📊 학년별 현황</div><table><thead><tr><th>학년</th><th class="th-org">신입 누계</th><th class="th-org">월평균</th><th class="th-tif">퇴원 누계</th><th class="th-tif">월평균</th><th>현재원</th></tr></thead><tbody>${GRADES.map(g=>`<tr><td class="td-bold">${g}</td><td>${gradeStats[g].newIn}</td><td class="td-avg">${gradeStats[g].avgIn}</td><td>${gradeStats[g].withdrawal}</td><td class="td-avg">${gradeStats[g].avgOut}</td><td>${gradeStats[g].current}</td></tr>`).join('')}</tbody><tfoot><tr style="background:var(--org-lt);font-weight:800;border-top:2px solid var(--org);"><td style="padding:7px 10px;color:var(--org);">합계/평균</td><td style="padding:7px 10px;text-align:center;color:var(--org);">${totalNewIn}</td><td style="padding:7px 10px;text-align:center;color:var(--tif-dk);">${avgIn}</td><td style="padding:7px 10px;text-align:center;color:var(--org);">${totalWd}</td><td style="padding:7px 10px;text-align:center;color:var(--tif-dk);">${avgOut}</td><td style="padding:7px 10px;text-align:center;font-weight:900;color:var(--org);">${totalCu}</td></tr></tfoot></table></div>`;
   
   const pieData=GRADES.map(g=>gradeStats[g].current);
   const pieCols=['#F97316','#FB923C','#FDBA74','#0ABAB5','#2DD4BF','#99F6E4','#8B5CF6','#A78BFA','#C4B5FD'];
