@@ -551,7 +551,7 @@ function initDropdowns(){
   fillYearSelect('cs-sem-sy',years,minY);fillYearSelect('cs-sem-ey',years,maxY);
   
   // Grade tab
-  const gSel=document.getElementById('gr-grade');GRADES.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;gSel.appendChild(o);});
+  const gSel=document.getElementById('gr-grade');if(!gSel.options.length){GRADES.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;gSel.appendChild(o);});}
   fillYearSelect('gr-sy',years,minY);fillYearSelect('gr-ey',years,maxY);
   
   // Input tab
