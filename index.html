@@ -240,6 +240,7 @@ tr:hover td{background:#FFFBF5;}
         <div class="chart-card"><div class="chart-title">📉 월별 퇴원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-out"></canvas></div></div>
       </div>
       <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title">📉 캠퍼스별 퇴원율 추이</div><div class="chart-wrap"><canvas id="ch-cmp-rate"></canvas></div></div></div>
+      <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title">👥 월별 현재원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-cur"></canvas></div></div></div>
       <div id="cmp-table"></div>
     </div>
 
@@ -290,6 +291,9 @@ tr:hover td{background:#FFFBF5;}
         <div class="chart-card"><div class="chart-title" id="cs-ch1-title">📈 신입</div><div class="chart-wrap"><canvas id="ch-cs-in"></canvas></div></div>
         <div class="chart-card"><div class="chart-title" id="cs-ch2-title">📉 퇴원</div><div class="chart-wrap"><canvas id="ch-cs-out"></canvas></div></div>
         <div class="chart-card"><div class="chart-title" id="cs-ch3-title">📊 퇴원율</div><div class="chart-wrap"><canvas id="ch-cs-rate"></canvas></div></div>
+      </div>
+      <div class="chart-row cols-1">
+        <div class="chart-card"><div class="chart-title" id="cs-ch4-title">👥 현재원</div><div class="chart-wrap"><canvas id="ch-cs-cur"></canvas></div></div>
       </div>
       <div class="chart-row cols-2">
         <div id="cs-grade-table"></div>
@@ -756,6 +760,14 @@ function renderCompare(){
   mkChart('ch-cmp-out',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].out[k]||0),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2}))},options:lineOpts});
   mkChart('ch-cmp-rate',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].rate[k]||0),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2}))},options:{...lineOpts,scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
   
+  // 현재원 데이터 추가
+  campuses.forEach(c=>{
+    const recs=filtered.filter(r=>r.campus===c);
+    campusMoData[c].cur={};
+    getMonthlyData(recs,'current').forEach(d=>{campusMoData[c].cur[d.key]=d.value;});
+  });
+  mkChart('ch-cmp-cur',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].cur[k]||null),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2,spanGaps:true}))},options:lineOpts});
+  
   // Detailed table
   const thead=`<tr><th>캠퍼스</th><th class="th-org">순수신입 누계</th><th class="th-org">월평균</th><th class="th-tif">전입포함 누계</th><th class="th-tif">월평균</th><th class="th-org">순수퇴원 누계</th><th class="th-org">월평균</th><th class="th-tif">전출/졸업포함 누계</th><th class="th-tif">월평균</th></tr>`;
   const tbody=campuses.map(c=>{const s=csStats[c];return `<tr><td class="td-bold">${c}</td><td>${s.pureIn}</td><td class="td-avg">${s.avgNewIn}</td><td>${s.totalIn}</td><td class="td-avg">${s.avgTotalIn}</td><td>${s.pureOut}</td><td class="td-avg">${s.avgPureOut}</td><td>${s.totalOut}</td><td class="td-avg">${s.avgTotalOut}</td></tr>`;}).join('');
@@ -856,6 +868,17 @@ function renderCampus(){
     mkChart('ch-cs-in',{type:'line',data:{labels:months,datasets:datasets_in},options:lo});
     mkChart('ch-cs-out',{type:'line',data:{labels:months,datasets:datasets_out},options:lo});
     mkChart('ch-cs-rate',{type:'line',data:{labels:months,datasets:datasets_rate},options:{...lo,scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
+    // 월별 현재원
+    const datasets_cur=[];
+    years.forEach((yr,i)=>{
+      const col=YR_COLORS[i%YR_COLORS.length];
+      const yr_recs=recs.filter(r=>r.year===yr);
+      const byMo={};yr_recs.forEach(r=>{const mo=parseInt(r.month.replace('월',''));if(!byMo[mo])byMo[mo]=0;byMo[mo]+=r.current||0;});
+      const curData=[];for(let m=1;m<=12;m++)curData.push(byMo[m]??null);
+      datasets_cur.push({label:yr+'년',borderColor:col,backgroundColor:col.replace('#','rgba(').replace(/^rgba\(([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i,(_,r,g,b)=>`rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)}`).replace(')',',0.08)'),borderWidth:2,tension:0.35,spanGaps:true,data:curData});
+    });
+    document.getElementById('cs-ch4-title').textContent='👥 연도별 월별 현재원';
+    mkChart('ch-cs-cur',{type:'line',data:{labels:months,datasets:datasets_cur},options:lo});
   } else {
     // Semester mode
     const semData={};
@@ -884,6 +907,15 @@ ${sem}`;
     mkChart('ch-cs-in',{type:'bar',data:{labels:sLabels,datasets:[{label:'신입 누계',data:sLabels.map(k=>semData[k].in),backgroundColor:inBgColors,borderColor:inBgColors,borderWidth:1.5},{label:'월평균',data:sLabels.map(k=>semData[k].inAvg),type:'line',borderColor:'#374151',backgroundColor:'transparent',borderWidth:2,tension:0.3,datalabels:{display:false}}]},options:loLabel});
     mkChart('ch-cs-out',{type:'bar',data:{labels:sLabels,datasets:[{label:'퇴원 누계',data:sLabels.map(k=>semData[k].out),backgroundColor:outBgColors,borderColor:outBgColors,borderWidth:1.5},{label:'월평균',data:sLabels.map(k=>semData[k].outAvg),type:'line',borderColor:'#374151',backgroundColor:'transparent',borderWidth:2,tension:0.3,datalabels:{display:false}}]},options:loLabel});
     mkChart('ch-cs-rate',{type:'line',data:{labels:sLabels,datasets:[{label:'퇴원율',data:sLabels.map(k=>semData[k].rate),borderColor:col,backgroundColor:getCColorA(campus,0.08),borderWidth:2,tension:0.3}]},options:{...lo,scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
+    // 학기별 현재원 (각 학기 마지막 달의 현재원 평균)
+    const curSemData=sLabels.map(k=>{
+      const [yr,sem]=k.split('\n');
+      const sr=recs.filter(r=>r.year===yr&&r.semester===sem);
+      return sr.length?Math.round(sr.reduce((a,r)=>a+(r.current||0),0)/sr.length):0;
+    });
+    const curBgColors=semNames.map(s=>SEM_IN_COLORS[s]||'#FB923C');
+    document.getElementById('cs-ch4-title').textContent='👥 학기별 현재원 (학기 평균)';
+    mkChart('ch-cs-cur',{type:'bar',data:{labels:sLabels,datasets:[{label:'현재원',data:curSemData,backgroundColor:curBgColors,borderColor:curBgColors,borderWidth:1.5}]},options:{...loLabel,plugins:{...loLabel.plugins,legend:{display:false}}}});
   }
   
   // Grade table + pie
@@ -987,9 +1019,29 @@ function renderGrade(){
     return `<tr><td class="td-bold">${c}</td>${cols}</tr>`;
   }).join('');
   
+  // 신입 학년별 합계 행
+  const inTotals=GRADES.map(g=>{
+    const tot=campuses.reduce((a,c)=>{
+      const gr=allYrRecs.filter(r=>r.campus===c&&r.grade===g);
+      return a+gr.reduce((b,r)=>b+(r.newIn||0),0);
+    },0);
+    return `<td style="font-weight:800;color:var(--org);">${tot}</td><td style="color:var(--mut);">-</td>`;
+  }).join('');
+  const inTotalRow=`<tr style="background:var(--org-lt);border-top:2px solid var(--org);"><td style="padding:7px 10px;font-weight:800;color:var(--org);">합계</td>${inTotals}</tr>`;
+
+  // 퇴원 학년별 합계 행
+  const outTotals=GRADES.map(g=>{
+    const tot=campuses.reduce((a,c)=>{
+      const gr=allYrRecs.filter(r=>r.campus===c&&r.grade===g);
+      return a+gr.reduce((b,r)=>b+(r.withdrawal||0),0);
+    },0);
+    return `<td style="font-weight:800;color:var(--tif-dk);">${tot}</td><td style="color:var(--mut);">-</td>`;
+  }).join('');
+  const outTotalRow=`<tr style="background:var(--tif-lt);border-top:2px solid var(--tif);"><td style="padding:7px 10px;font-weight:800;color:var(--tif-dk);">합계</td>${outTotals}</tr>`;
+
   document.getElementById('gr-all-tables').innerHTML=`
-    <div class="tbl-card"><div class="tbl-title">📋 전 학년 캠퍼스별 신입 비교 (누계 / 월평균)</div><table><thead>${inThead}</thead><tbody>${inRows}</tbody></table></div>
-    <div class="tbl-card"><div class="tbl-title">📋 전 학년 캠퍼스별 퇴원 비교 (누계 / 월평균)</div><table><thead>${outThead}</thead><tbody>${outRows}</tbody></table></div>`;
+    <div class="tbl-card"><div class="tbl-title">📋 전 학년 캠퍼스별 신입 비교 (누계 / 월평균)</div><table><thead>${inThead}</thead><tbody>${inRows}</tbody><tfoot>${inTotalRow}</tfoot></table></div>
+    <div class="tbl-card"><div class="tbl-title">📋 전 학년 캠퍼스별 퇴원 비교 (누계 / 월평균)</div><table><thead>${outThead}</thead><tbody>${outRows}</tbody><tfoot>${outTotalRow}</tfoot></table></div>`;
 }
 
 // ====== 엑셀 업로드 ======
