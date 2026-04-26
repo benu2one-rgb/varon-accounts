@@ -766,7 +766,7 @@ function renderCompare(){
     campusMoData[c].cur={};
     getMonthlyData(recs,'current').forEach(d=>{campusMoData[c].cur[d.key]=d.value;});
   });
-  mkChart('ch-cmp-cur',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].cur[k]||null),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2,spanGaps:true}))},options:lineOpts});
+  mkChart('ch-cmp-cur',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].cur[k]||null),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2,spanGaps:true,pointRadius:3}))},options:{...lineOpts,plugins:{...lineOpts.plugins,tooltip:{callbacks:{title:items=>'현재원 '+items[0].label,label:item=>item.dataset.label+': '+item.parsed.y+'명'}}}}}); 
   
   // Detailed table
   const thead=`<tr><th>캠퍼스</th><th class="th-org">순수신입 누계</th><th class="th-org">월평균</th><th class="th-tif">전입포함 누계</th><th class="th-tif">월평균</th><th class="th-org">순수퇴원 누계</th><th class="th-org">월평균</th><th class="th-tif">전출/졸업포함 누계</th><th class="th-tif">월평균</th></tr>`;
@@ -907,11 +907,16 @@ ${sem}`;
     mkChart('ch-cs-in',{type:'bar',data:{labels:sLabels,datasets:[{label:'신입 누계',data:sLabels.map(k=>semData[k].in),backgroundColor:inBgColors,borderColor:inBgColors,borderWidth:1.5},{label:'월평균',data:sLabels.map(k=>semData[k].inAvg),type:'line',borderColor:'#374151',backgroundColor:'transparent',borderWidth:2,tension:0.3,datalabels:{display:false}}]},options:loLabel});
     mkChart('ch-cs-out',{type:'bar',data:{labels:sLabels,datasets:[{label:'퇴원 누계',data:sLabels.map(k=>semData[k].out),backgroundColor:outBgColors,borderColor:outBgColors,borderWidth:1.5},{label:'월평균',data:sLabels.map(k=>semData[k].outAvg),type:'line',borderColor:'#374151',backgroundColor:'transparent',borderWidth:2,tension:0.3,datalabels:{display:false}}]},options:loLabel});
     mkChart('ch-cs-rate',{type:'line',data:{labels:sLabels,datasets:[{label:'퇴원율',data:sLabels.map(k=>semData[k].rate),borderColor:col,backgroundColor:getCColorA(campus,0.08),borderWidth:2,tension:0.3}]},options:{...lo,scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
-    // 학기별 현재원 (각 학기 마지막 달의 현재원 평균)
+    // 학기별 현재원 (학기 마지막 달 기준 합계)
     const curSemData=sLabels.map(k=>{
-      const [yr,sem]=k.split('\n');
-      const sr=recs.filter(r=>r.year===yr&&r.semester===sem);
-      return sr.length?Math.round(sr.reduce((a,r)=>a+(r.current||0),0)/sr.length):0;
+      const [yrRaw,sem]=k.split('\n');
+      const yr=yrRaw.replace('년','').trim();
+      const sr=recs.filter(r=>String(r.year).replace('년','').trim()===yr&&r.semester===sem);
+      if(!sr.length) return 0;
+      // 학기 마지막 달의 현재원 합계 (각 학년별 스냅샷)
+      const lastMoKey=Math.max(...sr.map(r=>monthKey(r.year,r.semester,r.month)));
+      const lastMoRecs=sr.filter(r=>monthKey(r.year,r.semester,r.month)===lastMoKey);
+      return lastMoRecs.reduce((a,r)=>a+(r.current||0),0);
     });
     const curBgColors=semNames.map(s=>SEM_IN_COLORS[s]||'#FB923C');
     document.getElementById('cs-ch4-title').textContent='👥 학기별 현재원 (학기 평균)';
@@ -926,7 +931,9 @@ ${sem}`;
     const mc=moSet.size||1;
     const nI=gr.reduce((a,r)=>a+(r.newIn||0),0);
     const wd=gr.reduce((a,r)=>a+(r.withdrawal||0),0);
-    const cu=gr.length?gr[gr.length-1].current:0;
+    // 현재원은 가장 최근 달의 값 (합산 아님)
+    const sorted=gr.slice().sort((a,b)=>monthKey(b.year,b.semester,b.month)-monthKey(a.year,a.semester,a.month));
+    const cu=sorted.length?sorted[0].current:0;
     gradeStats[g]={newIn:nI,withdrawal:wd,current:cu,avgIn:(nI/mc).toFixed(1),avgOut:(wd/mc).toFixed(1)};
   });
   
