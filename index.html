@@ -1791,8 +1791,7 @@ async function handleExcel2Upload(event){
       }
       if(headerRow===-1){statusEl.textContent='❌ 형식 인식 불가';return;}
 
-      const headers=rows[headerRow].map(h=>String(h).replace(/
-/g,' ').trim());
+      const headers=rows[headerRow].map(h=>String(h).replace(/\n/g,' ').trim());
       const ci=h=>headers.findIndex(x=>x.includes(h));
 
       const iCampus=ci('캠퍼스'), iYear=ci('년도'), iMonth=ci('월'),
