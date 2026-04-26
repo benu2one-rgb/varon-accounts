@@ -983,8 +983,7 @@ function renderCampus(){
     years.forEach(yr=>{SEMS.forEach(sem=>{
       const semRecs=recs.filter(r=>r.year===yr&&r.semester===sem);
       if(semRecs.length){
-        const k=`${yr}년
-${sem}`;
+        const k=`${yr}년 ${sem}`;
         const nI=semRecs.reduce((a,r)=>a+(r.newIn||0),0);
         const wd=semRecs.reduce((a,r)=>a+(r.withdrawal||0),0);
         const pv=semRecs.reduce((a,r)=>a+(r.prev||0),0);
