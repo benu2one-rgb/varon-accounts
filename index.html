@@ -701,10 +701,17 @@ function calcStats(recs){
   let nI=0,tI=0,wd=0,tO=0,gr=0,mo=new Set();
   recs.forEach(r=>{nI+=r.newIn||0;tI+=r.transferIn||0;wd+=r.withdrawal||0;tO+=r.transferOut||0;gr+=r.graduation||0;mo.add(monthKey(r.year,r.semester,r.month));});
   const mc=mo.size||1;
+  // 현재원: 월별 마지막 스냅샷의 합산 평균
+  const moMap={};
+  recs.forEach(r=>{const k=monthKey(r.year,r.semester,r.month);if(!moMap[k])moMap[k]=0;moMap[k]+=r.current||0;});
+  const moVals=Object.values(moMap);
+  const curAvg=moVals.length?(moVals.reduce((a,b)=>a+b,0)/moVals.length).toFixed(1):0;
+  const curLatest=moVals.length?moVals[moVals.length-1]:0;
   return{newIn:nI,transferIn:tI,withdrawal:wd,transferOut:tO,graduation:gr,
     pureIn:nI,totalIn:nI+tI,pureOut:wd,totalOut:wd+tO+gr,monthCount:mc,
     avgNewIn:(nI/mc).toFixed(1),avgTotalIn:((nI+tI)/mc).toFixed(1),
-    avgPureOut:(wd/mc).toFixed(1),avgTotalOut:((wd+tO+gr)/mc).toFixed(1)};
+    avgPureOut:(wd/mc).toFixed(1),avgTotalOut:((wd+tO+gr)/mc).toFixed(1),
+    curAvg,curLatest};
 }
 
 // ====== DROPDOWNS INIT ======
@@ -806,12 +813,17 @@ function renderStats(containerId, stats){
     {label:'순수 퇴원 누계',cum:stats.pureOut,avg:stats.avgPureOut},
     {label:'전출/졸업 포함 퇴원',cum:stats.totalOut,avg:stats.avgTotalOut},
   ];
+  const curCard=`<div class="stat-card" style="border-color:var(--tif);background:var(--tif-lt);">
+    <div class="stat-label" style="color:var(--tif-dk);">현재원 평균</div>
+    <div class="stat-cum" style="color:var(--tif-dk);">${stats.curAvg}<span class="stat-unit">명</span></div>
+    <div class="stat-avg" style="color:var(--tif-dk);">최근 ${stats.curLatest}명</div>
+  </div>`;
   document.getElementById(containerId).innerHTML=items.map(it=>`
     <div class="stat-card">
       <div class="stat-label">${it.label}</div>
       <div class="stat-cum">${it.cum}<span class="stat-unit">명</span></div>
       <div class="stat-avg">월평균 ${it.avg}명</div>
-    </div>`).join('');
+    </div>`).join('')+curCard;
 }
 
 // ====== MONTHLY DATA HELPER ======
@@ -913,9 +925,28 @@ function renderCompare(){
   mkChart('ch-cmp-cur',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].cur[k]||null),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2,spanGaps:true,pointRadius:3}))},options:{...lineOpts,plugins:{...lineOpts.plugins,tooltip:{callbacks:{title:items=>'현재원 '+items[0].label,label:item=>item.dataset.label+': '+item.parsed.y+'명'}}}}}); 
   
   // Detailed table
-  const thead=`<tr><th>캠퍼스</th><th class="th-org">순수신입 누계</th><th class="th-org">월평균</th><th class="th-tif">전입포함 누계</th><th class="th-tif">월평균</th><th class="th-org">순수퇴원 누계</th><th class="th-org">월평균</th><th class="th-tif">전출/졸업포함 누계</th><th class="th-tif">월평균</th></tr>`;
-  const tbody=campuses.map(c=>{const s=csStats[c];return `<tr><td class="td-bold">${c}</td><td>${s.pureIn}</td><td class="td-avg">${s.avgNewIn}</td><td>${s.totalIn}</td><td class="td-avg">${s.avgTotalIn}</td><td>${s.pureOut}</td><td class="td-avg">${s.avgPureOut}</td><td>${s.totalOut}</td><td class="td-avg">${s.avgTotalOut}</td></tr>`;}).join('');
-  const avgRow=`<tr style="background:var(--org-lt);font-weight:700;"><td>바론(평균)</td><td>${avgIn}</td><td>-</td><td>-</td><td>-</td><td>${avgOut}</td><td>-</td><td>-</td><td>-</td></tr>`;
+  const thead=`<tr><th>캠퍼스</th><th class="th-org">순수신입 누계</th><th class="th-org">월평균</th><th class="th-tif">전입포함 누계</th><th class="th-tif">월평균</th><th class="th-org">순수퇴원 누계</th><th class="th-org">월평균</th><th class="th-tif">전출/졸업포함 누계</th><th class="th-tif">월평균</th><th style="background:var(--tif-lt);color:var(--tif-dk);">현재원 평균</th></tr>`;
+  const tbody=campuses.map(c=>{const s=csStats[c];return `<tr><td class="td-bold">${c}</td><td>${s.pureIn}</td><td class="td-avg">${s.avgNewIn}</td><td>${s.totalIn}</td><td class="td-avg">${s.avgTotalIn}</td><td>${s.pureOut}</td><td class="td-avg">${s.avgPureOut}</td><td>${s.totalOut}</td><td class="td-avg">${s.avgTotalOut}</td><td style="color:var(--tif-dk);font-weight:700;">${s.curAvg}</td></tr>`;}).join('');
+  // 합계 행
+  const totalPureIn=campuses.reduce((a,c)=>a+csStats[c].pureIn,0);
+  const totalTotalIn=campuses.reduce((a,c)=>a+csStats[c].totalIn,0);
+  const totalPureOut=campuses.reduce((a,c)=>a+csStats[c].pureOut,0);
+  const totalTotalOut=campuses.reduce((a,c)=>a+csStats[c].totalOut,0);
+  const totalCurAvg=campuses.length?(campuses.reduce((a,c)=>a+parseFloat(csStats[c].curAvg||0),0)/campuses.length).toFixed(1):0;
+  const avgRow=`<tr style="background:var(--org-lt);font-weight:700;border-top:2px solid var(--org);">
+    <td style="color:var(--org);">바론(평균)</td>
+    <td>${avgIn}</td><td>-</td><td>-</td><td>-</td>
+    <td>${avgOut}</td><td>-</td><td>-</td><td>-</td>
+    <td style="color:var(--tif-dk);">-</td>
+  </tr>
+  <tr style="background:#F0FDFB;font-weight:800;border-top:1px solid var(--tif);">
+    <td style="color:var(--tif-dk);">전체 합계</td>
+    <td style="color:var(--org);">${totalPureIn}</td><td>-</td>
+    <td style="color:var(--tif-dk);">${totalTotalIn}</td><td>-</td>
+    <td style="color:var(--org);">${totalPureOut}</td><td>-</td>
+    <td style="color:var(--tif-dk);">${totalTotalOut}</td><td>-</td>
+    <td style="color:var(--tif-dk);font-weight:900;">${totalCurAvg}</td>
+  </tr>`;
   document.getElementById('cmp-table').innerHTML=`<div class="tbl-card"><div class="tbl-title">📋 캠퍼스별 상세 현황 (누계 / 월평균)</div><table><thead>${thead}</thead><tbody>${tbody}${avgRow}</tbody></table></div>`;
 }
 
