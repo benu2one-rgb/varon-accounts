@@ -2002,8 +2002,13 @@ async function handleExcel2Upload(event){
       // 기존 삭제 후 재저장 (같은 캠퍼스+년도+월)
       const firstRow=dataRows[0];
       const batchCampus=String(firstRow[iCampus]||'').trim();
-      const batchYear=String(firstRow[iYear]||'').replace('년','').trim();
-      const batchMonth=String(firstRow[iMonth]||'').trim();
+      const batchYear=String(firstRow[iYear]||'').replace('년','').trim().substring(0,4);
+      const rawMo=firstRow[iMonth];
+      let batchMoNum=0;
+      if(rawMo instanceof Date){batchMoNum=rawMo.getMonth()+1;}
+      else if(typeof rawMo==='number'){const d=new Date(Math.round((rawMo-25569)*86400*1000));batchMoNum=d.getMonth()+1;}
+      else{const ms=String(rawMo||'');const mt=ms.match(/(\d{1,2})월/)||ms.match(/-(\d{2})-/);batchMoNum=mt?parseInt(mt[1]):0;}
+      const batchMonth=batchMoNum>0?batchMoNum+'월':''
 
       if(batchCampus&&batchYear&&batchMonth){
         const existing=await db.collection('records2')
@@ -2024,9 +2029,30 @@ async function handleExcel2Upload(event){
         dataRows.slice(i,i+400).forEach(row=>{
           const safeStr=idx=>idx>=0?String(row[idx]||'').trim():'';
           const ref=db.collection('records2').doc();
+          // 월(말일) 파싱 - 날짜 or 숫자 or "X월" 모두 처리
+          const rawMonth=row[iMonth];
+          let moNum=0;
+          if(rawMonth instanceof Date){moNum=rawMonth.getMonth()+1;}
+          else if(typeof rawMonth==='number'){
+            // Excel serial date
+            const d=new Date(Math.round((rawMonth-25569)*86400*1000));
+            moNum=d.getMonth()+1;
+          } else {
+            const ms=String(rawMonth||'');
+            const matched=ms.match(/(\d{1,2})월/) || ms.match(/-(\d{2})-/);
+            moNum=matched?parseInt(matched[1]):0;
+          }
+          const monthStr=moNum>0?moNum+'월':'';
+          
+          // 연도 파싱
+          const rawYear=row[iYear];
+          let yrStr='';
+          if(rawYear instanceof Date){yrStr=String(rawYear.getFullYear());}
+          else{yrStr=String(rawYear||'').replace('년','').trim().substring(0,4);}
+
           batch.set(ref,{
-            campus:safeStr(iCampus), year:safeStr(iYear).replace('년',''),
-            month:safeStr(iMonth), name:safeStr(iName), code:safeStr(iCode),
+            campus:safeStr(iCampus), year:yrStr,
+            month:monthStr, name:safeStr(iName), code:safeStr(iCode),
             school:safeStr(iSchool), grade:safeStr(iGrade), phone:safeStr(iPhone),
             address:safeStr(iAddr), division:safeStr(iDiv),
             className:safeStr(iClass), course:safeStr(iCourse),
