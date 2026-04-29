@@ -216,8 +216,6 @@ tr:hover td{background:#FFFBF5;}
     <button class="nav-btn" id="nav-compare" onclick="showTab('compare')">📊 전 캠퍼스 비교</button>
     <button class="nav-btn" id="nav-campus" onclick="showTab('campus')">🏫 캠퍼스별 분석</button>
     <button class="nav-btn" id="nav-grade" onclick="showTab('grade')">📚 학년별 분석</button>
-    <button class="nav-btn" id="nav-closing" onclick="showTab('closing')">📋 캠퍼스 마감</button>
-    <button class="nav-btn" id="nav-allclosing" onclick="showTab('allclosing')">📊 전 캠퍼스 마감</button>
     <button class="nav-btn" id="nav-input" onclick="showTab('input')">✏️ 데이터 입력</button>
     <button class="nav-btn" id="nav-admin" onclick="showTab('admin')">⚙️ 관리자</button>
   </nav>
@@ -334,128 +332,9 @@ tr:hover td{background:#FFFBF5;}
       <div id="gr-all-tables"></div>
     </div>
 
-    <!-- ===== 캠퍼스 마감 ===== -->
-    <div id="tab-closing" class="tab-content">
-      <div class="sec-title">캠퍼스 마감</div>
-      <div class="filter-bar">
-        <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="cl-campus"></select></div>
-        <div class="fg">
-          <div class="fl">기간 유형</div>
-          <div class="ptabs">
-            <button class="ptab active" id="cl-pt-monthly" onclick="setClPeriod('monthly')">월별</button>
-            <button class="ptab" id="cl-pt-semester" onclick="setClPeriod('semester')">학기별</button>
-          </div>
-        </div>
-        <div id="cl-monthly-filters" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="fg"><div class="fl">연도</div><select class="fi" id="cl-year"></select></div>
-          <div class="fg"><div class="fl">월</div><select class="fi" id="cl-month">
-            <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
-            <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
-            <option>9월</option><option>10월</option><option>11월</option><option>12월</option>
-          </select></div>
-        </div>
-        <div id="cl-semester-filters" style="display:none;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="fg"><div class="fl">연도</div><select class="fi" id="cl-sem-year"></select></div>
-          <div class="fg"><div class="fl">학기</div><select class="fi" id="cl-sem">
-            <option value="겨울">겨울 (전년12~2월)</option>
-            <option value="봄">봄 (3~5월)</option>
-            <option value="여름">여름 (6~8월)</option>
-            <option value="가을">가을 (9~11월)</option>
-          </select></div>
-        </div>
-        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderClosing()">조회</button></div>
-      </div>
-      <div id="cl-content"></div>
-    </div>
-
-    <!-- ===== 전 캠퍼스 마감 ===== -->
-    <div id="tab-allclosing" class="tab-content">
-      <div class="sec-title">전 캠퍼스 마감</div>
-      <div class="filter-bar">
-        <div class="fg">
-          <div class="fl">기간 유형</div>
-          <div class="ptabs">
-            <button class="ptab active" id="acl-pt-monthly" onclick="setAclPeriod('monthly')">월별</button>
-            <button class="ptab" id="acl-pt-semester" onclick="setAclPeriod('semester')">학기별</button>
-          </div>
-        </div>
-        <div id="acl-monthly-filters" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="fg"><div class="fl">연도</div><select class="fi" id="acl-year"></select></div>
-          <div class="fg"><div class="fl">월</div><select class="fi" id="acl-month">
-            <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
-            <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
-            <option>9월</option><option>10월</option><option>11월</option><option>12월</option>
-          </select></div>
-        </div>
-        <div id="acl-semester-filters" style="display:none;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="fg"><div class="fl">연도</div><select class="fi" id="acl-sem-year"></select></div>
-          <div class="fg"><div class="fl">학기</div><select class="fi" id="acl-sem">
-            <option value="겨울">겨울 (전년12~2월)</option>
-            <option value="봄">봄 (3~5월)</option>
-            <option value="여름">여름 (6~8월)</option>
-            <option value="가을">가을 (9~11월)</option>
-          </select></div>
-        </div>
-        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderAllClosing()">조회</button></div>
-      </div>
-      <div id="acl-content"></div>
-    </div>
-
     <!-- ===== 데이터 입력 ===== -->
     <div id="tab-input" class="tab-content">
       <div class="sec-title">데이터 입력</div>
-
-      <!-- 마감양식2 업로드 -->
-      <div style="background:#EFF6FF;border:1.5px dashed #2563EB;border-radius:var(--rad);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:13px;font-weight:800;color:#1D4ED8;margin-bottom:4px;">📂 마감양식2 (개인별 명단) 업로드</div>
-          <div style="font-size:11px;color:var(--mut);">캠퍼스 마감 / 전 캠퍼스 마감 분석용 데이터입니다</div>
-        </div>
-        <label style="padding:8px 18px;background:#2563EB;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
-          📤 마감양식2 선택
-          <input type="file" accept=".xlsx,.xls" id="excel2-upload" style="display:none;" onchange="handleExcel2Upload(event)">
-        </label>
-        <div id="excel2-status" style="font-size:12px;color:#1D4ED8;font-weight:600;"></div>
-      </div>
-
-      <!-- 마감양식2 목록 조회/수정 -->
-      <div style="background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-          <div style="font-size:13px;font-weight:800;color:#1D4ED8;">📋 마감양식2 목록 조회 / 수정</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
-            <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="r2-filter-campus"><option value="">전체</option></select></div>
-            <div class="fg"><div class="fl">연도</div><select class="fi" id="r2-filter-year"><option value="">전체</option></select></div>
-            <div class="fg"><div class="fl">월</div><select class="fi" id="r2-filter-month"><option value="">전체</option>
-              <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
-              <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
-              <option>9월</option><option>10월</option><option>11월</option><option>12월</option>
-            </select></div>
-            <button class="btn-tif" onclick="loadRecords2List()" style="padding:7px 14px;">조회</button>
-          </div>
-        </div>
-        <div id="r2-list-content" style="overflow-x:auto;max-height:500px;overflow-y:auto;"></div>
-      </div>
-      <div class="filter-bar">
-        <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="inp-campus"></select></div>
-        <div class="fg"><div class="fl">연도</div><select class="fi" id="inp-year"></select></div>
-        <div class="fg"><div class="fl">학기</div><select class="fi" id="inp-sem"><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
-        <div class="fg"><div class="fl">월</div><select class="fi" id="inp-month"></select></div>
-        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-tif" onclick="loadInputData()">불러오기</button></div>
-      </div>
-      <div id="inp-alert"></div>
-
-      <!-- 엑셀 업로드 -->
-      <div style="background:var(--tif-lt);border:1.5px dashed var(--tif);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:13px;font-weight:800;color:var(--tif-dk);margin-bottom:4px;">📂 엑셀 파일로 업로드</div>
-          <div style="font-size:11px;color:var(--mut);">기존 마감양식 엑셀 파일의 전체 데이터를 Firebase에 바로 저장합니다</div>
-        </div>
-        <label style="padding:8px 18px;background:var(--tif);color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
-          📤 엑셀 선택
-          <input type="file" accept=".xlsx,.xls" id="excel-upload" style="display:none;" onchange="handleExcelUpload(event)">
-        </label>
-        <div id="excel-status" style="font-size:12px;color:var(--tif-dk);font-weight:600;"></div>
-      </div>
 
       <div class="input-table-wrap">
         <table class="input-table" id="inp-table">
@@ -476,7 +355,10 @@ tr:hover td{background:#FFFBF5;}
           </tfoot>
         </table>
       </div>
-      <button class="btn-save" onclick="saveInputData()">저장</button>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn-save" onclick="saveInputData()">💾 저장 (덮어쓰기)</button>
+        <span style="font-size:12px;color:var(--mut);">불러오기 후 수정하고 저장하면 기존 데이터가 업데이트됩니다</span>
+      </div>
     </div>
 
     <!-- ===== 관리자 ===== -->
