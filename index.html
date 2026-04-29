@@ -335,6 +335,27 @@ tr:hover td{background:#FFFBF5;}
     <!-- ===== 데이터 입력 ===== -->
     <div id="tab-input" class="tab-content">
       <div class="sec-title">데이터 입력</div>
+      <div class="filter-bar">
+        <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="inp-campus"></select></div>
+        <div class="fg"><div class="fl">연도</div><select class="fi" id="inp-year"></select></div>
+        <div class="fg"><div class="fl">학기</div><select class="fi" id="inp-sem"><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
+        <div class="fg"><div class="fl">월</div><select class="fi" id="inp-month"></select></div>
+        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-tif" onclick="loadInputData()">불러오기</button></div>
+      </div>
+      <div id="inp-alert"></div>
+
+      <!-- 엑셀 업로드 -->
+      <div style="background:var(--tif-lt);border:1.5px dashed var(--tif);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--tif-dk);margin-bottom:4px;">📂 엑셀 파일로 업로드</div>
+          <div style="font-size:11px;color:var(--mut);">기존 마감양식 엑셀 파일의 전체 데이터를 Firebase에 바로 저장합니다</div>
+        </div>
+        <label style="padding:8px 18px;background:var(--tif);color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          📤 엑셀 선택
+          <input type="file" accept=".xlsx,.xls" id="excel-upload" style="display:none;" onchange="handleExcelUpload(event)">
+        </label>
+        <div id="excel-status" style="font-size:12px;color:var(--tif-dk);font-weight:600;"></div>
+      </div>
 
       <div class="input-table-wrap">
         <table class="input-table" id="inp-table">
