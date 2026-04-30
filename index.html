@@ -217,6 +217,7 @@ tr:hover td{background:#FFFBF5;}
     <button class="nav-btn" id="nav-campus" onclick="showTab('campus')">🏫 캠퍼스별 분석</button>
     <button class="nav-btn" id="nav-grade" onclick="showTab('grade')">📚 학년별 분석</button>
     <button class="nav-btn" id="nav-input" onclick="showTab('input')">✏️ 데이터 입력</button>
+    <button class="nav-btn" id="nav-withdrawal" onclick="showTab('withdrawal')">📊 퇴원생 분석</button>
     <button class="nav-btn" id="nav-admin" onclick="showTab('admin')">⚙️ 관리자</button>
   </nav>
 
@@ -226,11 +227,37 @@ tr:hover td{background:#FFFBF5;}
     <div id="tab-compare" class="tab-content">
       <div class="sec-title">전 캠퍼스 비교 <span style="font-size:12px;font-weight:500;color:#0ABAB5;margin-left:8px;">관리자 전용</span></div>
       <div class="filter-bar" id="cmp-filter">
-        <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="cmp-sy"></select></div>
-        <div class="fg"><div class="fl">시작 학기</div><select class="fi" id="cmp-ss"><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
-        <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">→</div>
-        <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="cmp-ey"></select></div>
-        <div class="fg"><div class="fl">종료 학기</div><select class="fi" id="cmp-es"><option>가을</option><option>겨울</option><option>봄</option><option>여름</option></select></div>
+        <div class="fg">
+          <div class="fl">기간 유형</div>
+          <div class="ptabs">
+            <button class="ptab active" id="cmp-pt-monthly" onclick="setCmpPeriod('monthly')">월별</button>
+            <button class="ptab" id="cmp-pt-semester" onclick="setCmpPeriod('semester')">학기별</button>
+          </div>
+        </div>
+        <!-- 월별 -->
+        <div id="cmp-monthly-filters" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="cmp-sy"></select></div>
+          <div class="fg"><div class="fl">시작 월</div><select class="fi" id="cmp-sm">
+            <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
+            <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
+            <option>9월</option><option>10월</option><option>11월</option><option>12월</option>
+          </select></div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
+          <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="cmp-ey"></select></div>
+          <div class="fg"><div class="fl">종료 월</div><select class="fi" id="cmp-em">
+            <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
+            <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
+            <option>9월</option><option>10월</option><option>11월</option><option value="12월" selected>12월</option>
+          </select></div>
+        </div>
+        <!-- 학기별 -->
+        <div id="cmp-semester-filters" style="display:none;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="cmp-sem-sy"></select></div>
+          <div class="fg"><div class="fl">시작 학기</div><select class="fi" id="cmp-ss"><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
+          <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="cmp-sem-ey"></select></div>
+          <div class="fg"><div class="fl">종료 학기</div><select class="fi" id="cmp-es"><option>가을</option><option>겨울</option><option>봄</option><option>여름</option></select></div>
+        </div>
         <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderCompare()">조회</button></div>
       </div>
       <div id="cmp-stats" class="stats-grid"></div>
@@ -239,7 +266,10 @@ tr:hover td{background:#FFFBF5;}
         <div class="chart-card"><div class="chart-title">📈 월별 신입 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-in"></canvas></div></div>
         <div class="chart-card"><div class="chart-title">📉 월별 퇴원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-out"></canvas></div></div>
       </div>
-      <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title">📉 캠퍼스별 퇴원율 추이</div><div class="chart-wrap"><canvas id="ch-cmp-rate"></canvas></div></div></div>
+      <div class="chart-row cols-2">
+        <div class="chart-card"><div class="chart-title">📉 캠퍼스별 퇴원율 추이</div><div class="chart-wrap"><canvas id="ch-cmp-rate"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">📋 캠퍼스별 퇴원율 데이터</div><div id="cmp-rate-table" style="overflow-x:auto;max-height:280px;overflow-y:auto;"></div></div>
+      </div>
       <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title">👥 월별 현재원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-cur"></canvas></div></div></div>
       <div id="cmp-table"></div>
     </div>
@@ -380,6 +410,67 @@ tr:hover td{background:#FFFBF5;}
         <button class="btn-save" onclick="saveInputData()">💾 저장 (덮어쓰기)</button>
         <span style="font-size:12px;color:var(--mut);">불러오기 후 수정하고 저장하면 기존 데이터가 업데이트됩니다</span>
       </div>
+    </div>
+
+    <!-- ===== 퇴원생 분석 ===== -->
+    <div id="tab-withdrawal" class="tab-content">
+      <div class="sec-title">퇴원생 분석</div>
+      <div class="filter-bar">
+        <div class="fg">
+          <div class="fl">기간 유형</div>
+          <div class="ptabs">
+            <button class="ptab active" id="wd-pt-monthly" onclick="setWdPeriod('monthly')">월별</button>
+            <button class="ptab" id="wd-pt-semester" onclick="setWdPeriod('semester')">학기별</button>
+          </div>
+        </div>
+        <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="wd-campus">
+          <option value="">전 캠퍼스</option>
+        </select></div>
+        <div id="wd-monthly-filters" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="wd-sy"></select></div>
+          <div class="fg"><div class="fl">시작 월</div><select class="fi" id="wd-sm">
+            <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
+            <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
+            <option>9월</option><option>10월</option><option>11월</option><option>12월</option>
+          </select></div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
+          <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="wd-ey"></select></div>
+          <div class="fg"><div class="fl">종료 월</div><select class="fi" id="wd-em">
+            <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
+            <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
+            <option>9월</option><option>10월</option><option>11월</option><option value="12월" selected>12월</option>
+          </select></div>
+        </div>
+        <div id="wd-semester-filters" style="display:none;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="wd-sem-sy"></select></div>
+          <div class="fg"><div class="fl">시작 학기</div><select class="fi" id="wd-sem-ss">
+            <option value="겨울">겨울</option><option value="봄" selected>봄</option>
+            <option value="여름">여름</option><option value="가을">가을</option>
+          </select></div>
+          <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
+          <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="wd-sem-ey"></select></div>
+          <div class="fg"><div class="fl">종료 학기</div><select class="fi" id="wd-sem-es">
+            <option value="겨울">겨울</option><option value="봄">봄</option>
+            <option value="여름">여름</option><option value="가을" selected>가을</option>
+          </select></div>
+        </div>
+        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderWithdrawal()">조회</button></div>
+      </div>
+
+      <!-- 파일 업로드 -->
+      <div style="background:#EFF6FF;border:1.5px dashed #2563EB;border-radius:var(--rad);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:#1D4ED8;margin-bottom:4px;">📂 마감양식(기본2) 업로드</div>
+          <div style="font-size:11px;color:var(--mut);">개인 명단 파일 업로드 시 퇴원생 분석 데이터가 자동 저장됩니다</div>
+        </div>
+        <label style="padding:8px 18px;background:#2563EB;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          📤 파일 선택
+          <input type="file" accept=".xlsx,.xls" id="wd-upload" style="display:none;" onchange="handleWdUpload(event)">
+        </label>
+        <div id="wd-upload-status" style="font-size:12px;color:#1D4ED8;font-weight:600;"></div>
+      </div>
+
+      <div id="wd-content"></div>
     </div>
 
     <!-- ===== 관리자 ===== -->
@@ -625,6 +716,7 @@ function initDropdowns(){
   
   // Compare tab
   fillYearSelect('cmp-sy',years,minY);fillYearSelect('cmp-ey',years,maxY);
+  fillYearSelect('cmp-sem-sy',years,minY);fillYearSelect('cmp-sem-ey',years,maxY);
   
   // Campus tab
   fillCampusSelect('cs-campus',campuses,currentUser.role!=='admin'?currentUser.campus:null);
@@ -669,6 +761,21 @@ function initDropdowns(){
     fillCampusSelect('cl-campus',allCampuses,currentUser.role!=='admin'?currentUser.campus:null);
   });
 
+  // 퇴원생 분석 드롭다운
+  fillYearSelect('wd-sy',years,minY);fillYearSelect('wd-ey',years,maxY);
+  fillYearSelect('wd-sem-sy',years,minY);fillYearSelect('wd-sem-ey',years,maxY);
+  const wdCampusSel=document.getElementById('wd-campus');
+  if(wdCampusSel){
+    const allCampusList=['남동탄','서수원','수원','운정1','운정2','장안'];
+    allCampusList.forEach(cp=>{const o=document.createElement('option');o.value=cp;o.textContent=cp;wdCampusSel.appendChild(o);});
+    db.collection('campuses').get().then(snap=>{
+      snap.docs.forEach(d=>{
+        const name=d.data().name;
+        if(name&&!allCampusList.includes(name)){const o=document.createElement('option');o.value=name;o.textContent=name;wdCampusSel.appendChild(o);}
+      });
+    });
+  }
+
   // Lock campus for non-admin
   if(currentUser.role!=='admin'){
     document.getElementById('cs-campus').disabled=true;
@@ -704,6 +811,7 @@ function showTab(tab){
   else if(tab==='grade') renderGrade();
   else if(tab==='closing') renderClosing();
   else if(tab==='allclosing') renderAllClosing();
+  else if(tab==='withdrawal') renderWithdrawal();
   else if(tab==='admin') renderAdmin();
   else if(tab==='input') renderInputForm();
 }
@@ -755,14 +863,40 @@ function getSemesterData(recs,field){
 }
 
 // ====== 전 캠퍼스 비교 ======
+let cmpPeriodType='monthly';
+
+function setCmpPeriod(type){
+  cmpPeriodType=type;
+  document.getElementById('cmp-pt-monthly').classList.toggle('active',type==='monthly');
+  document.getElementById('cmp-pt-semester').classList.toggle('active',type==='semester');
+  document.getElementById('cmp-monthly-filters').style.display=type==='monthly'?'flex':'none';
+  document.getElementById('cmp-semester-filters').style.display=type==='semester'?'flex':'none';
+}
+
 function renderCompare(){
-  const sy=document.getElementById('cmp-sy')?.value;
-  const ss=document.getElementById('cmp-ss')?.value;
-  const ey=document.getElementById('cmp-ey')?.value;
-  const es=document.getElementById('cmp-es')?.value;
-  if(!sy||!ey) return;
-  
-  const filtered=filterRecs({startYear:sy,startSem:ss,endYear:ey,endSem:es});
+  let filtered=[];
+  if(cmpPeriodType==='monthly'){
+    const sy=document.getElementById('cmp-sy')?.value;
+    const sm=document.getElementById('cmp-sm')?.value||'1월';
+    const ey=document.getElementById('cmp-ey')?.value;
+    const em=document.getElementById('cmp-em')?.value||'12월';
+    if(!sy||!ey) return;
+    const startKey=parseInt(sy)*100+parseInt(sm.replace('월',''));
+    const endKey=parseInt(ey)*100+parseInt(em.replace('월',''));
+    filtered=allRecords.filter(r=>{
+      const yr=parseInt(r.year);
+      const mo=parseInt(r.month.replace('월',''));
+      const key=yr*100+mo;
+      return key>=startKey&&key<=endKey;
+    });
+  } else {
+    const sy=document.getElementById('cmp-sem-sy')?.value;
+    const ss=document.getElementById('cmp-ss')?.value;
+    const ey=document.getElementById('cmp-sem-ey')?.value;
+    const es=document.getElementById('cmp-es')?.value;
+    if(!sy||!ey) return;
+    filtered=filterRecs({startYear:sy,startSem:ss,endYear:ey,endSem:es});
+  }
   const campuses=getCampuses();
   
   // Stats (all campuses combined)
@@ -819,6 +953,15 @@ function renderCompare(){
   mkChart('ch-cmp-out',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].out[k]||0),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2}))},options:lineOpts});
   mkChart('ch-cmp-rate',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].rate[k]||0),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2}))},options:{...lineOpts,scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
   
+  // 퇴원율 데이터 표
+  const rateTableHead=`<tr><th>기간</th>${campuses.map(c=>`<th style="color:${getCColor(c)};font-weight:800;">${c}</th>`).join('')}</tr>`;
+  const rateTableBody=moLabels.map((lb,i)=>{
+    const k=sortedKeys[i];
+    return `<tr><td style="font-weight:600;white-space:nowrap;">${lb}</td>${campuses.map(c=>`<td>${campusMoData[c].rate[k]||0}%</td>`).join('')}</tr>`;
+  }).join('');
+  const rateEl=document.getElementById('cmp-rate-table');
+  if(rateEl) rateEl.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px;"><thead>${rateTableHead}</thead><tbody>${rateTableBody}</tbody></table>`;
+  
   // 현재원 데이터 추가
   campuses.forEach(c=>{
     const recs=filtered.filter(r=>r.campus===c);
@@ -828,27 +971,35 @@ function renderCompare(){
   mkChart('ch-cmp-cur',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].cur[k]||null),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2,spanGaps:true,pointRadius:3}))},options:{...lineOpts,plugins:{...lineOpts.plugins,tooltip:{callbacks:{title:items=>'현재원 '+items[0].label,label:item=>item.dataset.label+': '+item.parsed.y+'명'}}}}}); 
   
   // Detailed table
-  const thead=`<tr><th>캠퍼스</th><th class="th-org">순수신입 누계</th><th class="th-org">월평균</th><th class="th-tif">전입포함 누계</th><th class="th-tif">월평균</th><th class="th-org">순수퇴원 누계</th><th class="th-org">월평균</th><th class="th-tif">전출/졸업포함 누계</th><th class="th-tif">월평균</th><th style="background:var(--tif-lt);color:var(--tif-dk);">현재원 평균</th></tr>`;
-  const tbody=campuses.map(c=>{const s=csStats[c];return `<tr><td class="td-bold">${c}</td><td>${s.pureIn}</td><td class="td-avg">${s.avgNewIn}</td><td>${s.totalIn}</td><td class="td-avg">${s.avgTotalIn}</td><td>${s.pureOut}</td><td class="td-avg">${s.avgPureOut}</td><td>${s.totalOut}</td><td class="td-avg">${s.avgTotalOut}</td><td style="color:var(--tif-dk);font-weight:700;">${s.curAvg}</td></tr>`;}).join('');
+  // 캠퍼스별 퇴원율 평균 계산
+  const cmpRateAvg={};
+  campuses.forEach(c=>{
+    const rates=sortedKeys.map(k=>parseFloat(campusMoData[c].rate[k]||0)).filter(v=>v>0);
+    cmpRateAvg[c]=rates.length?(rates.reduce((a,b)=>a+b,0)/rates.length).toFixed(1):0;
+  });
+  const thead=`<tr><th>캠퍼스</th><th class="th-org">순수신입 누계</th><th class="th-org">월평균</th><th class="th-tif">전입포함 누계</th><th class="th-tif">월평균</th><th class="th-org">순수퇴원 누계</th><th class="th-org">월평균</th><th class="th-tif">전출/졸업포함 누계</th><th class="th-tif">월평균</th><th style="background:var(--tif-lt);color:var(--tif-dk);">현재원 평균</th><th style="background:#FEF9C3;color:#854D0E;">퇴원율 평균</th></tr>`;
+  const tbody=campuses.map(c=>{const s=csStats[c];return `<tr><td class="td-bold">${c}</td><td>${s.pureIn}</td><td class="td-avg">${s.avgNewIn}</td><td>${s.totalIn}</td><td class="td-avg">${s.avgTotalIn}</td><td>${s.pureOut}</td><td class="td-avg">${s.avgPureOut}</td><td>${s.totalOut}</td><td class="td-avg">${s.avgTotalOut}</td><td style="color:var(--tif-dk);font-weight:700;">${s.curAvg}</td><td style="color:#854D0E;font-weight:700;">${cmpRateAvg[c]}%</td></tr>`;}).join('');
   // 합계 행
   const totalPureIn=campuses.reduce((a,c)=>a+csStats[c].pureIn,0);
   const totalTotalIn=campuses.reduce((a,c)=>a+csStats[c].totalIn,0);
   const totalPureOut=campuses.reduce((a,c)=>a+csStats[c].pureOut,0);
   const totalTotalOut=campuses.reduce((a,c)=>a+csStats[c].totalOut,0);
   const totalCurAvg=campuses.length?(campuses.reduce((a,c)=>a+parseFloat(csStats[c].curAvg||0),0)/campuses.length).toFixed(1):0;
+  const totalRateAvg=campuses.length?(campuses.reduce((a,c)=>a+parseFloat(cmpRateAvg[c]||0),0)/campuses.length).toFixed(1):0;
   const avgRow=`<tr style="background:var(--org-lt);font-weight:700;border-top:2px solid var(--org);">
     <td style="color:var(--org);">바론(평균)</td>
     <td>${avgIn}</td><td>-</td><td>-</td><td>-</td>
     <td>${avgOut}</td><td>-</td><td>-</td><td>-</td>
-    <td style="color:var(--tif-dk);">-</td>
+    <td style="color:var(--tif-dk);">-</td><td style="color:#854D0E;">-</td>
   </tr>
   <tr style="background:#F0FDFB;font-weight:800;border-top:1px solid var(--tif);">
-    <td style="color:var(--tif-dk);">전체 합계</td>
+    <td style="color:var(--tif-dk);">전체 합계/평균</td>
     <td style="color:var(--org);">${totalPureIn}</td><td>-</td>
     <td style="color:var(--tif-dk);">${totalTotalIn}</td><td>-</td>
     <td style="color:var(--org);">${totalPureOut}</td><td>-</td>
     <td style="color:var(--tif-dk);">${totalTotalOut}</td><td>-</td>
     <td style="color:var(--tif-dk);font-weight:900;">${totalCurAvg}</td>
+    <td style="color:#854D0E;font-weight:900;">${totalRateAvg}%</td>
   </tr>`;
   document.getElementById('cmp-table').innerHTML=`<div class="tbl-card"><div class="tbl-title">📋 캠퍼스별 상세 현황 (누계 / 월평균)</div><table><thead>${thead}</thead><tbody>${tbody}${avgRow}</tbody></table></div>`;
 }
@@ -1994,6 +2145,194 @@ async function handleExcel2Upload(event){
   };
   reader.readAsArrayBuffer(file);
   event.target.value='';
+}
+
+// ====== 퇴원생 분석 ======
+let allRecordsWd=[];
+let wdPeriodType='monthly';
+
+function setWdPeriod(type){
+  wdPeriodType=type;
+  document.getElementById('wd-pt-monthly').classList.toggle('active',type==='monthly');
+  document.getElementById('wd-pt-semester').classList.toggle('active',type==='semester');
+  document.getElementById('wd-monthly-filters').style.display=type==='monthly'?'flex':'none';
+  document.getElementById('wd-semester-filters').style.display=type==='semester'?'flex':'none';
+}
+
+async function loadRecordsWd(){
+  const snap=await db.collection('recordsWd').get();
+  allRecordsWd=snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+async function handleWdUpload(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const statusEl=document.getElementById('wd-upload-status');
+  statusEl.textContent='읽는 중...';
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array',cellDates:true});
+      const sheet=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+
+      let headerRow=-1;
+      for(let i=0;i<rows.length;i++){
+        if(rows[i].some(x=>String(x).includes('캠퍼스')||String(x).includes('이름'))){headerRow=i;break;}
+      }
+      if(headerRow===-1){statusEl.textContent='❌ 형식 인식 불가';return;}
+
+      const headers=rows[headerRow].map(h=>String(h).replace(/\n/g,' ').trim());
+      const ci=h=>headers.findIndex(x=>x.includes(h));
+      const iCampus=ci('캠퍼스'),iYear=ci('년도'),iMonth=ci('월'),iName=ci('이름'),
+            iGrade=ci('학년'),iDiv=ci('구분'),iClass=ci('반이름'),iCourse=ci('반과정'),
+            iTeacher=ci('담임'),iEnroll=ci('입학일'),iTenure=ci('재원기간'),
+            iStatus=ci('상태'),iWdDate=ci('퇴원일'),iReason=ci('퇴원사유'),iDetail=ci('구체사유');
+
+      const dataRows=rows.slice(headerRow+1).filter(r=>r[iName]&&String(r[iName]).trim());
+      if(!dataRows.length){statusEl.textContent='❌ 데이터 없음';return;}
+      statusEl.textContent=`⏳ ${dataRows.length}건 저장 중...`;
+
+      const firstRow=dataRows[0];
+      const batchCampus=String(firstRow[iCampus]||'').trim();
+      const batchYear=String(firstRow[iYear]||'').replace('년','').trim().substring(0,4);
+      const rawMo=firstRow[iMonth];
+      let batchMoNum=0;
+      if(rawMo instanceof Date){batchMoNum=rawMo.getMonth()+1;}
+      else if(typeof rawMo==='number'){const d=new Date(Math.round((rawMo-25569)*86400*1000));batchMoNum=d.getMonth()+1;}
+      else{const ms=String(rawMo||'');const mt=ms.match(/(\d{1,2})월/)||ms.match(/-(\d{2})-/);batchMoNum=mt?parseInt(mt[1]):0;}
+      const batchMonth=batchMoNum>0?batchMoNum+'월':'';
+
+      if(batchCampus&&batchYear&&batchMonth){
+        const existing=await db.collection('recordsWd').where('campus','==',batchCampus).where('year','==',batchYear).where('month','==',batchMonth).get();
+        if(!existing.empty){const db2=db.batch();existing.docs.forEach(d=>db2.delete(d.ref));await db2.commit();}
+      }
+
+      let saved=0;
+      for(let i=0;i<dataRows.length;i+=400){
+        const batch=db.batch();
+        dataRows.slice(i,i+400).forEach(row=>{
+          const safeStr=idx=>idx>=0?String(row[idx]||'').trim():'';
+          const rawM=row[iMonth];
+          let moNum=0;
+          if(rawM instanceof Date){moNum=rawM.getMonth()+1;}
+          else if(typeof rawM==='number'){const d=new Date(Math.round((rawM-25569)*86400*1000));moNum=d.getMonth()+1;}
+          else{const ms=String(rawM||'');const mt=ms.match(/(\d{1,2})월/)||ms.match(/-(\d{2})-/);moNum=mt?parseInt(mt[1]):0;}
+          const tenureStr=safeStr(iTenure).replace('개월','').trim();
+          batch.set(db.collection('recordsWd').doc(),{
+            campus:safeStr(iCampus),
+            year:String(row[iYear]||'').replace('년','').trim().substring(0,4),
+            month:moNum>0?moNum+'월':'',
+            name:safeStr(iName),grade:safeStr(iGrade),
+            division:safeStr(iDiv),className:safeStr(iClass),
+            course:safeStr(iCourse),teacher:safeStr(iTeacher),
+            tenure:parseInt(tenureStr)||0,
+            status:safeStr(iStatus),wdDate:safeStr(iWdDate),
+            reason:safeStr(iReason),detail:safeStr(iDetail)
+          });
+          saved++;
+        });
+        await batch.commit();
+        statusEl.textContent=`⏳ ${Math.min(i+400,dataRows.length)}/${dataRows.length}건 저장 중...`;
+      }
+      await loadRecordsWd();
+      statusEl.innerHTML=`<span style="color:#1D4ED8">✅ ${saved}건 저장 완료! (${batchCampus} ${batchYear}년 ${batchMonth})</span>`;
+      renderWithdrawal();
+    }catch(err){statusEl.textContent='❌ 오류: '+err.message;console.error(err);}
+  };
+  reader.readAsArrayBuffer(file);
+  event.target.value='';
+}
+
+async function renderWithdrawal(){
+  if(!allRecordsWd.length) await loadRecordsWd();
+  const campus=document.getElementById('wd-campus')?.value||'';
+  const content=document.getElementById('wd-content');
+  let recs=[];
+
+  if(wdPeriodType==='monthly'){
+    const sy=document.getElementById('wd-sy')?.value;
+    const sm=document.getElementById('wd-sm')?.value||'1월';
+    const ey=document.getElementById('wd-ey')?.value;
+    const em=document.getElementById('wd-em')?.value||'12월';
+    if(!sy||!ey) return;
+    const startKey=parseInt(sy)*100+parseInt(sm.replace('월',''));
+    const endKey=parseInt(ey)*100+parseInt(em.replace('월',''));
+    recs=allRecordsWd.filter(r=>{
+      if(campus&&String(r.campus).trim()!==campus) return false;
+      const mo=parseInt(String(r.month||'').replace('월',''))||0;
+      const yr=parseInt(r.year)||0;
+      const key=yr*100+mo;
+      return key>=startKey&&key<=endKey;
+    });
+  } else {
+    const sy=document.getElementById('wd-sem-sy')?.value;
+    const ss=document.getElementById('wd-sem-ss')?.value;
+    const ey=document.getElementById('wd-sem-ey')?.value;
+    const es=document.getElementById('wd-sem-es')?.value;
+    if(!sy||!ey) return;
+    const startScore=semNumericScore(sy,ss);
+    const endScore=semNumericScore(ey,es);
+    recs=allRecordsWd.filter(r=>{
+      if(campus&&String(r.campus).trim()!==campus) return false;
+      return semNumericScore(r.year,r.semester||'봄')>=startScore&&semNumericScore(r.year,r.semester||'봄')<=endScore;
+    });
+  }
+
+  if(!recs.length){
+    content.innerHTML='<div class="alert alert-info">데이터가 없어요. 파일을 먼저 업로드해 주세요.</div>';
+    return;
+  }
+
+  const stayRecs=recs.filter(r=>['재원','신입','전입'].includes(r.status));
+  const wdRecs=recs.filter(r=>r.status==='퇴원');
+
+  // 재원기간 구간 분류
+  const bands=[
+    {label:'3개월 미만',min:0,max:3,color:'#FDA4AF'},
+    {label:'3~6개월',min:3,max:6,color:'#FCD34D'},
+    {label:'6~12개월',min:6,max:12,color:'#6EE7B7'},
+    {label:'12~24개월',min:12,max:24,color:'#93C5FD'},
+    {label:'24개월 이상',min:24,max:999,color:'#C4B5FD'},
+  ];
+
+  const stayBandCounts=bands.map(b=>stayRecs.filter(r=>(parseInt(r.tenure)||0)>=b.min&&(parseInt(r.tenure)||0)<b.max).length);
+  const wdBandCounts=bands.map(b=>wdRecs.filter(r=>(parseInt(r.tenure)||0)>=b.min&&(parseInt(r.tenure)||0)<b.max).length);
+
+  // 퇴원사유 분석
+  const reasonMap={};
+  wdRecs.forEach(r=>{if(r.reason){reasonMap[r.reason]=(reasonMap[r.reason]||0)+1;}});
+  const reasons=Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]);
+
+  content.innerHTML=`
+    <div class="chart-row cols-2">
+      <div class="chart-card">
+        <div class="chart-title">① 재원생 재원기간 분포 (총 ${stayRecs.length}명)</div>
+        <div class="chart-wrap"><canvas id="ch-wd-stay"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">② 퇴원생 재원기간 분포 (총 ${wdRecs.length}명)</div>
+        <div class="chart-wrap"><canvas id="ch-wd-out"></canvas></div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-title">③ 퇴원사유 분석 (퇴원생 ${wdRecs.length}명)</div>
+      <table><thead><tr><th>퇴원사유</th><th class="th-org">인원</th><th class="th-tif">비율</th></tr></thead>
+      <tbody>${reasons.map(([r,n])=>`<tr><td class="td-bold">${r}</td><td>${n}명</td><td>${wdRecs.length>0?(n/wdRecs.length*100).toFixed(1):0}%</td></tr>`).join('')}
+      ${!reasons.length?'<tr><td colspan="3" style="text-align:center;color:var(--mut);">퇴원사유 데이터 없음</td></tr>':''}
+      </tbody><tfoot><tr style="background:var(--org-lt);font-weight:800;"><td style="color:var(--org);">합계</td><td>${wdRecs.length}명</td><td>100%</td></tr></tfoot>
+      </table>
+    </div>`;
+
+  // 차트 그리기
+  const pieOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'},datalabels:{display:true,formatter:(v,ctx)=>{const tot=ctx.dataset.data.reduce((a,b)=>a+b,0);return tot>0&&v>0?v+'명\n('+Math.round(v/tot*100)+'%)':''}, color:'#374151',font:{weight:'bold',size:10},textAlign:'center'}},cutout:'50%'};
+  destroyChart('ch-wd-stay');
+  const stayEl=document.getElementById('ch-wd-stay');
+  if(stayEl) charts['ch-wd-stay']=new Chart(stayEl.getContext('2d'),{type:'doughnut',data:{labels:bands.map((b,i)=>`${b.label} (${stayBandCounts[i]}명)`),datasets:[{data:stayBandCounts,backgroundColor:bands.map(b=>b.color),borderWidth:2,borderColor:'#fff'}]},options:pieOpts});
+  destroyChart('ch-wd-out');
+  const outEl=document.getElementById('ch-wd-out');
+  if(outEl) charts['ch-wd-out']=new Chart(outEl.getContext('2d'),{type:'doughnut',data:{labels:bands.map((b,i)=>`${b.label} (${wdBandCounts[i]}명)`),datasets:[{data:wdBandCounts,backgroundColor:bands.map(b=>b.color),borderWidth:2,borderColor:'#fff'}]},options:pieOpts});
 }
 
 // ====== SEED DATA ======
