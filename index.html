@@ -320,10 +320,11 @@ tr:hover td{background:#FFFBF5;}
       <div class="chart-row cols-3" id="cs-charts">
         <div class="chart-card"><div class="chart-title" id="cs-ch1-title">📈 신입</div><div class="chart-wrap"><canvas id="ch-cs-in"></canvas></div></div>
         <div class="chart-card"><div class="chart-title" id="cs-ch2-title">📉 퇴원</div><div class="chart-wrap"><canvas id="ch-cs-out"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title" id="cs-ch3-title">📊 퇴원율</div><div class="chart-wrap"><canvas id="ch-cs-rate"></canvas></div></div>
-      </div>
-      <div class="chart-row cols-1">
         <div class="chart-card"><div class="chart-title" id="cs-ch4-title">👥 현재원</div><div class="chart-wrap"><canvas id="ch-cs-cur"></canvas></div></div>
+      </div>
+      <div class="chart-row cols-2">
+        <div class="chart-card"><div class="chart-title" id="cs-ch3-title">📊 퇴원율</div><div class="chart-wrap"><canvas id="ch-cs-rate"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">📋 퇴원율 데이터 표</div><div id="cs-rate-table" style="overflow-y:auto;max-height:260px;font-size:12px;"></div></div>
       </div>
       <div class="chart-row cols-2">
         <div id="cs-grade-table"></div>
@@ -425,6 +426,8 @@ tr:hover td{background:#FFFBF5;}
         </div>
         <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="wd-campus">
           <option value="">전 캠퍼스</option>
+          <option>남동탄</option><option>서수원</option><option>수원</option>
+          <option>운정1</option><option>운정2</option><option>장안</option>
         </select></div>
         <div id="wd-monthly-filters" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
           <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="wd-sy"></select></div>
@@ -745,6 +748,20 @@ function initDropdowns(){
     if(currentUser.role!=='admin'){
       document.getElementById('cs-campus').disabled=true;
       document.getElementById('inp-campus').disabled=true;
+      // 퇴원생 분석 캠퍼스도 잠금
+      const wdSel=document.getElementById('wd-campus');
+      if(wdSel){wdSel.innerHTML=`<option value="${currentUser.campus}">${currentUser.campus}</option>`;wdSel.disabled=true;}
+    } else {
+      // 관리자: wd-campus에 Firestore 캠퍼스 추가
+      const fixed=['남동탄','서수원','수원','운정1','운정2','장안'];
+      const wdSel=document.getElementById('wd-campus');
+      if(wdSel){
+        allCampuses.forEach(cp=>{
+          if(!fixed.includes(cp)&&![...wdSel.options].some(o=>o.value===cp)){
+            const o=document.createElement('option');o.value=cp;o.textContent=cp;wdSel.appendChild(o);
+          }
+        });
+      }
     }
   });
   
@@ -764,22 +781,33 @@ function initDropdowns(){
   // 퇴원생 분석 드롭다운
   fillYearSelect('wd-sy',years,minY);fillYearSelect('wd-ey',years,maxY);
   fillYearSelect('wd-sem-sy',years,minY);fillYearSelect('wd-sem-ey',years,maxY);
+  // wd-campus 권한 처리
   const wdCampusSel=document.getElementById('wd-campus');
   if(wdCampusSel){
-    const allCampusList=['남동탄','서수원','수원','운정1','운정2','장안'];
-    allCampusList.forEach(cp=>{const o=document.createElement('option');o.value=cp;o.textContent=cp;wdCampusSel.appendChild(o);});
-    db.collection('campuses').get().then(snap=>{
-      snap.docs.forEach(d=>{
-        const name=d.data().name;
-        if(name&&!allCampusList.includes(name)){const o=document.createElement('option');o.value=name;o.textContent=name;wdCampusSel.appendChild(o);}
+    if(currentUser.role!=='admin'){
+      // 사용자: 본인 캠퍼스만
+      wdCampusSel.innerHTML=`<option value="${currentUser.campus}">${currentUser.campus}</option>`;
+      wdCampusSel.disabled=true;
+    }
+    // 관리자는 이미 HTML에 옵션 있음 - Firestore 캠퍼스도 추가
+    if(currentUser.role==='admin'){
+      db.collection('campuses').get().then(snap=>{
+        const fixed=['남동탄','서수원','수원','운정1','운정2','장안'];
+        snap.docs.forEach(d=>{
+          const name=d.data().name;
+          if(name&&!fixed.includes(name)){
+            const o=document.createElement('option');o.value=name;o.textContent=name;wdCampusSel.appendChild(o);
+          }
+        });
       });
-    });
+    }
   }
 
   // Lock campus for non-admin
   if(currentUser.role!=='admin'){
     document.getElementById('cs-campus').disabled=true;
     document.getElementById('inp-campus').disabled=true;
+    // wd-campus는 위에서 처리됨
   }
 }
 
@@ -1034,7 +1062,8 @@ function semNumericScore(year,sem){
 }
 
 function renderCampus(){
-  const campus=document.getElementById('cs-campus')?.value;
+  // 사용자 권한: 본인 캠퍼스만
+  const campus=currentUser.role!=='admin'?currentUser.campus:(document.getElementById('cs-campus')?.value||'');
   if(!campus) return;
   let recs=[];
 
@@ -1108,6 +1137,43 @@ function renderCampus(){
     });
     document.getElementById('cs-ch4-title').textContent='👥 연도별 월별 현재원';
     mkChart('ch-cs-cur',{type:'line',data:{labels:months,datasets:datasets_cur},options:lo});
+
+    // 퇴원율 표 (월별: 각 연도별 월별 순수퇴원율 + 퇴원율)
+    const rateTableHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <thead><tr><th style="padding:5px;background:#F8FAFC;border-bottom:2px solid var(--bdr);">월</th>
+        ${years.map(yr=>`<th colspan="2" style="padding:5px;background:#FEF9C3;border-bottom:2px solid var(--bdr);color:#854D0E;">${yr}년</th>`).join('')}
+      </tr>
+      <tr><th style="padding:4px;background:#F8FAFC;border-bottom:1px solid var(--bdr);"></th>
+        ${years.map(()=>'<th style="padding:4px;background:#FEF9C3;font-size:10px;color:#854D0E;">순수</th><th style="padding:4px;background:#FEF9C3;font-size:10px;color:#854D0E;">포함</th>').join('')}
+      </tr></thead>
+      <tbody>${months.map((mo,mi)=>{
+        return '<tr>'+`<td style="padding:4px 6px;border-bottom:1px solid #F1F5F9;font-weight:600;">${mo}</td>`+
+        years.map(yr=>{
+          const yr_recs=recs.filter(r=>r.year===yr);
+          const byMo={};yr_recs.forEach(r=>{const m=parseInt(r.month.replace('월',''));if(!byMo[m])byMo[m]={prev:0,wd:0,tOut:0,grad:0};byMo[m].prev+=r.prev||0;byMo[m].wd+=r.withdrawal||0;byMo[m].tOut+=r.transferOut||0;byMo[m].grad+=r.graduation||0;});
+          const d=byMo[mi+1];
+          const pureR=d&&d.prev>0?(d.wd/d.prev*100).toFixed(1):'-';
+          const totR=d&&d.prev>0?((d.wd+d.tOut+d.grad)/d.prev*100).toFixed(1):'-';
+          return `<td style="padding:4px 6px;border-bottom:1px solid #F1F5F9;text-align:center;color:#854D0E;">${pureR}${pureR!=='-'?'%':''}</td><td style="padding:4px 6px;border-bottom:1px solid #F1F5F9;text-align:center;color:#92400E;">${totR}${totR!=='-'?'%':''}</td>`;
+        }).join('')+'</tr>';
+      }).join('')}
+      </tbody>
+      <tfoot><tr>
+        <td style="padding:5px;background:var(--org-lt);font-weight:800;color:var(--org);">평균</td>
+        ${years.map(yr=>{
+          const yr_recs=recs.filter(r=>r.year===yr);
+          const totalPrev=yr_recs.reduce((a,r)=>a+(r.prev||0),0);
+          const totalWd=yr_recs.reduce((a,r)=>a+(r.withdrawal||0),0);
+          const totalOut=yr_recs.reduce((a,r)=>a+(r.withdrawal||0)+(r.transferOut||0)+(r.graduation||0),0);
+          const pureAvg=totalPrev>0?(totalWd/totalPrev*100).toFixed(1):'-';
+          const totAvg=totalPrev>0?(totalOut/totalPrev*100).toFixed(1):'-';
+          return `<td style="padding:5px;background:var(--org-lt);font-weight:800;color:var(--org);text-align:center;">${pureAvg}${pureAvg!=='-'?'%':''}</td><td style="padding:5px;background:var(--org-lt);font-weight:800;color:#92400E;text-align:center;">${totAvg}${totAvg!=='-'?'%':''}</td>`;
+        }).join('')}
+      </tr></tfoot>
+    </table>`;
+    const csRateEl=document.getElementById('cs-rate-table');
+    if(csRateEl) csRateEl.innerHTML=rateTableHTML;
+
   } else {
     // Semester mode
     const semData={};
@@ -1149,6 +1215,29 @@ function renderCampus(){
     const curBgColors=semNames.map(s=>SEM_IN_COLORS[s]||'#FB923C');
     document.getElementById('cs-ch4-title').textContent='👥 학기별 현재원 (학기 평균)';
     mkChart('ch-cs-cur',{type:'bar',data:{labels:sLabels,datasets:[{label:'현재원',data:curSemData,backgroundColor:curBgColors,borderColor:curBgColors,borderWidth:1.5}]},options:{...loLabel,plugins:{...loLabel.plugins,legend:{display:false}}}});
+
+    // 학기별 퇴원율 표
+    const semRateHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <thead><tr>
+        <th style="padding:5px;background:#F8FAFC;border-bottom:2px solid var(--bdr);">학기</th>
+        <th style="padding:5px;background:#FEF9C3;color:#854D0E;border-bottom:2px solid var(--bdr);">순수퇴원율</th>
+        <th style="padding:5px;background:#FEF9C3;color:#92400E;border-bottom:2px solid var(--bdr);">퇴원율(포함)</th>
+      </tr></thead>
+      <tbody>${sLabels.map(k=>{
+        const pv=recs.filter(r=>{const[yr,sem]=k.split(' ');return r.year===yr.replace('년','')&&r.semester===sem;}).reduce((a,r)=>a+(r.prev||0),0);
+        const wd=recs.filter(r=>{const[yr,sem]=k.split(' ');return r.year===yr.replace('년','')&&r.semester===sem;}).reduce((a,r)=>a+(r.withdrawal||0),0);
+        const tot=recs.filter(r=>{const[yr,sem]=k.split(' ');return r.year===yr.replace('년','')&&r.semester===sem;}).reduce((a,r)=>a+(r.withdrawal||0)+(r.transferOut||0)+(r.graduation||0),0);
+        const pr=pv>0?(wd/pv*100).toFixed(1)+' %':'-';
+        const tr=pv>0?(tot/pv*100).toFixed(1)+' %':'-';
+        return `<tr><td style="padding:4px 6px;border-bottom:1px solid #F1F5F9;font-weight:600;">${k.replace('\n',' ')}</td><td style="padding:4px 6px;text-align:center;color:#854D0E;">${pr}</td><td style="padding:4px 6px;text-align:center;color:#92400E;">${tr}</td></tr>`;
+      }).join('')}</tbody>
+      <tfoot><tr>
+        <td style="padding:5px;background:var(--org-lt);font-weight:800;color:var(--org);">평균</td>
+        ${(()=>{const pv=recs.reduce((a,r)=>a+(r.prev||0),0);const wd=recs.reduce((a,r)=>a+(r.withdrawal||0),0);const tot=recs.reduce((a,r)=>a+(r.withdrawal||0)+(r.transferOut||0)+(r.graduation||0),0);return `<td style="padding:5px;background:var(--org-lt);font-weight:800;color:#854D0E;text-align:center;">${pv>0?(wd/pv*100).toFixed(1)+'%':'-'}</td><td style="padding:5px;background:var(--org-lt);font-weight:800;color:#92400E;text-align:center;">${pv>0?(tot/pv*100).toFixed(1)+'%':'-'}</td>`;})()}
+      </tr></tfoot>
+    </table>`;
+    const csRateEl2=document.getElementById('cs-rate-table');
+    if(csRateEl2) csRateEl2.innerHTML=semRateHTML;
   }
   
   // Grade table + pie
@@ -2247,7 +2336,21 @@ async function handleWdUpload(event){
 
 async function renderWithdrawal(){
   if(!allRecordsWd.length) await loadRecordsWd();
-  const campus=document.getElementById('wd-campus')?.value||'';
+  
+  // 연도 드롭다운 업데이트 (recordsWd 데이터 기준)
+  const wdYears=[...new Set(allRecordsWd.map(r=>String(r.year).replace('년','').trim()))].filter(Boolean).sort();
+  if(wdYears.length){
+    ['wd-sy','wd-ey','wd-sem-sy','wd-sem-ey'].forEach(id=>{
+      const sel=document.getElementById(id);
+      if(!sel) return;
+      const cur=sel.value;
+      sel.innerHTML='';
+      wdYears.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y+'년';o.selected=(y===cur||(!cur&&y===wdYears[wdYears.length-1]));sel.appendChild(o);});
+    });
+  }
+
+  // 사용자 권한: 본인 캠퍼스만
+  const campus=currentUser.role!=='admin'?currentUser.campus:(document.getElementById('wd-campus')?.value||'');
   const content=document.getElementById('wd-content');
   let recs=[];
 
