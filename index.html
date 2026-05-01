@@ -2408,8 +2408,20 @@ async function renderWithdrawal(){
   wdRecs.forEach(r=>{if(r.reason){reasonMap[r.reason]=(reasonMap[r.reason]||0)+1;}});
   const reasons=Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]);
   const allReasons=[...new Set(wdRecs.map(r=>r.reason).filter(Boolean))].sort();
-  // 학년 순서: GRADES 상수 기준으로 고정 정렬
-  const wdGrades=GRADES.filter(g=>wdRecs.some(r=>r.grade===g));
+  // 학년 순서: GRADES 상수 기준 고정 (데이터 있는 학년만)
+  // grade 값 정규화 함수
+  function normalizeGrade(g){
+    if(!g) return '';
+    g=String(g).trim();
+    // "초등1" -> "초1", "중등1" -> "중1" 등 변환
+    g=g.replace('초등','초').replace('중등','중').replace('고등','고');
+    // "1학년" -> 처리 불가이므로 그대로
+    return g;
+  }
+  const wdGrades=GRADES.filter(g=>wdRecs.some(r=>normalizeGrade(r.grade)===g));
+  // 데이터가 있지만 GRADES에 없는 학년도 추가
+  const extraGrades=[...new Set(wdRecs.map(r=>normalizeGrade(r.grade)).filter(g=>g&&!GRADES.includes(g)))];
+  const allWdGrades=[...wdGrades,...extraGrades];
 
   content.innerHTML=`
     <div class="chart-row cols-2">
@@ -2429,14 +2441,14 @@ async function renderWithdrawal(){
         <thead>
           <tr>
             <th style="background:#F8FAFC;min-width:80px;">퇴원사유</th>
-            ${wdGrades.map(g=>`<th class="th-tif" style="min-width:55px;">${g}</th>`).join('')}
+            ${allWdGrades.map(g=>`<th class="th-tif" style="min-width:55px;">${g}</th>`).join('')}
             <th class="th-org" style="min-width:60px;">합계</th>
             <th style="background:#FEF9C3;color:#854D0E;min-width:60px;">비율</th>
           </tr>
         </thead>
         <tbody>
           ${allReasons.map(reason=>{
-            const gradeCounts=wdGrades.map(g=>wdRecs.filter(r=>r.reason===reason&&r.grade===g).length);
+            const gradeCounts=allWdGrades.map(g=>wdRecs.filter(r=>(normalizeGrade(r.grade)===g)&&r.reason===reason).length);
             const total=gradeCounts.reduce((a,b)=>a+b,0);
             return `<tr>
               <td class="td-bold">${reason}</td>
@@ -2445,13 +2457,13 @@ async function renderWithdrawal(){
               <td style="text-align:center;color:#854D0E;font-weight:700;">${wdRecs.length>0?(total/wdRecs.length*100).toFixed(1):0}%</td>
             </tr>`;
           }).join('')}
-          ${!allReasons.length?`<tr><td colspan="${wdGrades.length+3}" style="text-align:center;color:var(--mut);padding:14px;">퇴원사유 데이터 없음</td></tr>`:''}
+          ${!allReasons.length?`<tr><td colspan="${allWdGrades.length+3}" style="text-align:center;color:var(--mut);padding:14px;">퇴원사유 데이터 없음</td></tr>`:''}
         </tbody>
         <tfoot>
           <tr style="background:var(--org-lt);font-weight:800;border-top:2px solid var(--org);">
             <td style="color:var(--org);">합계</td>
-            ${wdGrades.map(g=>{
-              const cnt=wdRecs.filter(r=>r.grade===g).length;
+            ${allWdGrades.map(g=>{
+              const cnt=wdRecs.filter(r=>normalizeGrade(r.grade)===g).length;
               return `<td style="text-align:center;color:var(--org);">${cnt>0?cnt+'명':'-'}</td>`;
             }).join('')}
             <td style="text-align:center;color:var(--org);">${wdRecs.length}명</td>
