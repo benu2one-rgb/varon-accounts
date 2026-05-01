@@ -2408,10 +2408,8 @@ async function renderWithdrawal(){
   wdRecs.forEach(r=>{if(r.reason){reasonMap[r.reason]=(reasonMap[r.reason]||0)+1;}});
   const reasons=Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]);
   const allReasons=[...new Set(wdRecs.map(r=>r.reason).filter(Boolean))].sort();
-  const wdGrades=[...new Set(wdRecs.map(r=>r.grade).filter(Boolean))].sort((a,b)=>{
-    const order=['초1','초2','초3','초4','초5','초6','중1','중2','중3'];
-    return order.indexOf(a)-order.indexOf(b);
-  });
+  // 학년 순서: GRADES 상수 기준으로 고정 정렬
+  const wdGrades=GRADES.filter(g=>wdRecs.some(r=>r.grade===g));
 
   content.innerHTML=`
     <div class="chart-row cols-2">
