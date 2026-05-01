@@ -2403,10 +2403,15 @@ async function renderWithdrawal(){
   const stayBandCounts=bands.map(b=>stayRecs.filter(r=>(parseInt(r.tenure)||0)>=b.min&&(parseInt(r.tenure)||0)<b.max).length);
   const wdBandCounts=bands.map(b=>wdRecs.filter(r=>(parseInt(r.tenure)||0)>=b.min&&(parseInt(r.tenure)||0)<b.max).length);
 
-  // 퇴원사유 분석
+  // 퇴원사유 분석 (전체 + 학년별)
   const reasonMap={};
   wdRecs.forEach(r=>{if(r.reason){reasonMap[r.reason]=(reasonMap[r.reason]||0)+1;}});
   const reasons=Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]);
+  const allReasons=[...new Set(wdRecs.map(r=>r.reason).filter(Boolean))].sort();
+  const wdGrades=[...new Set(wdRecs.map(r=>r.grade).filter(Boolean))].sort((a,b)=>{
+    const order=['초1','초2','초3','초4','초5','초6','중1','중2','중3'];
+    return order.indexOf(a)-order.indexOf(b);
+  });
 
   content.innerHTML=`
     <div class="chart-row cols-2">
@@ -2420,12 +2425,43 @@ async function renderWithdrawal(){
       </div>
     </div>
     <div class="tbl-card">
-      <div class="tbl-title">③ 퇴원사유 분석 (퇴원생 ${wdRecs.length}명)</div>
-      <table><thead><tr><th>퇴원사유</th><th class="th-org">인원</th><th class="th-tif">비율</th></tr></thead>
-      <tbody>${reasons.map(([r,n])=>`<tr><td class="td-bold">${r}</td><td>${n}명</td><td>${wdRecs.length>0?(n/wdRecs.length*100).toFixed(1):0}%</td></tr>`).join('')}
-      ${!reasons.length?'<tr><td colspan="3" style="text-align:center;color:var(--mut);">퇴원사유 데이터 없음</td></tr>':''}
-      </tbody><tfoot><tr style="background:var(--org-lt);font-weight:800;"><td style="color:var(--org);">합계</td><td>${wdRecs.length}명</td><td>100%</td></tr></tfoot>
+      <div class="tbl-title">③ 퇴원사유 분석 — 학년별 (퇴원생 ${wdRecs.length}명)</div>
+      <div style="overflow-x:auto;">
+      <table style="min-width:600px;">
+        <thead>
+          <tr>
+            <th style="background:#F8FAFC;min-width:80px;">퇴원사유</th>
+            ${wdGrades.map(g=>`<th class="th-tif" style="min-width:55px;">${g}</th>`).join('')}
+            <th class="th-org" style="min-width:60px;">합계</th>
+            <th style="background:#FEF9C3;color:#854D0E;min-width:60px;">비율</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${allReasons.map(reason=>{
+            const gradeCounts=wdGrades.map(g=>wdRecs.filter(r=>r.reason===reason&&r.grade===g).length);
+            const total=gradeCounts.reduce((a,b)=>a+b,0);
+            return `<tr>
+              <td class="td-bold">${reason}</td>
+              ${gradeCounts.map(n=>`<td style="text-align:center;">${n>0?n+' 명':'-'}</td>`).join('')}
+              <td style="text-align:center;font-weight:800;color:var(--org);">${total}명</td>
+              <td style="text-align:center;color:#854D0E;font-weight:700;">${wdRecs.length>0?(total/wdRecs.length*100).toFixed(1):0}%</td>
+            </tr>`;
+          }).join('')}
+          ${!allReasons.length?`<tr><td colspan="${wdGrades.length+3}" style="text-align:center;color:var(--mut);padding:14px;">퇴원사유 데이터 없음</td></tr>`:''}
+        </tbody>
+        <tfoot>
+          <tr style="background:var(--org-lt);font-weight:800;border-top:2px solid var(--org);">
+            <td style="color:var(--org);">합계</td>
+            ${wdGrades.map(g=>{
+              const cnt=wdRecs.filter(r=>r.grade===g).length;
+              return `<td style="text-align:center;color:var(--org);">${cnt>0?cnt+'명':'-'}</td>`;
+            }).join('')}
+            <td style="text-align:center;color:var(--org);">${wdRecs.length}명</td>
+            <td style="text-align:center;color:var(--org);">100%</td>
+          </tr>
+        </tfoot>
       </table>
+      </div>
     </div>`;
 
   // 차트 그리기
