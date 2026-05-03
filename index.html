@@ -218,6 +218,7 @@ tr:hover td{background:#FFFBF5;}
     <button class="nav-btn" id="nav-grade" onclick="showTab('grade')">📚 학년별 분석</button>
     <button class="nav-btn" id="nav-input" onclick="showTab('input')">✏️ 데이터 입력</button>
     <button class="nav-btn" id="nav-withdrawal" onclick="showTab('withdrawal')">📊 퇴원생 분석</button>
+    <button class="nav-btn" id="nav-score" onclick="showTab('score')">📝 내신성적</button>
     <button class="nav-btn" id="nav-admin" onclick="showTab('admin')">⚙️ 관리자</button>
   </nav>
 
@@ -474,6 +475,48 @@ tr:hover td{background:#FFFBF5;}
       </div>
 
       <div id="wd-content"></div>
+    </div>
+
+    <!-- ===== 내신성적 ===== -->
+    <div id="tab-score" class="tab-content">
+      <div class="sec-title">내신성적</div>
+
+      <!-- 파일 업로드 -->
+      <div style="background:#F0FDF4;border:1.5px dashed #16A34A;border-radius:var(--rad);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:#15803D;margin-bottom:4px;">📂 성적 파일 업로드</div>
+          <div style="font-size:11px;color:var(--mut);">성적입력양식 엑셀 파일 업로드 시 기존 데이터를 덮어씁니다</div>
+        </div>
+        <label style="padding:8px 18px;background:#16A34A;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          📤 파일 선택
+          <input type="file" accept=".xlsx,.xls" id="score-upload" style="display:none;" onchange="handleScoreUpload(event)">
+        </label>
+        <div id="score-upload-status" style="font-size:12px;color:#15803D;font-weight:600;"></div>
+      </div>
+
+      <!-- 조회 필터 -->
+      <div class="filter-bar" id="score-filter-bar" style="display:none;">
+        <div class="fg"><div class="fl">분원명</div><select class="fi" id="sc-campus"><option value="">전체</option></select></div>
+        <div class="fg"><div class="fl">년도</div><select class="fi" id="sc-year"><option value="">전체</option></select></div>
+        <div class="fg"><div class="fl">학기</div>
+          <select class="fi" id="sc-sem">
+            <option value="">전체</option><option>1학기</option><option>2학기</option>
+          </select>
+        </div>
+        <div class="fg"><div class="fl">구분</div>
+          <select class="fi" id="sc-type">
+            <option value="">전체</option><option>중간</option><option>기말</option>
+          </select>
+        </div>
+        <div class="fg"><div class="fl">학년</div>
+          <select class="fi" id="sc-grade">
+            <option value="">전체</option><option>중등1</option><option>중등2</option><option>중등3</option>
+          </select>
+        </div>
+        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderScore()">조회</button></div>
+      </div>
+
+      <div id="score-content"></div>
     </div>
 
     <!-- ===== 관리자 ===== -->
@@ -840,6 +883,7 @@ function showTab(tab){
   else if(tab==='closing') renderClosing();
   else if(tab==='allclosing') renderAllClosing();
   else if(tab==='withdrawal') renderWithdrawal();
+  else if(tab==='score') initScoreTab();
   else if(tab==='admin') renderAdmin();
   else if(tab==='input') renderInputForm();
 }
@@ -2482,6 +2526,297 @@ async function renderWithdrawal(){
   destroyChart('ch-wd-out');
   const outEl=document.getElementById('ch-wd-out');
   if(outEl) charts['ch-wd-out']=new Chart(outEl.getContext('2d'),{type:'doughnut',data:{labels:bands.map((b,i)=>`${b.label} (${wdBandCounts[i]}명)`),datasets:[{data:wdBandCounts,backgroundColor:bands.map(b=>b.color),borderWidth:2,borderColor:'#fff'}]},options:pieOpts});
+}
+
+
+// ====== 내신성적 ======
+let allScoreRecords = [];
+
+async function loadScoreRecords(){
+  const snap = await db.collection('recordsScore').get();
+  allScoreRecords = snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+async function initScoreTab(){
+  if(!allScoreRecords.length) await loadScoreRecords();
+  updateScoreDropdowns();
+  const fb=document.getElementById('score-filter-bar');
+  if(fb) fb.style.display='flex';
+}
+
+function updateScoreDropdowns(){
+  const campuses=[...new Set(allScoreRecords.map(r=>r.campus).filter(Boolean))].sort();
+  const years=[...new Set(allScoreRecords.map(r=>String(r.year)).filter(Boolean))].sort();
+  
+  const fixed=['남동탄','서수원','수원','운정1','운정2','장안'];
+  const allCampuses=[...new Set([...fixed,...campuses])];
+  
+  const cSel=document.getElementById('sc-campus');
+  if(cSel){
+    cSel.innerHTML='<option value="">전체</option>';
+    allCampuses.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;cSel.appendChild(o);});
+  }
+  const ySel=document.getElementById('sc-year');
+  if(ySel){
+    ySel.innerHTML='<option value="">전체</option>';
+    years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y+'년';ySel.appendChild(o);});
+  }
+}
+
+async function handleScoreUpload(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const statusEl=document.getElementById('score-upload-status');
+  statusEl.textContent='읽는 중...';
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const sheet=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+      
+      // 헤더 찾기
+      let headerRow=-1;
+      for(let i=0;i<rows.length;i++){
+        if(rows[i].some(x=>String(x).includes('분원명')||String(x).includes('학년'))){headerRow=i;break;}
+      }
+      if(headerRow===-1){statusEl.textContent='❌ 형식 인식 불가';return;}
+      
+      const headers=rows[headerRow].map(h=>String(h).trim());
+      const ci=h=>headers.findIndex(x=>x===h||x.includes(h));
+      const iCampus=ci('분원명'),iSid=ci('S-ID'),iName=ci('학생이름'),
+            iSchool=ci('학교'),iGrade=ci('학년'),iLevel=ci('레벨'),
+            iYear=ci('년도'),iSem=ci('학기'),iType=ci('구분'),
+            iBook=ci('교과서'),iScore=ci('점수'),iTeacher=ci('담임');
+      
+      const dataRows=rows.slice(headerRow+1).filter(r=>r[iName]&&String(r[iName]).trim());
+      if(!dataRows.length){statusEl.textContent='❌ 데이터 없음';return;}
+      statusEl.textContent=`⏳ 기존 데이터 삭제 중...`;
+      
+      // 전체 삭제 후 재저장
+      const existing=await db.collection('recordsScore').get();
+      for(let i=0;i<existing.docs.length;i+=400){
+        const batch=db.batch();
+        existing.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));
+        await batch.commit();
+      }
+      
+      statusEl.textContent=`⏳ ${dataRows.length}건 저장 중...`;
+      let saved=0;
+      for(let i=0;i<dataRows.length;i+=400){
+        const batch=db.batch();
+        dataRows.slice(i,i+400).forEach(row=>{
+          const safeStr=idx=>idx>=0?String(row[idx]||'').trim():'';
+          batch.set(db.collection('recordsScore').doc(),{
+            campus:safeStr(iCampus),
+            sid:safeStr(iSid),
+            name:safeStr(iName),
+            school:safeStr(iSchool),
+            grade:safeStr(iGrade),
+            level:safeStr(iLevel),
+            year:safeStr(iYear).replace('년','').trim(),
+            sem:safeStr(iSem),
+            type:safeStr(iType),
+            book:safeStr(iBook),
+            score:parseFloat(row[iScore])||0,
+            teacher:safeStr(iTeacher)
+          });
+          saved++;
+        });
+        await batch.commit();
+        statusEl.textContent=`⏳ ${Math.min(i+400,dataRows.length)}/${dataRows.length}건 저장 중...`;
+      }
+      await loadScoreRecords();
+      updateScoreDropdowns();
+      const fb=document.getElementById('score-filter-bar');
+      if(fb) fb.style.display='flex';
+      statusEl.innerHTML=`<span style="color:#15803D">✅ ${saved}건 저장 완료!</span>`;
+    }catch(err){statusEl.textContent='❌ 오류: '+err.message;console.error(err);}
+  };
+  reader.readAsArrayBuffer(file);
+  event.target.value='';
+}
+
+// 점수 구간 계산
+function calcBands(recs){
+  const scores=recs.map(r=>parseFloat(r.score)||0).filter(s=>!isNaN(s));
+  const total=scores.length;
+  const avg=total?( scores.reduce((a,b)=>a+b,0)/total).toFixed(1):0;
+  const bands=[
+    {label:'100점', fn:s=>s===100},
+    {label:'90점 이상', fn:s=>s>=90&&s<100},
+    {label:'80점 이상', fn:s=>s>=80&&s<90},
+    {label:'70점 이상', fn:s=>s>=70&&s<80},
+    {label:'60점 이상', fn:s=>s>=60&&s<70},
+    {label:'50점 이상', fn:s=>s>=50&&s<60},
+    {label:'50점 미만', fn:s=>s<50},
+  ];
+  const bandData=bands.map(b=>({
+    label:b.label,
+    count:scores.filter(b.fn).length,
+    pct:total?(scores.filter(b.fn).length/total*100).toFixed(1):0
+  }));
+  return{avg,total,bandData};
+}
+
+// 분석 블록 HTML 생성
+function makeBandBlock(title,recs,canvasId){
+  const{avg,total,bandData}=calcBands(recs);
+  const bandColors=['#4ADE80','#A3E635','#FDE047','#FB923C','#F87171','#C084FC','#94A3B8'];
+  const tableRows=bandData.map((b,i)=>`
+    <tr>
+      <td style="padding:5px 8px;display:flex;align-items:center;gap:6px;">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#${bandColors[i].replace('#','')};flex-shrink:0;"></span>
+        ${b.label}
+      </td>
+      <td style="padding:5px 8px;text-align:center;font-weight:700;color:#1E293B;">${b.count}명</td>
+      <td style="padding:5px 8px;text-align:center;color:#854D0E;">${b.pct}%</td>
+    </tr>`).join('');
+  
+  return `
+    <div style="background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bdr);">${title}</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <div style="background:var(--org-lt);border-radius:8px;padding:8px 16px;text-align:center;">
+          <div style="font-size:11px;color:var(--mut);font-weight:700;">평균점수</div>
+          <div style="font-size:22px;font-weight:900;color:var(--org);">${avg}<span style="font-size:12px;">점</span></div>
+        </div>
+        <div style="background:var(--tif-lt);border-radius:8px;padding:8px 16px;text-align:center;">
+          <div style="font-size:11px;color:var(--mut);font-weight:700;">응시인원</div>
+          <div style="font-size:22px;font-weight:900;color:var(--tif-dk);">${total}<span style="font-size:12px;">명</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div style="flex:1;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead><tr>
+              <th style="padding:5px 8px;background:#F8FAFC;border-bottom:2px solid var(--bdr);text-align:left;">점수 구간</th>
+              <th style="padding:5px 8px;background:#F8FAFC;border-bottom:2px solid var(--bdr);">인원</th>
+              <th style="padding:5px 8px;background:#FEF9C3;border-bottom:2px solid var(--bdr);color:#854D0E;">비율</th>
+            </tr></thead>
+            <tbody>${tableRows}</tbody>
+            <tfoot><tr style="background:var(--org-lt);font-weight:800;border-top:2px solid var(--org);">
+              <td style="padding:5px 8px;color:var(--org);">합계</td>
+              <td style="padding:5px 8px;text-align:center;color:var(--org);">${total}명</td>
+              <td style="padding:5px 8px;text-align:center;color:var(--org);">100%</td>
+            </tr></tfoot>
+          </table>
+        </div>
+        <div style="width:200px;height:200px;flex-shrink:0;">
+          <canvas id="${canvasId}"></canvas>
+        </div>
+      </div>
+    </div>`;
+}
+
+function drawBandChart(canvasId, recs){
+  const{bandData}=calcBands(recs);
+  const bandColors=['#4ADE80','#A3E635','#FDE047','#FB923C','#F87171','#C084FC','#94A3B8'];
+  destroyChart(canvasId);
+  const el=document.getElementById(canvasId);
+  if(!el) return;
+  charts[canvasId]=new Chart(el.getContext('2d'),{
+    type:'doughnut',
+    data:{
+      labels:bandData.map(b=>b.label),
+      datasets:[{data:bandData.map(b=>b.count),backgroundColor:bandColors,borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        datalabels:{
+          display:true,
+          formatter:(v,ctx)=>{
+            const tot=ctx.dataset.data.reduce((a,b)=>a+b,0);
+            return tot>0&&v>0?Math.round(v/tot*100)+'%':'';
+          },
+          color:'#fff',font:{weight:'bold',size:10}
+        }
+      },
+      cutout:'45%'
+    }
+  });
+}
+
+async function renderScore(){
+  if(!allScoreRecords.length) await loadScoreRecords();
+  const campus=document.getElementById('sc-campus')?.value||'';
+  const year=document.getElementById('sc-year')?.value||'';
+  const sem=document.getElementById('sc-sem')?.value||'';
+  const type=document.getElementById('sc-type')?.value||'';
+  const grade=document.getElementById('sc-grade')?.value||'';
+  const content=document.getElementById('score-content');
+  
+  let recs=allScoreRecords.filter(r=>{
+    if(campus&&r.campus!==campus) return false;
+    if(year&&String(r.year)!==String(year)) return false;
+    if(sem&&r.sem!==sem) return false;
+    if(type&&r.type!==type) return false;
+    if(grade&&r.grade!==grade) return false;
+    return true;
+  });
+  
+  if(!recs.length){
+    content.innerHTML='<div class="alert alert-info">조건에 맞는 데이터가 없어요.</div>';
+    return;
+  }
+  
+  // 각 그룹 키 추출
+  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
+  const teachers=[...new Set(recs.map(r=>r.teacher).filter(Boolean))].sort();
+  const schools=[...new Set(recs.map(r=>r.school).filter(Boolean))].sort();
+  const books=[...new Set(recs.map(r=>r.book).filter(Boolean))].sort();
+  
+  // HTML 생성
+  let html='';
+  
+  // 분원별
+  html+=`<div style="font-size:15px;font-weight:800;color:var(--org);margin:14px 0 8px;padding-left:6px;border-left:4px solid var(--org);">📍 분원별</div>`;
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px;">';
+  campuses.forEach((c,i)=>{
+    const cr=recs.filter(r=>r.campus===c);
+    html+=makeBandBlock(c,cr,'sc-cmp-'+i);
+  });
+  html+='</div>';
+  
+  // 담임별
+  html+=`<div style="font-size:15px;font-weight:800;color:var(--tif-dk);margin:14px 0 8px;padding-left:6px;border-left:4px solid var(--tif);">👩‍🏫 담임(내신)별</div>`;
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px;">';
+  teachers.forEach((t,i)=>{
+    const tr=recs.filter(r=>r.teacher===t);
+    html+=makeBandBlock(t,tr,'sc-tch-'+i);
+  });
+  html+='</div>';
+  
+  // 학교별
+  html+=`<div style="font-size:15px;font-weight:800;color:#7C3AED;margin:14px 0 8px;padding-left:6px;border-left:4px solid #7C3AED;">🏫 학교별</div>`;
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px;">';
+  schools.forEach((s,i)=>{
+    const sr=recs.filter(r=>r.school===s);
+    html+=makeBandBlock(s,sr,'sc-sch-'+i);
+  });
+  html+='</div>';
+  
+  // 교과서별
+  html+=`<div style="font-size:15px;font-weight:800;color:#B45309;margin:14px 0 8px;padding-left:6px;border-left:4px solid #B45309;">📚 교과서별</div>`;
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px;">';
+  books.forEach((b,i)=>{
+    const br=recs.filter(r=>r.book===b);
+    html+=makeBandBlock(b,br,'sc-bk-'+i);
+  });
+  html+='</div>';
+  
+  content.innerHTML=html;
+  
+  // 차트 렌더링
+  requestAnimationFrame(()=>{
+    campuses.forEach((c,i)=>drawBandChart('sc-cmp-'+i,recs.filter(r=>r.campus===c)));
+    teachers.forEach((t,i)=>drawBandChart('sc-tch-'+i,recs.filter(r=>r.teacher===t)));
+    schools.forEach((s,i)=>drawBandChart('sc-sch-'+i,recs.filter(r=>r.school===s)));
+    books.forEach((b,i)=>drawBandChart('sc-bk-'+i,recs.filter(r=>r.book===b)));
+  });
 }
 
 // ====== SEED DATA ======
