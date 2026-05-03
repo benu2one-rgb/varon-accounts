@@ -2721,7 +2721,86 @@ function makeCampusTable(recs){
     </div>`;
 }
 
-// 범용 행 표 (담임, 학교, 교과서)
+// 캠퍼스별 묶음 표 (담임, 학교) - 캠퍼스 내 평균 높은 순 정렬
+function makeCampusGroupedTable(title,icon,recs,keyFn){
+  const BAND_COLORS=['#4ADE80','#A3E635','#FDE047','#FB923C','#F87171'];
+  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
+  const BAND_HDR=['100점','90점 이상','80점 이상','70점 이상','70점 미만'];
+  const thS='padding:6px 8px;text-align:center;font-size:11px;font-weight:800;white-space:nowrap;border-bottom:2px solid var(--bdr);';
+  const tdS='padding:6px 8px;text-align:center;font-size:11px;border-bottom:1px solid #F1F5F9;';
+
+  const thead=`<tr>
+    <th style="${thS}background:#F8FAFC;text-align:left;">${icon} ${title}</th>
+    <th style="${thS}background:var(--org-lt);color:var(--org);">평균</th>
+    <th style="${thS}background:var(--tif-lt);color:var(--tif-dk);">응시인원</th>
+    ${BAND_HDR.map(h=>`<th colspan="2" style="${thS}background:#FEF9C3;color:#854D0E;">${h}</th>`).join('')}
+  </tr>
+  <tr>
+    <th style="${thS}background:#F8FAFC;"></th>
+    <th style="${thS}background:var(--org-lt);"></th>
+    <th style="${thS}background:var(--tif-lt);"></th>
+    ${BAND_HDR.map(()=>'<th style="'+thS+'background:#FFFBEB;color:#92400E;font-size:10px;">인원</th><th style="'+thS+'background:#FFFBEB;color:#92400E;font-size:10px;">비율</th>').join('')}
+  </tr>`;
+
+  let html=`<div class="tbl-card" style="margin-bottom:14px;overflow-x:auto;">
+    <div class="tbl-title">${icon} ${title}별 성적 현황 (캠퍼스별 평균 높은 순)</div>`;
+
+  campuses.forEach(campus=>{
+    const campusRecs=recs.filter(r=>r.campus===campus);
+    if(!campusRecs.length) return;
+
+    // 이 캠퍼스의 항목들 추출 후 평균 높은 순 정렬
+    const items=[...new Set(campusRecs.map(r=>keyFn(r)).filter(Boolean))];
+    const itemsWithAvg=items.map(item=>{
+      const gr=campusRecs.filter(r=>keyFn(r)===item);
+      const scores=gr.map(r=>parseFloat(r.score)||0);
+      const avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+      return{item,avg,recs:gr};
+    }).sort((a,b)=>b.avg-a.avg);
+
+    // 캠퍼스 헤더 행
+    html+=`<div style="background:var(--org);color:#fff;padding:7px 12px;font-size:12px;font-weight:800;margin-top:8px;">🏢 ${campus}</div>`;
+    html+=`<table style="width:100%;border-collapse:collapse;min-width:700px;"><thead>${thead}</thead><tbody>`;
+
+    itemsWithAvg.forEach(({item,recs:gr},i)=>{
+      const{avg,total,bandData}=calcBands(gr);
+      const rowBg=i%2===0?'':'background:#FAFAFA;';
+      html+=`<tr>
+        <td style="${tdS}${rowBg}font-weight:700;text-align:left;padding-left:16px;">${item}</td>
+        <td style="${tdS}${rowBg}color:var(--org);font-weight:800;">${avg}점</td>
+        <td style="${tdS}${rowBg}color:var(--tif-dk);font-weight:700;">${total}명</td>
+        ${bandData.map(b=>`<td style="${tdS}${rowBg}font-weight:700;">${b.count}명</td><td style="${tdS}${rowBg}color:#854D0E;">${b.pct}%</td>`).join('')}
+      </tr>`;
+    });
+
+    // 캠퍼스 합계 행
+    const{avg:cAvg,total:cTotal,bandData:cBands}=calcBands(campusRecs);
+    html+=`<tr style="background:#EFF6FF;font-weight:800;border-top:2px solid #2563EB;">
+      <td style="${tdS}color:#1D4ED8;font-weight:800;">📍 ${campus} 합계</td>
+      <td style="${tdS}color:#1D4ED8;">${cAvg}점</td>
+      <td style="${tdS}color:#1D4ED8;">${cTotal}명</td>
+      ${cBands.map(b=>`<td style="${tdS}color:#1D4ED8;">${b.count}명</td><td style="${tdS}color:#1D4ED8;">${b.pct}%</td>`).join('')}
+    </tr>`;
+
+    html+='</tbody></table>';
+  });
+
+  // 전체 합계 행
+  const{avg:tAvg,total:tTotal,bandData:tBands}=calcBands(recs);
+  html+=`<table style="width:100%;border-collapse:collapse;min-width:700px;"><tfoot>
+    <tr style="background:var(--org-lt);font-weight:800;border-top:2px solid var(--org);">
+      <td style="${tdS}color:var(--org);text-align:left;padding-left:10px;">🏆 전체 합계 / 평균</td>
+      <td style="${tdS}color:var(--org);">${tAvg}점</td>
+      <td style="${tdS}color:var(--org);">${tTotal}명</td>
+      ${tBands.map(b=>`<td style="${tdS}color:var(--org);">${b.count}명</td><td style="${tdS}color:var(--org);">${b.pct}%</td>`).join('')}
+    </tr>
+  </tfoot></table>
+  </div>`;
+
+  return html;
+}
+
+// 범용 행 표 (교과서 - 기존 방식 유지)
 function makeRowTable(title,icon,items,recs,keyFn){
   const BAND_HDR=['100점','90점 이상','80점 이상','70점 이상','70점 미만'];
   const thS='padding:6px 8px;text-align:center;font-size:11px;font-weight:800;white-space:nowrap;border-bottom:2px solid var(--bdr);';
@@ -2827,8 +2906,8 @@ async function renderScore(){
 
   let html='';
   html+=makeCampusTable(recs);
-  html+=makeRowTable('담임(내신)','👩‍🏫',teachers,recs,r=>r.teacher);
-  html+=makeRowTable('학교','🏫',schools,recs,r=>r.school);
+  html+=makeCampusGroupedTable('담임(내신)','👩‍🏫',recs,r=>r.teacher);
+  html+=makeCampusGroupedTable('학교','🏫',recs,r=>r.school);
   html+=makeRowTable('교과서','📚',books,recs,r=>r.book);
 
   content.innerHTML=html;
