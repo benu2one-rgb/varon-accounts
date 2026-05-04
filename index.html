@@ -2646,10 +2646,11 @@ async function loadScoreRecords(){
 async function initScoreTab(){
   if(!allScoreRecords.length) await loadScoreRecords();
   updateScoreDropdowns();
-  updateScoreHistoryDropdowns();
+  updateScoreHistoryDropdowns(); // 데이터 로드 후 드롭다운 채우기
   const fb=document.getElementById('score-filter-bar');
   if(fb) fb.style.display='flex';
-  document.getElementById('score-upload-history').style.display='block';
+  const sh=document.getElementById('score-upload-history');
+  if(sh) sh.style.display='block';
   await loadScoreUploadHistory();
 }
 
@@ -2766,43 +2767,62 @@ async function handleScoreUpload(event){
 
 // ===== 업로드 이력 조회/수정 =====
 async function loadScoreUploadHistory(){
-  const el=document.getElementById('score-history-title');
-  if(el) el.textContent='📋 업로드 이력';
-  // 업로드 로그 기반 이력 표시
-  let snap;
-  try{ snap=await db.collection('uploadLogs').where('dataType','==','score').get(); }
-  catch(e){ return; }
-  let logs=snap.docs.map(d=>({id:d.id,...d.data()}));
-  if(!isSuperAdmin()) logs=logs.filter(l=>l.uploadedBy===currentUser?.email);
-  logs.sort((a,b)=>b.uploadedAt.localeCompare(a.uploadedAt));
-
-  const titleEl=document.getElementById('score-history-section-title');
-  if(titleEl) titleEl.textContent=`📋 업로드 이력${isSuperAdmin()?'' : ' (내 업로드)'}`;
-
   const logEl=document.getElementById('score-upload-log-list');
   if(!logEl) return;
-  if(!logs.length){logEl.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';return;}
+
+  // uploadLogs에서 불러오기
+  let logs=[];
+  try{
+    const snap=await db.collection('uploadLogs').where('dataType','==','score').get();
+    logs=snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){}
+
+  // uploadLogs가 없으면 allScoreRecords에서 자동 그룹핑
+  if(!logs.length && allScoreRecords.length){
+    const groups={};
+    allScoreRecords.forEach(r=>{
+      const key=`${r.campus}||${r.year}||${r.sem}||${r.type}`;
+      if(!groups[key]) groups[key]={
+        campus:r.campus, year:r.year, sem:r.sem, type:r.type,
+        count:0, uploadedAt:r.uploadedAt||'', uploadedBy:r.uploadedBy||'',
+        uploadedByName:r.uploadedByName||'', id:null,
+        displayName:`${r.campus||'-'} ${r.year||''}년 ${r.sem||''} ${r.type||''}`
+      };
+      groups[key].count++;
+      if(r.uploadedAt>groups[key].uploadedAt) groups[key].uploadedAt=r.uploadedAt;
+    });
+    logs=Object.values(groups);
+  }
+
+  // 권한 필터
+  if(!isSuperAdmin()) logs=logs.filter(l=>l.uploadedBy===currentUser?.email||l.uploadedBy==='');
+  logs.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
+
+  if(!logs.length){
+    logEl.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요. 파일을 먼저 업로드해 주세요.</div>';
+    return;
+  }
 
   const tdS='padding:5px 8px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   logEl.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:#F8FAFC;">
-      <th style="${tdS}font-weight:800;text-align:left;">파일명</th>
-      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;">업로드한 사람</th>`:''}
-      <th style="${tdS}font-weight:800;">캠퍼스</th>
-      <th style="${tdS}font-weight:800;">년도/학기/구분</th>
-      <th style="${tdS}font-weight:800;">건수</th>
-      <th style="${tdS}font-weight:800;">업로드 일시</th>
-      <th style="${tdS}font-weight:800;">관리</th>
+      <th style="${tdS}font-weight:800;text-align:left;">파일 / 데이터</th>
+      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;">업로드한 사람</th>`:''}
+      <th style="${tdS}font-weight:800;text-align:center;">캠퍼스</th>
+      <th style="${tdS}font-weight:800;text-align:center;">년도/학기/구분</th>
+      <th style="${tdS}font-weight:800;text-align:center;">건수</th>
+      <th style="${tdS}font-weight:800;text-align:center;">업로드 일시</th>
+      <th style="${tdS}font-weight:800;text-align:center;">삭제</th>
     </tr></thead>
     <tbody>${logs.map((log,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
-      <td style="${tdS}font-weight:600;">${log.displayName||log.fileName}</td>
-      ${isSuperAdmin()?`<td style="${tdS}text-align:center;">${log.uploadedByName||log.uploadedBy||'-'}</td>`:''}
+      <td style="${tdS}font-weight:600;">${log.displayName||log.fileName||log.campus+' '+log.year+'년'}</td>
+      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${log.uploadedByName||log.uploadedBy||'-'}</td>`:''}
       <td style="${tdS}text-align:center;">${log.campus||'-'}</td>
       <td style="${tdS}text-align:center;">${log.year||''}년 ${log.sem||''} ${log.type||''}</td>
-      <td style="${tdS}text-align:center;">${log.count||0}건</td>
+      <td style="${tdS}text-align:center;font-weight:700;color:var(--tif-dk);">${log.count||0}건</td>
       <td style="${tdS}text-align:center;font-size:11px;color:var(--mut);">${log.uploadedAt?log.uploadedAt.substring(0,16).replace('T',' '):'-'}</td>
-      <td style="${tdS}">
-        <button onclick="deleteScoreUploadLog('${log.id}','${log.campus}','${log.year}','${log.sem}','${log.type}')" style="padding:3px 8px;border:1.5px solid #EF4444;border-radius:4px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;">삭제</button>
+      <td style="${tdS}text-align:center;">
+        <button onclick="deleteScoreUploadLog('${log.id}','${log.campus}','${log.year}','${log.sem}','${log.type}')" style="padding:3px 8px;border:1.5px solid #EF4444;border-radius:4px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;">🗑️ 삭제</button>
       </td>
     </tr>`).join('')}</tbody>
   </table>`;
@@ -2826,12 +2846,19 @@ async function deleteScoreUploadLog(logId, campus, year, sem, type){
 }
 
 function updateScoreHistoryDropdowns(){
+  if(!allScoreRecords.length) return;
   const campuses=[...new Set(allScoreRecords.map(r=>r.campus).filter(Boolean))].sort();
-  const years=[...new Set(allScoreRecords.map(r=>String(r.year)).filter(Boolean))].sort();
+  const years=[...new Set(allScoreRecords.map(r=>String(r.year).replace('년','').trim()).filter(Boolean))].sort();
   const shc=document.getElementById('sh-campus');
   const shy=document.getElementById('sh-year');
-  if(shc){shc.innerHTML='<option value="">전체</option>'+campuses.map(c=>`<option>${c}</option>`).join('');}
-  if(shy){shy.innerHTML='<option value="">전체</option>'+years.map(y=>`<option value="${y}">${y}년</option>`).join('');}
+  if(shc){
+    const cur=shc.value;
+    shc.innerHTML='<option value="">전체</option>'+campuses.map(cp=>`<option value="${cp}"${cp===cur?' selected':''}>${cp}</option>`).join('');
+  }
+  if(shy){
+    const cur=shy.value;
+    shy.innerHTML='<option value="">전체</option>'+years.map(y=>`<option value="${y}"${y===cur?' selected':''}>${y}년</option>`).join('');
+  }
 }
 
 async function loadScoreHistory(){
@@ -3747,15 +3774,32 @@ function isSuperAdmin(){
 async function loadMockHistory(){
   const el=document.getElementById('mock-history-content');
   if(!el) return;
-  let q=db.collection('uploadLogs').where('dataType','==','mock');
-  const snap=await q.get();
-  let logs=snap.docs.map(d=>({id:d.id,...d.data()}));
 
-  // 슈퍼관리자가 아니면 본인 것만
-  if(!isSuperAdmin()){
-    logs=logs.filter(l=>l.uploadedBy===currentUser?.email);
+  let logs=[];
+  try{
+    const snap=await db.collection('uploadLogs').where('dataType','==','mock').get();
+    logs=snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){}
+
+  // uploadLogs 없으면 allMockRecords에서 자동 그룹핑
+  if(!logs.length && allMockRecords.length){
+    const groups={};
+    allMockRecords.forEach(r=>{
+      const key=`${r.campus}||${r.year}||${r.month}||${r.type}`;
+      if(!groups[key]) groups[key]={
+        campus:r.campus, year:r.year, month:r.month, type:r.type,
+        count:0, uploadedAt:r.uploadedAt||'', uploadedBy:r.uploadedBy||'',
+        uploadedByName:r.uploadedByName||'', id:null,
+        displayName:`${r.campus||'-'} ${r.year||''}년 ${r.month||''} ${r.type||''}`
+      };
+      groups[key].count++;
+      if((r.uploadedAt||'')>(groups[key].uploadedAt||'')) groups[key].uploadedAt=r.uploadedAt;
+    });
+    logs=Object.values(groups);
   }
-  logs.sort((a,b)=>b.uploadedAt.localeCompare(a.uploadedAt));
+
+  if(!isSuperAdmin()) logs=logs.filter(l=>l.uploadedBy===currentUser?.email||l.uploadedBy==='');
+  logs.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
 
   if(!logs.length){el.innerHTML='<div style="padding:12px;color:var(--mut);font-size:13px;">업로드 이력이 없어요.</div>';return;}
 
@@ -3816,15 +3860,32 @@ async function deleteMockUploadLog(logId, campus, year, month, type){
 async function loadMockHistory(){
   const el=document.getElementById('mock-history-content');
   if(!el) return;
-  let q=db.collection('uploadLogs').where('dataType','==','mock');
-  const snap=await q.get();
-  let logs=snap.docs.map(d=>({id:d.id,...d.data()}));
 
-  // 슈퍼관리자가 아니면 본인 것만
-  if(!isSuperAdmin()){
-    logs=logs.filter(l=>l.uploadedBy===currentUser?.email);
+  let logs=[];
+  try{
+    const snap=await db.collection('uploadLogs').where('dataType','==','mock').get();
+    logs=snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){}
+
+  // uploadLogs 없으면 allMockRecords에서 자동 그룹핑
+  if(!logs.length && allMockRecords.length){
+    const groups={};
+    allMockRecords.forEach(r=>{
+      const key=`${r.campus}||${r.year}||${r.month}||${r.type}`;
+      if(!groups[key]) groups[key]={
+        campus:r.campus, year:r.year, month:r.month, type:r.type,
+        count:0, uploadedAt:r.uploadedAt||'', uploadedBy:r.uploadedBy||'',
+        uploadedByName:r.uploadedByName||'', id:null,
+        displayName:`${r.campus||'-'} ${r.year||''}년 ${r.month||''} ${r.type||''}`
+      };
+      groups[key].count++;
+      if((r.uploadedAt||'')>(groups[key].uploadedAt||'')) groups[key].uploadedAt=r.uploadedAt;
+    });
+    logs=Object.values(groups);
   }
-  logs.sort((a,b)=>b.uploadedAt.localeCompare(a.uploadedAt));
+
+  if(!isSuperAdmin()) logs=logs.filter(l=>l.uploadedBy===currentUser?.email||l.uploadedBy==='');
+  logs.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
 
   if(!logs.length){el.innerHTML='<div style="padding:12px;color:var(--mut);font-size:13px;">업로드 이력이 없어요.</div>';return;}
 
