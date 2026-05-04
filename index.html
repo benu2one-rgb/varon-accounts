@@ -774,6 +774,22 @@ function monthLabel(year,semester,month){
 
 // ====== STATE ======
 let currentUser=null, allRecords=[], csPeriodType='monthly';
+
+// ====== 캐시 시스템 (Firebase 읽기 최소화) ======
+const CACHE_TTL = 5 * 60 * 1000; // 5분
+const _cache = {};
+
+function cacheSet(key, data){
+  _cache[key] = { data, ts: Date.now() };
+}
+function cacheGet(key){
+  const entry = _cache[key];
+  if(!entry) return null;
+  if(Date.now() - entry.ts > CACHE_TTL){ delete _cache[key]; return null; }
+  return entry.data;
+}
+function cacheInvalidate(key){ delete _cache[key]; }
+function cacheInvalidateAll(){ Object.keys(_cache).forEach(k=>delete _cache[k]); }
 const charts={};
 
 function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
@@ -823,9 +839,11 @@ async function doLogin(){
 async function doLogout(){await auth.signOut();}
 
 // ====== DATA ======
-async function loadRecords(){
+async function loadRecords(force=false){
+  if(!force && allRecords.length && cacheGet('records')) return;
   const snap=await db.collection('records').get();
   allRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
+  cacheSet('records', true);
 }
 
 function getYears(){return [...new Set(allRecords.map(r=>String(r.year).replace("년","").trim()))].filter(Boolean).sort();}
@@ -859,6 +877,33 @@ function calcStats(recs){
 }
 
 // ====== DROPDOWNS INIT ======
+function applyAllCampuses(allCampuses){
+  fillCampusSelect('cs-campus',allCampuses,currentUser.role==='user'?currentUser.campus:null);
+  fillCampusSelect('inp-campus',allCampuses,currentUser.role==='user'?currentUser.campus:null);
+  fillCampusSelect('nu-campus',allCampuses,null);
+  fillCampusSelect('cl-campus',allCampuses,currentUser.role==='user'?currentUser.campus:null);
+  if(currentUser.role==='user'){
+    const cs=document.getElementById('cs-campus');
+    const inp=document.getElementById('inp-campus');
+    if(cs) cs.disabled=true;
+    if(inp) inp.disabled=true;
+    const wdSel=document.getElementById('wd-campus');
+    if(wdSel){wdSel.innerHTML=`<option value="${currentUser.campus}">${currentUser.campus}</option>`;wdSel.disabled=true;}
+  } else {
+    const fixed=['남동탄','서수원','수원','운정1','운정2','장안'];
+    const wdSel=document.getElementById('wd-campus');
+    if(wdSel){
+      wdSel.innerHTML='<option value="">전 캠퍼스</option>';
+      allCampuses.forEach(cp=>{const o=document.createElement('option');o.value=cp;o.textContent=cp;wdSel.appendChild(o);});
+    }
+    const scCampusSel=document.getElementById('sc-campus');
+    if(scCampusSel){
+      scCampusSel.innerHTML='<option value="">전체</option>';
+      allCampuses.forEach(cp=>{const o=document.createElement('option');o.value=cp;o.textContent=cp;scCampusSel.appendChild(o);});
+    }
+  }
+}
+
 function initDropdowns(){
   const years=getYears();
   const campuses=getCampuses();
@@ -1589,7 +1634,8 @@ function handleExcelUpload(event){
         statusEl.textContent=`⏳ ${Math.min(i+400,dataRows.length)}/${dataRows.length}건 저장 중...`;
       }
 
-      await loadRecords();
+      cacheInvalidate('records');
+      await loadRecords(true);
       initDropdowns();
       statusEl.innerHTML=`<span style="color:var(--tif-dk)">✅ 총 ${saved}건 저장 완료!</span>`;
     }catch(err){
@@ -1697,7 +1743,8 @@ async function saveInputData(){
       batch.set(ref,data);
     }
     await batch.commit();
-    await loadRecords();
+    cacheInvalidate('records');
+    await loadRecords(true);
     initDropdowns();
     document.getElementById('inp-alert').innerHTML=`<div class="alert alert-ok">✅ 저장 완료! ${campus} ${year}년 ${sem} ${month} 데이터</div>`;
   }catch(e){
@@ -1708,8 +1755,14 @@ async function saveInputData(){
 // ====== 관리자 ======
 // ====== 캠퍼스 관리 ======
 async function loadCampusList(){
-  const snap=await db.collection('campuses').get();
-  const campuses=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const cached=cacheGet('campusList_admin');
+  let campuses;
+  if(cached){campuses=cached;}
+  else{
+    const snap=await db.collection('campuses').get();
+    campuses=snap.docs.map(d=>({id:d.id,...d.data()}));
+    cacheSet('campusList_admin',campuses);
+  }
   const el=document.getElementById('campus-list');
   if(!el) return;
   if(!campuses.length){el.innerHTML='<span style="color:var(--mut);font-size:13px;">등록된 캠퍼스가 없습니다.</span>';return;}
@@ -1728,8 +1781,11 @@ async function addCampus(){
     await db.collection('campuses').add({name,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     document.getElementById('new-campus-name').value='';
     alertEl.innerHTML=`<div class="alert alert-ok">✅ "${name}" 캠퍼스가 추가됐어요!</div>`;
+    cacheInvalidate('campusList_admin');
+    cacheInvalidate('campusList');
     await loadCampusList();
-    await loadRecords();
+    cacheInvalidate('records');
+    await loadRecords(true);
     initDropdowns();
   }catch(e){alertEl.innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;}
 }
@@ -1739,8 +1795,11 @@ async function deleteCampus(id,name){
   try{
     await db.collection('campuses').doc(id).delete();
     document.getElementById('campus-alert').innerHTML=`<div class="alert alert-ok">✅ "${name}" 삭제 완료!</div>`;
+    cacheInvalidate('campusList_admin');
+    cacheInvalidate('campusList');
     await loadCampusList();
-    await loadRecords();
+    cacheInvalidate('records');
+    await loadRecords(true);
     initDropdowns();
   }catch(e){document.getElementById('campus-alert').innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;}
 }
@@ -1776,6 +1835,7 @@ async function saveEditUser(){
   if(!name){alertEl.innerHTML='<div class="alert alert-err">이름을 입력해주세요.</div>';return;}
   try{
     await db.collection('users').doc(uid).update({name,role,campus});
+    cacheInvalidate('users');
     alertEl.innerHTML='<div class="alert alert-ok">✅ 수정 완료!</div>';
     setTimeout(()=>{closeEditModal();renderAdmin();},800);
   }catch(e){
@@ -1786,8 +1846,12 @@ async function saveEditUser(){
 async function renderAdmin(){
   if(currentUser?.role!=='admin') return;
   await loadCampusList();
-  const snap=await db.collection('users').get();
-  const users=snap.docs.map(d=>({id:d.id,...d.data()}));
+  let users=cacheGet('users');
+  if(!users){
+    const snap=await db.collection('users').get();
+    users=snap.docs.map(d=>({id:d.id,...d.data()}));
+    cacheSet('users', users);
+  }
   
   const html=users.map(u=>{
     const isActive=u.isActive!==false;
@@ -1837,6 +1901,7 @@ async function addUser(){
     // Sign back in as admin
     await auth.signInWithEmailAndPassword(currentUser.email,adminPw);
     
+    cacheInvalidate('users');
     alertEl.innerHTML=`<div class="alert alert-ok">✅ ${name} (${email}) 생성 완료!</div>`;
     document.getElementById('nu-name').value='';document.getElementById('nu-email').value='';
     document.getElementById('nu-pw').value='';document.getElementById('nu-admin-pw').value='';
@@ -1851,6 +1916,7 @@ async function addUser(){
 async function deleteUser(uid,name){
   if(!confirm(`"${name}" 사용자를 삭제하시겠습니까?\n(Firestore 기록은 삭제됨으로 표시됩니다)`)) return;
   await db.collection('users').doc(uid).update({isActive:false,deletedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  cacheInvalidate('users');
   await renderAdmin();
 }
 
@@ -2396,9 +2462,11 @@ function setWdPeriod(type){
   document.getElementById('wd-semester-filters').style.display=type==='semester'?'flex':'none';
 }
 
-async function loadRecordsWd(){
+async function loadRecordsWd(force=false){
+  if(!force && allRecordsWd.length && cacheGet('recordsWd')) return;
   const snap=await db.collection('recordsWd').get();
   allRecordsWd=snap.docs.map(d=>({id:d.id,...d.data()}));
+  cacheSet('recordsWd', true);
 }
 
 async function handleWdUpload(event){
@@ -2636,9 +2704,11 @@ async function renderWithdrawal(){
 // ====== 내신성적 ======
 let allScoreRecords = [];
 
-async function loadScoreRecords(){
+async function loadScoreRecords(force=false){
+  if(!force && allScoreRecords.length && cacheGet('recordsScore')) return;
   const snap = await db.collection('recordsScore').get();
   allScoreRecords = snap.docs.map(d=>({id:d.id,...d.data()}));
+  cacheSet('recordsScore', true);
 }
 
 async function initScoreTab(){
@@ -2743,7 +2813,8 @@ async function handleScoreUpload(event){
         await batch.commit();
         statusEl.textContent=`⏳ ${Math.min(i+400,dataRows.length)}/${dataRows.length}건 저장 중...`;
       }
-      await loadScoreRecords();
+      cacheInvalidate('recordsScore');
+      await loadScoreRecords(true);
       updateScoreDropdowns();
       updateScoreHistoryDropdowns();
       document.getElementById('score-filter-bar').style.display='flex';
@@ -3403,9 +3474,11 @@ function normMockGrade(g){
   return n>=5?5:n;
 }
 
-async function loadMockRecords(){
+async function loadMockRecords(force=false){
+  if(!force && allMockRecords.length && cacheGet('recordsMock')) return;
   const snap=await db.collection('recordsMock').get();
   allMockRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
+  cacheSet('recordsMock', true);
 }
 
 async function initMockTab(){
@@ -3507,7 +3580,8 @@ async function handleMockUpload(event){
         count:saved, uploadedAt, uploadedBy, uploadedByName
       });
 
-      await loadMockRecords();
+      cacheInvalidate('recordsMock');
+      await loadMockRecords(true);
       updateMockDropdowns();
       document.getElementById('mock-filter-bar').style.display='flex';
       document.getElementById('mock-upload-history').style.display='block';
