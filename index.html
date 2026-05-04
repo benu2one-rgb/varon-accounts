@@ -119,6 +119,7 @@ tr:hover td{background:#FFFBF5;}
 .badge-admin{background:var(--org-lt);color:var(--org);}
 .badge-user{background:var(--tif-lt);color:var(--tif-dk);}
 .badge-del{background:#FEE2E2;color:#DC2626;}
+.badge-viewer{background:#EDE9FE;color:#6D28D9;}
 .btn-del{padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;}
 .btn-del:hover{background:#FEF2F2;}
 
@@ -619,7 +620,7 @@ tr:hover td{background:#FFFBF5;}
             <div class="fg" style="margin-bottom:10px;"><div class="fl">이름</div><input type="text" id="nu-name" class="form-input" placeholder="이름 입력"></div>
             <div class="fg" style="margin-bottom:10px;"><div class="fl">이메일</div><input type="email" id="nu-email" class="form-input" placeholder="이메일 입력"></div>
             <div class="fg" style="margin-bottom:10px;"><div class="fl">비밀번호</div><input type="password" id="nu-pw" class="form-input" placeholder="초기 비밀번호 설정"></div>
-            <div class="fg" style="margin-bottom:10px;"><div class="fl">역할</div><select id="nu-role" class="form-input"><option value="user">일반 사용자</option><option value="admin">관리자</option></select></div>
+            <div class="fg" style="margin-bottom:10px;"><div class="fl">역할</div><select id="nu-role" class="form-input"><option value="user">일반 사용자</option><option value="viewer">뷰어 (전체조회만)</option><option value="admin">관리자</option></select></div>
             <div class="fg" style="margin-bottom:14px;"><div class="fl">담당 캠퍼스</div><select id="nu-campus" class="form-input"></select></div>
             <div class="fg" style="margin-bottom:10px;"><div class="fl">관리자 비밀번호 (재확인)</div><input type="password" id="nu-admin-pw" class="form-input" placeholder="현재 관리자 비밀번호"></div>
             <button class="btn-save" onclick="addUser()">사용자 생성</button>
@@ -698,6 +699,7 @@ tr:hover td{background:#FFFBF5;}
     <div class="fg" style="margin-bottom:12px;"><div class="fl">역할</div>
       <select id="edit-role" class="form-input">
         <option value="user">일반 사용자</option>
+        <option value="viewer">뷰어 (전체조회만)</option>
         <option value="admin">관리자</option>
       </select>
     </div>
@@ -796,9 +798,18 @@ function showLogin(){document.getElementById('loginScreen').style.display='flex'
 function showApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='flex';
-  document.getElementById('headerUserInfo').textContent=`${currentUser.name||''} (${currentUser.role==='admin'?'관리자':currentUser.campus||'사용자'})`;
-  if(currentUser.role!=='admin'){
+  const roleLabel=currentUser.role==='admin'?'관리자':currentUser.role==='viewer'?'뷰어':currentUser.campus||'사용자';
+  document.getElementById('headerUserInfo').textContent=`${currentUser.name||''} (${roleLabel})`;
+  // 뷰어는 데이터 입력 탭 숨기기
+  if(currentUser.role==='viewer'){
+    document.getElementById('nav-input').classList.add('hidden');
+  }
+  if(currentUser.role==='user'){
+    // 일반 사용자: 전 캠퍼스 비교, 관리자 탭 모두 숨김
     document.getElementById('nav-compare').classList.add('hidden');
+    document.getElementById('nav-admin').classList.add('hidden');
+  } else if(currentUser.role==='viewer'){
+    // 뷰어: 관리자 탭만 숨김 (전 캠퍼스 비교는 볼 수 있음)
     document.getElementById('nav-admin').classList.add('hidden');
   }
 }
@@ -881,7 +892,7 @@ function initDropdowns(){
     fillCampusSelect('nu-campus',allCampuses,null);
     fillCampusSelect('cs-campus',allCampuses,currentUser.role!=='admin'?currentUser.campus:null);
     fillCampusSelect('inp-campus',allCampuses,currentUser.role!=='admin'?currentUser.campus:null);
-    if(currentUser.role!=='admin'){
+    if(currentUser.role==='user'){
       document.getElementById('cs-campus').disabled=true;
       document.getElementById('inp-campus').disabled=true;
       // 퇴원생 분석 캠퍼스도 잠금
@@ -920,13 +931,13 @@ function initDropdowns(){
   // wd-campus 권한 처리
   const wdCampusSel=document.getElementById('wd-campus');
   if(wdCampusSel){
-    if(currentUser.role!=='admin'){
+    if(currentUser.role==='user'){
       // 사용자: 본인 캠퍼스만
       wdCampusSel.innerHTML=`<option value="${currentUser.campus}">${currentUser.campus}</option>`;
       wdCampusSel.disabled=true;
     }
-    // 관리자는 이미 HTML에 옵션 있음 - Firestore 캠퍼스도 추가
-    if(currentUser.role==='admin'){
+    // 관리자·뷰어는 전체 캠퍼스 - Firestore 캠퍼스도 추가
+    if(currentUser.role==='admin'||currentUser.role==='viewer'){
       db.collection('campuses').get().then(snap=>{
         const fixed=['남동탄','서수원','수원','운정1','운정2','장안'];
         snap.docs.forEach(d=>{
@@ -939,11 +950,10 @@ function initDropdowns(){
     }
   }
 
-  // Lock campus for non-admin
-  if(currentUser.role!=='admin'){
+  // 캠퍼스 잠금: 사용자만 잠금 (뷰어는 전체 볼 수 있음)
+  if(currentUser.role==='user'){
     document.getElementById('cs-campus').disabled=true;
     document.getElementById('inp-campus').disabled=true;
-    // wd-campus는 위에서 처리됨
   }
 }
 
@@ -964,7 +974,7 @@ function updateInpMonths(){
 
 // ====== TAB ROUTING ======
 function showTab(tab){
-  if(tab==='compare'&&currentUser?.role!=='admin') return;
+  if(tab==='compare'&&currentUser?.role==='user') return;
   if(tab==='admin'&&currentUser?.role!=='admin') return;
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -1201,7 +1211,7 @@ function semNumericScore(year,sem){
 
 function renderCampus(){
   // 사용자 권한: 본인 캠퍼스만
-  const campus=currentUser.role!=='admin'?currentUser.campus:(document.getElementById('cs-campus')?.value||'');
+  const campus=currentUser.role==='user'?currentUser.campus:(document.getElementById('cs-campus')?.value||'');
   if(!campus) return;
   let recs=[];
 
@@ -1785,7 +1795,7 @@ async function renderAdmin(){
     const dAt=u.deletedAt?.toDate?.()?.toLocaleDateString('ko-KR')||null;
     return `<div class="user-item">
       <div class="u-info">
-        <div class="u-name">${u.name||'이름없음'} <span class="badge ${u.role==='admin'?'badge-admin':'badge-user'}">${u.role==='admin'?'관리자':'사용자'}</span>${!isActive?'<span class="badge badge-del" style="margin-left:4px;">삭제됨</span>':''}</div>
+        <div class="u-name">${u.name||'이름없음'} <span class="badge ${u.role==='admin'?'badge-admin':u.role==='viewer'?'badge-viewer':'badge-user'}">${u.role==='admin'?'관리자':u.role==='viewer'?'뷰어':'사용자'}</span>${!isActive?'<span class="badge badge-del" style="margin-left:4px;">삭제됨</span>':''}</div>
         <div class="u-email">${u.email||'-'} · ${u.campus||'캠퍼스 미지정'}</div>
         <div class="u-meta">등록일: ${cAt}${dAt?` · 삭제일: ${dAt}`:''}</div>
       </div>
@@ -2488,7 +2498,7 @@ async function renderWithdrawal(){
   }
 
   // 사용자 권한: 본인 캠퍼스만
-  const campus=currentUser.role!=='admin'?currentUser.campus:(document.getElementById('wd-campus')?.value||'');
+  const campus=currentUser.role==='user'?currentUser.campus:(document.getElementById('wd-campus')?.value||'');
   const content=document.getElementById('wd-content');
   let recs=[];
 
