@@ -496,7 +496,7 @@ tr:hover td{background:#FFFBF5;}
       </div>
 
       <!-- 업로드 이력 & 수정 -->
-      <div id="score-upload-history" style="display:none;background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
+      <div id="score-upload-history" style="background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div style="font-size:13px;font-weight:800;color:#15803D;">📋 업로드된 성적 데이터 조회 / 수정</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
@@ -2638,7 +2638,7 @@ async function initScoreTab(){
   const fb=document.getElementById('score-filter-bar');
   if(fb) fb.style.display='flex';
   const sh=document.getElementById('score-upload-history');
-  if(sh) sh.style.display='block';
+  if(sh) sh.style.display='block'; // 항상 표시
   await loadScoreUploadHistory();
 }
 
@@ -2737,8 +2737,9 @@ async function handleScoreUpload(event){
       updateScoreDropdowns();
       updateScoreHistoryDropdowns();
       document.getElementById('score-filter-bar').style.display='flex';
-      document.getElementById('score-upload-history').style.display='block';
-      await loadScoreHistory();
+      const shEl=document.getElementById('score-upload-history');
+      if(shEl) shEl.style.display='block';
+      await loadScoreUploadHistory();
       // 업로드 로그 저장
       const scoreLogLabel=`${file.name} (${uploadYear}${uploadSem}_${uploadCampus})`;
       await db.collection('uploadLogs').add({
@@ -2756,7 +2757,11 @@ async function handleScoreUpload(event){
 // ===== 업로드 이력 조회/수정 =====
 async function loadScoreUploadHistory(){
   const logEl=document.getElementById('score-upload-log-list');
-  if(!logEl) return;
+  if(!logEl){
+    const sh=document.getElementById('score-upload-history');
+    if(sh) sh.style.display='block';
+    return;
+  }
 
   // uploadedAt 기준으로 파일 단위 그룹핑
   const fileGroups={};
