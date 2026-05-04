@@ -495,6 +495,21 @@ tr:hover td{background:#FFFBF5;}
         <div id="score-upload-status" style="font-size:12px;color:#15803D;font-weight:600;"></div>
       </div>
 
+      <!-- 업로드 이력 & 수정 -->
+      <div id="score-upload-history" style="display:none;background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:13px;font-weight:800;color:#15803D;">📋 업로드된 성적 데이터 조회 / 수정</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="fg"><div class="fl">분원명</div><select class="fi" id="sh-campus"><option value="">전체</option></select></div>
+            <div class="fg"><div class="fl">년도</div><select class="fi" id="sh-year"><option value="">전체</option></select></div>
+            <div class="fg"><div class="fl">학기</div><select class="fi" id="sh-sem"><option value="">전체</option><option>1학기</option><option>2학기</option></select></div>
+            <div class="fg"><div class="fl">구분</div><select class="fi" id="sh-type"><option value="">전체</option><option>중간</option><option>기말</option></select></div>
+            <button class="btn-tif" onclick="loadScoreHistory()" style="padding:7px 14px;">조회</button>
+          </div>
+        </div>
+        <div id="score-history-content" style="overflow-x:auto;max-height:400px;overflow-y:auto;"></div>
+      </div>
+
       <!-- 조회 필터 -->
       <div class="filter-bar" id="score-filter-bar" style="display:none;">
         <div class="fg"><div class="fl">분원명</div><select class="fi" id="sc-campus"><option value="">전체</option></select></div>
@@ -618,6 +633,26 @@ tr:hover td{background:#FFFBF5;}
     </div>
 
   </main>
+</div>
+
+<!-- 내신성적 수정 모달 -->
+<div id="sc-edit-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:28px 32px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+    <div style="font-size:16px;font-weight:800;margin-bottom:20px;color:#15803D;">✏️ 성적 데이터 수정</div>
+    <input type="hidden" id="sc-edit-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div class="fg"><div class="fl">이름</div><input type="text" id="sc-edit-name" class="form-input"></div>
+      <div class="fg"><div class="fl">학년</div><select id="sc-edit-grade" class="form-input"><option>중등1</option><option>중등2</option><option>중등3</option></select></div>
+      <div class="fg"><div class="fl">교과서</div><input type="text" id="sc-edit-book" class="form-input"></div>
+      <div class="fg"><div class="fl">담임</div><input type="text" id="sc-edit-teacher" class="form-input"></div>
+      <div class="fg" style="grid-column:span 2;"><div class="fl">점수</div><input type="number" id="sc-edit-score" class="form-input" min="0" max="100"></div>
+    </div>
+    <div id="sc-edit-alert" style="margin-bottom:10px;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeScoreEditModal()" style="padding:9px 20px;border:1.5px solid var(--bdr);border-radius:7px;background:#fff;font-size:13px;cursor:pointer;color:var(--mut);">취소</button>
+      <button onclick="saveScoreEdit()" style="padding:9px 20px;background:#16A34A;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">저장</button>
+    </div>
+  </div>
 </div>
 
 <!-- 마감양식2 수정 모달 -->
@@ -2593,8 +2628,12 @@ async function loadScoreRecords(){
 async function initScoreTab(){
   if(!allScoreRecords.length) await loadScoreRecords();
   updateScoreDropdowns();
+  updateScoreHistoryDropdowns();
   const fb=document.getElementById('score-filter-bar');
   if(fb) fb.style.display='flex';
+  if(allScoreRecords.length){
+    document.getElementById('score-upload-history').style.display='block';
+  }
 }
 
 function updateScoreDropdowns(){
@@ -2628,52 +2667,60 @@ async function handleScoreUpload(event){
       const wb=XLSX.read(data,{type:'array'});
       const sheet=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
-      
-      // 헤더 찾기
       let headerRow=-1;
       for(let i=0;i<rows.length;i++){
         if(rows[i].some(x=>String(x).includes('분원명')||String(x).includes('학년'))){headerRow=i;break;}
       }
       if(headerRow===-1){statusEl.textContent='❌ 형식 인식 불가';return;}
-      
       const headers=rows[headerRow].map(h=>String(h).trim());
       const ci=h=>headers.findIndex(x=>x===h||x.includes(h));
       const iCampus=ci('분원명'),iSid=ci('S-ID'),iName=ci('학생이름'),
             iSchool=ci('학교'),iGrade=ci('학년'),iLevel=ci('레벨'),
             iYear=ci('년도'),iSem=ci('학기'),iType=ci('구분'),
             iBook=ci('교과서'),iScore=ci('점수'),iTeacher=ci('담임');
-      
       const dataRows=rows.slice(headerRow+1).filter(r=>r[iName]&&String(r[iName]).trim());
       if(!dataRows.length){statusEl.textContent='❌ 데이터 없음';return;}
-      statusEl.textContent=`⏳ 기존 데이터 삭제 중...`;
-      
-      // 전체 삭제 후 재저장
-      const existing=await db.collection('recordsScore').get();
-      for(let i=0;i<existing.docs.length;i+=400){
-        const batch=db.batch();
-        existing.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));
-        await batch.commit();
+
+      statusEl.textContent='⏳ 기존 데이터 비교 중...';
+
+      // 업로드한 파일에서 분원+년도+학기+구분 조합 파악
+      const safeStr=(row,idx)=>idx>=0?String(row[idx]||'').trim():'';
+      const uploadCampus=safeStr(dataRows[0],iCampus);
+      const uploadYear=safeStr(dataRows[0],iYear).replace('년','').trim();
+      const uploadSem=safeStr(dataRows[0],iSem);
+      const uploadType=safeStr(dataRows[0],iType);
+
+      // 같은 분원+년도+학기+구분의 기존 데이터만 삭제 (다른 분원 데이터 보존!)
+      if(uploadCampus&&uploadYear&&uploadSem&&uploadType){
+        statusEl.textContent=`⏳ ${uploadCampus} ${uploadYear}년 ${uploadSem} ${uploadType} 기존 데이터 교체 중...`;
+        const existing=await db.collection('recordsScore')
+          .where('campus','==',uploadCampus)
+          .where('year','==',uploadYear)
+          .where('sem','==',uploadSem)
+          .where('type','==',uploadType).get();
+        if(!existing.empty){
+          for(let i=0;i<existing.docs.length;i+=400){
+            const batch=db.batch();
+            existing.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));
+            await batch.commit();
+          }
+        }
       }
-      
+
       statusEl.textContent=`⏳ ${dataRows.length}건 저장 중...`;
+      const uploadedAt=new Date().toISOString();
       let saved=0;
       for(let i=0;i<dataRows.length;i+=400){
         const batch=db.batch();
         dataRows.slice(i,i+400).forEach(row=>{
-          const safeStr=idx=>idx>=0?String(row[idx]||'').trim():'';
+          const ss=idx=>idx>=0?String(row[idx]||'').trim():'';
           batch.set(db.collection('recordsScore').doc(),{
-            campus:safeStr(iCampus),
-            sid:safeStr(iSid),
-            name:safeStr(iName),
-            school:safeStr(iSchool),
-            grade:safeStr(iGrade),
-            level:safeStr(iLevel),
-            year:safeStr(iYear).replace('년','').trim(),
-            sem:safeStr(iSem),
-            type:safeStr(iType),
-            book:safeStr(iBook),
-            score:parseFloat(row[iScore])||0,
-            teacher:safeStr(iTeacher)
+            campus:ss(iCampus),sid:ss(iSid),name:ss(iName),
+            school:ss(iSchool),grade:ss(iGrade),level:ss(iLevel),
+            year:ss(iYear).replace('년','').trim(),
+            sem:ss(iSem),type:ss(iType),book:ss(iBook),
+            score:parseFloat(row[iScore])||0,teacher:ss(iTeacher),
+            uploadedAt
           });
           saved++;
         });
@@ -2682,13 +2729,131 @@ async function handleScoreUpload(event){
       }
       await loadScoreRecords();
       updateScoreDropdowns();
-      const fb=document.getElementById('score-filter-bar');
-      if(fb) fb.style.display='flex';
-      statusEl.innerHTML=`<span style="color:#15803D">✅ ${saved}건 저장 완료!</span>`;
+      updateScoreHistoryDropdowns();
+      document.getElementById('score-filter-bar').style.display='flex';
+      document.getElementById('score-upload-history').style.display='block';
+      await loadScoreHistory();
+      statusEl.innerHTML=`<span style="color:#15803D">✅ ${saved}건 저장 완료! (${uploadCampus} ${uploadYear}년 ${uploadSem} ${uploadType})</span>`;
     }catch(err){statusEl.textContent='❌ 오류: '+err.message;console.error(err);}
   };
   reader.readAsArrayBuffer(file);
   event.target.value='';
+}
+
+// ===== 업로드 이력 조회/수정 =====
+function updateScoreHistoryDropdowns(){
+  const campuses=[...new Set(allScoreRecords.map(r=>r.campus).filter(Boolean))].sort();
+  const years=[...new Set(allScoreRecords.map(r=>String(r.year)).filter(Boolean))].sort();
+  const shc=document.getElementById('sh-campus');
+  const shy=document.getElementById('sh-year');
+  if(shc){shc.innerHTML='<option value="">전체</option>'+campuses.map(c=>`<option>${c}</option>`).join('');}
+  if(shy){shy.innerHTML='<option value="">전체</option>'+years.map(y=>`<option value="${y}">${y}년</option>`).join('');}
+}
+
+async function loadScoreHistory(){
+  const campus=document.getElementById('sh-campus')?.value||'';
+  const year=document.getElementById('sh-year')?.value||'';
+  const sem=document.getElementById('sh-sem')?.value||'';
+  const type=document.getElementById('sh-type')?.value||'';
+  const el=document.getElementById('score-history-content');
+  el.innerHTML='<div class="loading">로딩 중...</div>';
+
+  let recs=allScoreRecords.filter(r=>{
+    if(campus&&r.campus!==campus) return false;
+    if(year&&String(r.year)!==year) return false;
+    if(sem&&r.sem!==sem) return false;
+    if(type&&r.type!==type) return false;
+    return true;
+  });
+
+  // 최신 업로드 순 정렬
+  recs=[...recs].sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
+
+  if(!recs.length){el.innerHTML='<div style="padding:20px;color:var(--mut);font-size:13px;">데이터가 없어요.</div>';return;}
+
+  el.innerHTML=`
+    <div style="font-size:12px;color:var(--mut);margin-bottom:8px;">총 ${recs.length}명 · 최신 업로드 순</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead>
+        <tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
+          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);text-align:left;">분원</th>
+          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">년도</th>
+          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">학기</th>
+          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">구분</th>
+          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">이름</th>
+          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">학년</th>
+          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">교과서</th>
+          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">담임</th>
+          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">점수</th>
+          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">수정/삭제</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${recs.map(r=>`<tr id="sh-row-${r.id}">
+          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;">${r.campus||''}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;text-align:center;">${r.year||''}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;text-align:center;">${r.sem||''}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;text-align:center;">${r.type||''}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;font-weight:700;">${r.name||''}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;text-align:center;">${r.grade||''}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;">${r.book||''}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;">${r.teacher||''}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;text-align:center;font-weight:800;color:var(--org);">${r.score||0}점</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;">
+            <div style="display:flex;gap:4px;">
+              <button onclick="openScoreEditModal('${r.id}')" style="padding:3px 8px;border:1.5px solid var(--tif);border-radius:4px;background:#fff;color:var(--tif-dk);font-size:11px;cursor:pointer;">수정</button>
+              <button onclick="deleteScoreRecord('${r.id}')" style="padding:3px 8px;border:1.5px solid #EF4444;border-radius:4px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;">삭제</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function openScoreEditModal(id){
+  const r=allScoreRecords.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('sc-edit-id').value=id;
+  document.getElementById('sc-edit-name').value=r.name||'';
+  document.getElementById('sc-edit-grade').value=r.grade||'';
+  document.getElementById('sc-edit-book').value=r.book||'';
+  document.getElementById('sc-edit-teacher').value=r.teacher||'';
+  document.getElementById('sc-edit-score').value=r.score||0;
+  document.getElementById('sc-edit-modal').style.display='flex';
+  document.getElementById('sc-edit-alert').innerHTML='';
+}
+
+function closeScoreEditModal(){
+  document.getElementById('sc-edit-modal').style.display='none';
+}
+
+async function saveScoreEdit(){
+  const id=document.getElementById('sc-edit-id').value;
+  const alertEl=document.getElementById('sc-edit-alert');
+  const data={
+    name:document.getElementById('sc-edit-name').value.trim(),
+    grade:document.getElementById('sc-edit-grade').value.trim(),
+    book:document.getElementById('sc-edit-book').value.trim(),
+    teacher:document.getElementById('sc-edit-teacher').value.trim(),
+    score:parseFloat(document.getElementById('sc-edit-score').value)||0,
+  };
+  try{
+    await db.collection('recordsScore').doc(id).update(data);
+    const idx=allScoreRecords.findIndex(x=>x.id===id);
+    if(idx>=0) allScoreRecords[idx]={...allScoreRecords[idx],...data};
+    alertEl.innerHTML='<div class="alert alert-ok">✅ 수정 완료!</div>';
+    setTimeout(()=>{closeScoreEditModal();loadScoreHistory();},600);
+  }catch(e){alertEl.innerHTML=`<div class="alert alert-err">❌ ${e.message}</div>`;}
+}
+
+async function deleteScoreRecord(id){
+  if(!confirm('이 항목을 삭제하시겠습니까?')) return;
+  try{
+    await db.collection('recordsScore').doc(id).delete();
+    allScoreRecords=allScoreRecords.filter(x=>x.id!==id);
+    const row=document.getElementById('sh-row-'+id);
+    if(row) row.remove();
+  }catch(e){alert('삭제 오류: '+e.message);}
 }
 
 // 점수 구간 계산
