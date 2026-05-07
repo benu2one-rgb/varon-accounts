@@ -1133,11 +1133,11 @@ function initDropdowns(){
 }
 
 function fillYearSelect(id,years,selected){
-  const el=document.getElementById(id);el.innerHTML='';
+  const el=document.getElementById(id);if(!el) return;el.innerHTML='';
   years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y+'년';o.selected=(y===selected);el.appendChild(o);});
 }
 function fillCampusSelect(id,campuses,locked){
-  const el=document.getElementById(id);el.innerHTML='';
+  const el=document.getElementById(id);if(!el) return;el.innerHTML='';
   if(!locked){campuses.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;el.appendChild(o);});}
   else{const o=document.createElement('option');o.value=locked;o.textContent=locked;el.appendChild(o);}
 }
