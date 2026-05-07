@@ -694,9 +694,25 @@ tr:hover td{background:#FFFBF5;}
       <div style="background:#fff;border-radius:16px;padding:28px 32px;width:520px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.2);margin:20px auto;">
         <div style="font-size:16px;font-weight:800;margin-bottom:20px;color:#1D4ED8;">✏️ 신입전형 개별 입력</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-          <div class="fg"><div class="fl">캠퍼스</div><select id="adm-f-campus" class="form-input"><option value="">선택</option></select></div>
-          <div class="fg"><div class="fl">응시분기</div><input type="text" id="adm-f-quarter" class="form-input" placeholder="예: 26 여름"></div>
-          <div class="fg"><div class="fl">응시방식</div><input type="text" id="adm-f-method" class="form-input" placeholder="예: 1차 설명회"></div>
+          <div class="fg"><div class="fl">캠퍼스</div>
+            <input type="text" id="adm-f-campus" class="form-input" list="adm-campus-list" placeholder="캠퍼스 입력 또는 선택">
+            <datalist id="adm-campus-list">
+              <option>남동탄</option><option>서수원</option><option>수원</option>
+              <option>운정1</option><option>운정2</option><option>장안</option>
+            </datalist>
+          </div>
+          <div class="fg"><div class="fl">응시년도</div><input type="text" id="adm-f-admyear" class="form-input" placeholder="예: 26년"></div>
+          <div class="fg"><div class="fl">응시분기</div>
+            <select id="adm-f-admquarter" class="form-input">
+              <option value="">선택</option><option>겨울</option><option>봄</option><option>여름</option><option>가을</option>
+            </select>
+          </div>
+          <div class="fg"><div class="fl">응시방식</div>
+            <input type="text" id="adm-f-method" class="form-input" list="adm-method-list" placeholder="입력 또는 선택">
+            <datalist id="adm-method-list">
+              <option>1차 설명회</option><option>2차 설명회</option><option>개별 전형</option>
+            </datalist>
+          </div>
           <div class="fg"><div class="fl">참석여부</div><select id="adm-f-attend" class="form-input"><option value="">미참석</option><option value="참석">참석</option></select></div>
           <div class="fg"><div class="fl">Test 날짜</div><input type="date" id="adm-f-testdate" class="form-input"></div>
           <div class="fg"><div class="fl">구분</div><select id="adm-f-division" class="form-input"><option value="">선택</option><option>CHESS</option><option>ACE</option></select></div>
@@ -4257,7 +4273,7 @@ function renderAdmTable(recs, limitNote=false, total=0){
       <tbody>
         ${recs.map((r,i)=>`<tr id="adm-row-${r.id}" style="${i%2===0?'':'background:#FAFAFA'}">
           <td style="${tdS}font-weight:600;">${r.campus||''}</td>
-          <td style="${tdS}text-align:center;">${r.quarter||''}</td>
+          <td style="${tdS}text-align:center;">${r.admYear||r.year||''} ${r.admQuarter||''}</td>
           <td style="${tdS}">${r.method||''}</td>
           <td style="${tdS}text-align:center;color:${r.attend==='참석'?'#059669':'#94A3B8'};">${r.attend||'-'}</td>
           <td style="${tdS}text-align:center;">${r.testDate?r.testDate.substring(0,10):'-'}</td>
@@ -4285,7 +4301,7 @@ function renderAdmTable(recs, limitNote=false, total=0){
 // ===== 개별 입력 폼 =====
 function openAdmissionForm(id=''){
   document.getElementById('adm-f-editid').value='';
-  ['campus','quarter','method','attend','testdate','division','name','school','grade','contact','class','enrolldate']
+  ['campus','admyear','admquarter','method','attend','testdate','division','name','school','grade','contact','class','enrolldate']
     .forEach(f=>{ const el=document.getElementById('adm-f-'+f); if(el) el.value=''; });
   document.getElementById('adm-form-alert').innerHTML='';
   if(id){
@@ -4293,7 +4309,8 @@ function openAdmissionForm(id=''){
     if(r){
       document.getElementById('adm-f-editid').value=id;
       document.getElementById('adm-f-campus').value=r.campus||'';
-      document.getElementById('adm-f-quarter').value=r.quarter||'';
+      document.getElementById('adm-f-admyear').value=r.admYear||r.year||'';
+      document.getElementById('adm-f-admquarter').value=r.admQuarter||'';
       document.getElementById('adm-f-method').value=r.method||'';
       document.getElementById('adm-f-attend').value=r.attend||'';
       document.getElementById('adm-f-testdate').value=r.testDate?r.testDate.substring(0,10):'';
@@ -4339,9 +4356,13 @@ async function deleteAdmRecord(id){
 async function saveAdmissionForm(){
   const editId=document.getElementById('adm-f-editid').value;
   const alertEl=document.getElementById('adm-form-alert');
+  const admYear=document.getElementById('adm-f-admyear').value.replace('년','').trim();
+  const admQtr=document.getElementById('adm-f-admquarter').value;
   const data={
-    campus:document.getElementById('adm-f-campus').value,
-    quarter:document.getElementById('adm-f-quarter').value.trim(),
+    campus:document.getElementById('adm-f-campus').value.trim(),
+    admYear, admQuarter:admQtr,
+    quarter:admYear+' '+admQtr,
+    year:admYear,
     method:document.getElementById('adm-f-method').value.trim(),
     attend:document.getElementById('adm-f-attend').value,
     testDate:document.getElementById('adm-f-testdate').value||null,
@@ -4352,7 +4373,6 @@ async function saveAdmissionForm(){
     contact:document.getElementById('adm-f-contact').value.trim(),
     classAssign:document.getElementById('adm-f-class').value.trim(),
     enrollDate:document.getElementById('adm-f-enrolldate').value||null,
-    year:document.getElementById('adm-f-quarter').value.trim().substring(0,2),
     uploadedAt:editId?undefined:new Date().toISOString(),
     uploadedBy:currentUser?.email||''
   };
@@ -4395,7 +4415,8 @@ async function handleAdmissionUpload(event){
       if(hr===-1){statusEl.textContent='❌ 형식 인식 불가';return;}
       const headers=rows[hr].map(h=>String(h).trim());
       const ci=h=>headers.findIndex(x=>x===h||x.includes(h));
-      const iCamp=ci('캠퍼스'),iQtr=ci('응시분기'),iMeth=ci('응시방식'),iAtt=ci('참석여부'),
+      const iCamp=ci('캠퍼스'),iAdmYear=ci('응시년도'),iAdmQtr=ci('응시분기'),
+            iMeth=ci('응시방식'),iAtt=ci('참석여부'),
             iTest=ci('Test'),iDiv=ci('구분'),iName=ci('이름'),iSch=ci('학교'),
             iGrd=ci('학년'),iCont=ci('연락처'),iCls=ci('반배정'),iEnr=ci('입학');
       const dataRows=rows.slice(hr+1).filter(r=>r[iName]&&String(r[iName]).trim());
@@ -4403,9 +4424,14 @@ async function handleAdmissionUpload(event){
       const ss=(row,idx)=>idx>=0?String(row[idx]||'').trim():'';
       const fmtDate=v=>{if(!v||v==='') return null;if(v instanceof Date) return v.toISOString().substring(0,10);if(typeof v==='number'){const d=new Date(Math.round((v-25569)*86400*1000));return d.toISOString().substring(0,10);}return String(v).substring(0,10)||null;};
       const upCampus=ss(dataRows[0],iCamp);
-      const upQtr=ss(dataRows[0],iQtr);
-      if(upCampus&&upQtr){
-        const ex=await db.collection('recordsAdm').where('campus','==',upCampus).where('quarter','==',upQtr).get();
+      const upAdmYear=ss(dataRows[0],iAdmYear).replace('년','').trim();
+      const upAdmQtr=ss(dataRows[0],iAdmQtr);
+      // 같은 캠퍼스+응시년도+응시분기 기존 데이터 삭제
+      if(upCampus&&upAdmYear){
+        const ex=await db.collection('recordsAdm')
+          .where('campus','==',upCampus)
+          .where('admYear','==',upAdmYear)
+          .where('admQuarter','==',upAdmQtr).get();
         if(!ex.empty){
           for(let i=0;i<ex.docs.length;i+=400){const b=db.batch();ex.docs.slice(i,i+400).forEach(d=>b.delete(d.ref));await b.commit();}
         }
@@ -4416,10 +4442,13 @@ async function handleAdmissionUpload(event){
       for(let i=0;i<dataRows.length;i+=400){
         const batch=db.batch();
         dataRows.slice(i,i+400).forEach(row=>{
-          const quarterStr=ss(row,iQtr);
-          const yr=quarterStr?quarterStr.substring(0,2):'';
+          const admYear=ss(row,iAdmYear).replace('년','').trim();
+          const admQtr=ss(row,iAdmQtr);
           batch.set(db.collection('recordsAdm').doc(),{
-            campus:ss(row,iCamp),quarter:quarterStr,year:yr,
+            campus:ss(row,iCamp),
+            admYear, admQuarter:admQtr,
+            quarter:admYear+' '+admQtr,
+            year:admYear,
             method:ss(row,iMeth),attend:ss(row,iAtt),
             testDate:fmtDate(row[iTest]),division:ss(row,iDiv),
             name:ss(row,iName),school:ss(row,iSch),grade:ss(row,iGrd),
@@ -4435,7 +4464,7 @@ async function handleAdmissionUpload(event){
       await loadAdmRecords(true);
       updateAdmDropdowns();
       await loadAdmUploadHistory();
-      statusEl.innerHTML=`<span style="color:#15803D">✅ ${saved}건 저장 완료! (${upCampus} ${upQtr})</span>`;
+      statusEl.innerHTML=`<span style="color:#15803D">✅ ${saved}건 저장 완료! (${upCampus} ${upAdmYear}년 ${upAdmQtr})</span>`;
     }catch(err){statusEl.textContent='❌ 오류: '+err.message;console.error(err);}
   };
   reader.readAsArrayBuffer(file);
@@ -4547,14 +4576,12 @@ function renderAdmAll(recs){
       campusApply+=s.apply;campusAttend+=s.attend;campusTested+=s.tested;campusPassed+=s.passed;campusEnrolled+=s.enrolled;
       allMonths.forEach(m=>{campusByMonth[m]=(campusByMonth[m]||0)+(s.byMonth[m]||0);});
       tbody+=`<tr>
-        <td style="${tdS}text-align:left;padding-left:16px;font-weight:600;"${di===0?` rowspan="${divisions.length}"`:''}${di>0?' style="display:none"':''}>
-          ${di===0?campus:''}
-        </td>
+        ${di===0?`<td style="${tdS}text-align:left;padding-left:12px;font-weight:700;" rowspan="${divisions.filter(d=>campusRecs.filter(r=>r.division===d).length>0).length}">${campus}</td>`:''}
         <td style="${tdS}"><span style="padding:2px 6px;border-radius:10px;font-size:10px;font-weight:700;background:${div==='CHESS'?'#EDE9FE':'#FFF7ED'};color:${div==='CHESS'?'#6D28D9':'#C2410C'};">${div}</span></td>
         <td style="${tdS}">${s.apply}</td>
         <td style="${tdS}">${s.attend}</td>
         <td style="${tdS}">${s.tested}</td>
-        <td style="${tdS};font-weight:700;color:#6D28D9;">${s.passed}</td>
+        <td style="${tdS}font-weight:700;color:#6D28D9;">${s.passed}</td>
         ${allMonths.map(m=>`<td style="${tdS}">${s.byMonth[m]||''}</td>`).join('')}
         <td style="${tdS}font-weight:700;color:#854D0E;">${s.enrolled}</td>
         <td style="${tdS}color:#92400E;font-weight:700;">${s.rate}%</td>
@@ -4607,8 +4634,8 @@ function renderAdmAll(recs){
         </table>
       </div>
       <div class="chart-card">
-        <div class="chart-title">📊 캠퍼스별 현황 (막대 그래프)</div>
-        <div class="chart-wrap tall"><canvas id="ch-adm-bar"></canvas></div>
+        <div class="chart-title">📊 캠퍼스별 등록 인원</div>
+        <div class="chart-wrap" style="height:260px;"><canvas id="ch-adm-bar"></canvas></div>
       </div>
     </div>`;
 
@@ -4636,7 +4663,8 @@ function renderAdmAll(recs){
           datalabels:{anchor:'end',align:'top',font:{size:12,weight:'bold'},
             color:'#374151',formatter:v=>v?v+'명':''}
         },
-        scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'명'}}}
+        scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'명'}}},
+        datasets:{bar:{maxBarThickness:60}}
       }
     });
   });
