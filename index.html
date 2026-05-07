@@ -3093,11 +3093,12 @@ function updateScoreHistoryDropdowns(){
 }
 
 async function loadScoreHistory(){
+  const el=document.getElementById('score-history-content');
+  if(!el) return; // 요소 없으면 종료
   const campus=document.getElementById('sh-campus')?.value||'';
   const year=document.getElementById('sh-year')?.value||'';
   const sem=document.getElementById('sh-sem')?.value||'';
   const type=document.getElementById('sh-type')?.value||'';
-  const el=document.getElementById('score-history-content');
   el.innerHTML='<div class="loading">로딩 중...</div>';
 
   let recs=allScoreRecords.filter(r=>{
