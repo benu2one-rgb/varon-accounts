@@ -598,7 +598,7 @@ tr:hover td{background:#FFFBF5;}
     <div id="tab-admission" class="tab-content">
       <div class="sec-title">신입전형</div>
 
-      <!-- 업로드 영역 -->
+      <!-- 업로드 -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
         <div style="background:#F0FDF4;border:1.5px dashed #16A34A;border-radius:var(--rad);padding:14px 18px;">
           <div style="font-size:13px;font-weight:800;color:#15803D;margin-bottom:4px;">📂 다량 업로드 (엑셀)</div>
@@ -623,7 +623,7 @@ tr:hover td{background:#FFFBF5;}
         <div id="adm-history-list"></div>
       </div>
 
-      <!-- 데이터 조회 -->
+      <!-- 데이터 조회/수정 -->
       <div style="background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
         <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:12px;">🔍 데이터 조회 / 수정</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px;">
@@ -637,7 +637,7 @@ tr:hover td{background:#FFFBF5;}
           <div id="adm-sq-date-wrap" style="display:flex;gap:8px;align-items:flex-end;">
             <div class="fg"><div class="fl">날짜</div><input type="date" class="fi" id="adm-sq-date-val"></div>
           </div>
-          <div id="adm-sq-name-wrap" style="display:none;flex;gap:8px;align-items:flex-end;">
+          <div id="adm-sq-name-wrap" style="display:none;gap:8px;align-items:flex-end;">
             <div class="fg"><div class="fl">이름</div>
               <input type="text" class="fi" id="adm-sq-name-val" placeholder="이름 입력..." oninput="admNameSuggest()">
             </div>
@@ -648,31 +648,34 @@ tr:hover td{background:#FFFBF5;}
         <div id="adm-search-result" style="overflow-x:auto;max-height:440px;overflow-y:auto;"></div>
       </div>
 
-      <!-- 분석 필터 -->
-      <div class="filter-bar" style="margin-bottom:12px;">
-        <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="adm-f-campus-filter"><option value="">전체</option></select></div>
-        <div class="fg">
-          <div class="fl">기간 유형</div>
-          <div class="ptabs">
-            <button class="ptab active" id="adm-pt-q" onclick="setAdmPeriod('quarter')">분기별</button>
-            <button class="ptab" id="adm-pt-m" onclick="setAdmPeriod('month')">월별</button>
+      <!-- ★ 주요 분석 필터 (강조) -->
+      <div style="background:var(--org-lt);border:2px solid var(--org);border-radius:var(--rad);padding:16px 20px;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:900;color:var(--org);margin-bottom:12px;">📊 현황 조회</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+          <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="adm-f-campus" style="min-width:90px;"><option value="">전체</option></select></div>
+          <div class="fg">
+            <div class="fl">기간 유형</div>
+            <div class="ptabs">
+              <button class="ptab active" id="adm-pt-q" onclick="setAdmPeriod('quarter')">분기별</button>
+              <button class="ptab" id="adm-pt-m" onclick="setAdmPeriod('month')">월별</button>
+            </div>
           </div>
+          <div id="adm-q-wrap" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg"><div class="fl">시작 년도</div><select class="fi" id="adm-q-sy"></select></div>
+            <div class="fg"><div class="fl">시작 분기</div><select class="fi" id="adm-q-sq"><option value="">전체</option><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
+            <div style="align-self:flex-end;padding-bottom:4px;color:#94A3B8;font-weight:700;">~</div>
+            <div class="fg"><div class="fl">종료 년도</div><select class="fi" id="adm-q-ey"></select></div>
+            <div class="fg"><div class="fl">종료 분기</div><select class="fi" id="adm-q-eq"><option value="">전체</option><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
+          </div>
+          <div id="adm-m-wrap" style="display:none;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg"><div class="fl">시작 년도</div><select class="fi" id="adm-m-sy"></select></div>
+            <div class="fg"><div class="fl">시작 월</div><select class="fi" id="adm-m-sm"><option value="">전체</option><option>1월</option><option>2월</option><option>3월</option><option>4월</option><option>5월</option><option>6월</option><option>7월</option><option>8월</option><option>9월</option><option>10월</option><option>11월</option><option>12월</option></select></div>
+            <div style="align-self:flex-end;padding-bottom:4px;color:#94A3B8;font-weight:700;">~</div>
+            <div class="fg"><div class="fl">종료 년도</div><select class="fi" id="adm-m-ey"></select></div>
+            <div class="fg"><div class="fl">종료 월</div><select class="fi" id="adm-m-em"><option value="">전체</option><option>1월</option><option>2월</option><option>3월</option><option>4월</option><option>5월</option><option>6월</option><option>7월</option><option>8월</option><option>9월</option><option>10월</option><option>11월</option><option>12월</option></select></div>
+          </div>
+          <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="admRender()" style="font-size:14px;padding:9px 22px;">조회</button></div>
         </div>
-        <div id="adm-q-wrap" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="fg"><div class="fl">시작 년도</div><select class="fi" id="adm-q-sy"></select></div>
-          <div class="fg"><div class="fl">시작 분기</div><select class="fi" id="adm-q-sq"><option value="">전체</option><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
-          <div style="align-self:flex-end;padding-bottom:4px;color:#94A3B8;font-weight:700;">~</div>
-          <div class="fg"><div class="fl">종료 년도</div><select class="fi" id="adm-q-ey"></select></div>
-          <div class="fg"><div class="fl">종료 분기</div><select class="fi" id="adm-q-eq"><option value="">전체</option><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
-        </div>
-        <div id="adm-m-wrap" style="display:none;gap:8px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="fg"><div class="fl">시작 년도</div><select class="fi" id="adm-m-sy"></select></div>
-          <div class="fg"><div class="fl">시작 월</div><select class="fi" id="adm-m-sm"><option value="">전체</option><option>1월</option><option>2월</option><option>3월</option><option>4월</option><option>5월</option><option>6월</option><option>7월</option><option>8월</option><option>9월</option><option>10월</option><option>11월</option><option>12월</option></select></div>
-          <div style="align-self:flex-end;padding-bottom:4px;color:#94A3B8;font-weight:700;">~</div>
-          <div class="fg"><div class="fl">종료 년도</div><select class="fi" id="adm-m-ey"></select></div>
-          <div class="fg"><div class="fl">종료 월</div><select class="fi" id="adm-m-em"><option value="">전체</option><option>1월</option><option>2월</option><option>3월</option><option>4월</option><option>5월</option><option>6월</option><option>7월</option><option>8월</option><option>9월</option><option>10월</option><option>11월</option><option>12월</option></select></div>
-        </div>
-        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="admRender()">조회</button></div>
       </div>
 
       <!-- 분석 탭 -->
@@ -699,7 +702,7 @@ tr:hover td{background:#FFFBF5;}
           </div>
           <div class="fg"><div class="fl">응시방식</div>
             <input type="text" id="adm-m-method" class="form-input" list="adm-method-dl" placeholder="입력 또는 선택">
-            <datalist id="adm-method-dl"><option>1차 설명회</option><option>2차 설명회</option><option>개별 전형</option></datalist>
+            <datalist id="adm-method-dl"><option>1차 설명회</option><option>2차 설명회</option><option>3차 설명회</option><option>개별 전형</option></datalist>
           </div>
           <div class="fg"><div class="fl">참석여부</div><select id="adm-m-attend" class="form-input"><option value="">미참석</option><option value="참석">참석</option></select></div>
           <div class="fg"><div class="fl">Test 날짜</div><input type="date" id="adm-m-testdate" class="form-input"></div>
@@ -723,7 +726,7 @@ tr:hover td{background:#FFFBF5;}
       </div>
     </div>
 
-    <!-- ===== 관리자 ===== -->    <!-- ===== 관리자 ===== -->
+    <!-- ===== 관리자 ===== -->    <!-- ===== 관리자 ===== -->    <!-- ===== 관리자 ===== -->
     <div id="tab-admin" class="tab-content">
       <div class="sec-title">관리자</div>
 
@@ -4100,17 +4103,40 @@ const ACE_GRADES=['초등6','중등1','중등2','중등3'];
 const ALL_GRADES=[...CHESS_GRADES,...ACE_GRADES];
 const QTR_ORDER={겨울:1,봄:2,여름:3,가을:4};
 
+// 날짜 로컬 변환 (timezone 문제 완전 해결)
+function toLocalDate(v){
+  if(!v||v==='') return null;
+  if(v instanceof Date){
+    const y=v.getFullYear(),m=String(v.getMonth()+1).padStart(2,'0'),d=String(v.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  if(typeof v==='number'){
+    // Excel serial → 로컬 날짜 (UTC 오프셋 없이)
+    const totalDays=Math.round(v)-25569;
+    const ms=totalDays*86400*1000;
+    const d=new Date(ms);
+    // UTC 기준으로 날짜 추출 (Excel serial은 UTC)
+    const y=d.getUTCFullYear(),mo=String(d.getUTCMonth()+1).padStart(2,'0'),day=String(d.getUTCDate()).padStart(2,'0');
+    return `${y}-${mo}-${day}`;
+  }
+  const s=String(v);
+  return s.substring(0,10)||null;
+}
+
+// 분기 점수 (필터용)
+function qScore(year,quarter){
+  const y=parseInt(String(year||'').replace('년','').replace('20',''))||0;
+  return y*10+(QTR_ORDER[quarter]||0);
+}
+
 // ===== 데이터 로드 =====
 async function loadAdmRecs(force=false){
   if(!force&&allAdmRecs.length&&cacheGet('recordsAdm')) return;
   const snap=await db.collection('recordsAdm').get();
   allAdmRecs=snap.docs.map(d=>{
     const v={id:d.id,...d.data()};
-    // Timestamp 변환
-    ['testDate','enrollDate'].forEach(k=>{
-      if(v[k]&&typeof v[k]==='object'&&v[k].toDate)
-        v[k]=v[k].toDate().toISOString().substring(0,10);
-    });
+    if(v.testDate&&typeof v.testDate==='object'&&v.testDate.toDate) v.testDate=toLocalDate(v.testDate.toDate());
+    if(v.enrollDate&&typeof v.enrollDate==='object'&&v.enrollDate.toDate) v.enrollDate=toLocalDate(v.enrollDate.toDate());
     return v;
   });
   cacheSet('recordsAdm',true);
@@ -4126,20 +4152,19 @@ async function initAdmissionTab(){
 function admUpdateDropdowns(){
   const camps=[...new Set(allAdmRecs.map(r=>r.campus).filter(Boolean))].sort();
   const allCamps=[...new Set([...ADM_CAMPUSES,...camps])].sort();
+  // 년도: admYear 기준 (2자리)
   const years=[...new Set(allAdmRecs.map(r=>String(r.admYear||r.year||'').replace('년','')).filter(Boolean))].sort();
 
-  const camSel=document.getElementById('adm-f-campus-filter');
+  const camSel=document.getElementById('adm-f-campus');
   if(camSel){camSel.innerHTML='<option value="">전체</option>'+allCamps.map(cp=>`<option>${cp}</option>`).join('');}
 
   ['adm-q-sy','adm-q-ey','adm-m-sy','adm-m-ey'].forEach(id=>{
-    const sel=document.getElementById(id);
-    if(!sel) return;
+    const sel=document.getElementById(id);if(!sel) return;
     const cur=sel.value;
     sel.innerHTML='<option value="">전체</option>'+years.map(y=>`<option value="${y}"${y===cur?' selected':''}>${y}년</option>`).join('');
   });
 }
 
-// ===== 기간 유형 전환 =====
 function setAdmPeriod(type){
   admPeriod=type;
   document.getElementById('adm-pt-q').classList.toggle('active',type==='quarter');
@@ -4148,7 +4173,6 @@ function setAdmPeriod(type){
   document.getElementById('adm-m-wrap').style.display=type==='month'?'flex':'none';
 }
 
-// ===== 검색 방식 전환 =====
 function setAdmSearchMode(mode){
   admSearchMode=mode;
   document.getElementById('adm-sq-date').classList.toggle('active',mode==='date');
@@ -4159,7 +4183,6 @@ function setAdmSearchMode(mode){
   document.getElementById('adm-search-result').innerHTML='';
 }
 
-// ===== 뷰 전환 =====
 function admShowView(view){
   admView=view;
   document.getElementById('adm-view-all').classList.toggle('active',view==='all');
@@ -4173,11 +4196,9 @@ function admNameSuggest(){
   const q=document.getElementById('adm-sq-name-val').value.trim();
   const dd=document.getElementById('adm-name-dropdown');
   if(!q){dd.style.display='none';return;}
-  // 권한 필터
   let pool=allAdmRecs.filter(r=>r.name&&r.name.includes(q));
-  if(!isSuperAdmin()&&currentUser?.role!=='admin')
-    pool=pool.filter(r=>r.campus===currentUser?.campus);
-  const uniq=[...new Map(pool.map(r=>[r.name+'|'+r.contact,{name:r.name,contact:r.contact||'-',campus:r.campus||''}])).values()];
+  if(!isSuperAdmin()&&currentUser?.role!=='admin') pool=pool.filter(r=>r.campus===currentUser?.campus);
+  const uniq=[...new Map(pool.map(r=>[r.name+'|'+(r.contact||''),{name:r.name,contact:r.contact||'-',campus:r.campus||''}])).values()];
   if(!uniq.length){dd.style.display='none';return;}
   dd.style.display='block';
   dd.innerHTML=uniq.slice(0,10).map(m=>`
@@ -4193,8 +4214,7 @@ function admSelectPerson(name,contact){
   document.getElementById('adm-sq-name-val').value=name;
   document.getElementById('adm-name-dropdown').style.display='none';
   let recs=allAdmRecs.filter(r=>r.name===name&&(r.contact===contact||!contact||contact==='-'));
-  if(!isSuperAdmin()&&currentUser?.role!=='admin')
-    recs=recs.filter(r=>r.campus===currentUser?.campus);
+  if(!isSuperAdmin()&&currentUser?.role!=='admin') recs=recs.filter(r=>r.campus===currentUser?.campus);
   admRenderTable(recs);
 }
 
@@ -4221,8 +4241,8 @@ async function admSearch(){
 function admRenderTable(recs){
   const el=document.getElementById('adm-search-result');
   if(!recs.length){el.innerHTML='<div style="padding:14px;color:var(--mut);font-size:13px;">데이터가 없어요.</div>';return;}
-  const t='padding:6px 8px;font-size:11px;border-bottom:1px solid #F1F5F9;';
-  el.innerHTML=`<div style="font-size:12px;color:var(--mut);margin-bottom:6px;">총 ${recs.length}명</div>
+  const t='padding:5px 7px;font-size:11px;border-bottom:1px solid #F1F5F9;';
+  el.innerHTML=`<div style="font-size:12px;color:var(--mut);margin-bottom:6px;">총 ${recs.length}명 (스크롤로 더 보기)</div>
     <table style="width:100%;border-collapse:collapse;min-width:900px;">
       <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
         <th style="${t}font-weight:800;text-align:left;">캠퍼스</th>
@@ -4231,7 +4251,7 @@ function admRenderTable(recs){
         <th style="${t}font-weight:800;text-align:center;">응시방식</th>
         <th style="${t}font-weight:800;text-align:center;">참석</th>
         <th style="${t}font-weight:800;text-align:center;">Test날짜</th>
-        <th style="${t}font-weight:800;font-weight:800;">이름</th>
+        <th style="${t}font-weight:800;">이름</th>
         <th style="${t}font-weight:800;">학교</th>
         <th style="${t}font-weight:800;text-align:center;">학년</th>
         <th style="${t}font-weight:800;">연락처</th>
@@ -4255,11 +4275,11 @@ function admRenderTable(recs){
           <td style="${t}text-align:center;color:${r.enrollDate?'#C2410C':'#94A3B8'};">${r.enrollDate?r.enrollDate.substring(0,10):'-'}</td>
           <td style="${t}">
             ${isSuperAdmin()||r.campus===currentUser?.campus
-              ?`<div style="display:flex;gap:4px;">
-                  <button onclick="openAdmForm('${r.id}')" style="padding:3px 8px;border:1.5px solid var(--tif);border-radius:4px;background:#fff;color:var(--tif-dk);font-size:11px;cursor:pointer;">수정</button>
-                  <button onclick="admDelete('${r.id}')" style="padding:3px 8px;border:1.5px solid #EF4444;border-radius:4px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;">삭제</button>
+              ?`<div style="display:flex;gap:3px;">
+                  <button onclick="openAdmForm('${r.id}')" style="padding:2px 7px;border:1.5px solid var(--tif);border-radius:4px;background:#fff;color:var(--tif-dk);font-size:10px;cursor:pointer;">수정</button>
+                  <button onclick="admDelete('${r.id}')" style="padding:2px 7px;border:1.5px solid #EF4444;border-radius:4px;background:#fff;color:#EF4444;font-size:10px;cursor:pointer;">삭제</button>
                 </div>`
-              :`<span style="font-size:11px;color:#94A3B8;">열람만</span>`}
+              :`<span style="font-size:10px;color:#94A3B8;">열람만</span>`}
           </td>
         </tr>`).join('')}
       </tbody>
@@ -4268,8 +4288,8 @@ function admRenderTable(recs){
 
 // ===== CRUD =====
 function openAdmForm(id=''){
-  const fields=['campus','admyear','admquarter','method','attend','testdate','division','name','school','grade','contact','class','enrolldate'];
-  fields.forEach(f=>{const el=document.getElementById('adm-m-'+f);if(el)el.value='';});
+  const fs=['campus','admyear','admquarter','method','attend','testdate','division','name','school','grade','contact','class','enrolldate'];
+  fs.forEach(f=>{const el=document.getElementById('adm-m-'+f);if(el)el.value='';});
   document.getElementById('adm-m-editid').value='';
   document.getElementById('adm-m-alert').innerHTML='';
   if(id){
@@ -4322,14 +4342,12 @@ async function saveAdmForm(){
       const idx=allAdmRecs.findIndex(x=>x.id===editId);
       if(idx>=0) allAdmRecs[idx]={...allAdmRecs[idx],...data};
     } else {
-      data.uploadedAt=new Date().toISOString();
-      data.uploadedBy=currentUser?.email||'';
+      data.uploadedAt=new Date().toISOString();data.uploadedBy=currentUser?.email||'';
       const ref=db.collection('recordsAdm').doc();
       await ref.set(data);
       allAdmRecs.push({id:ref.id,...data});
     }
-    cacheInvalidate('recordsAdm');
-    admUpdateDropdowns();
+    cacheInvalidate('recordsAdm');admUpdateDropdowns();
     alertEl.innerHTML='<div class="alert alert-ok">✅ 저장 완료!</div>';
     setTimeout(()=>{closeAdmForm();admLoadHistory();},600);
   }catch(e){alertEl.innerHTML=`<div class="alert alert-err">❌ ${e.message}</div>`;}
@@ -4350,47 +4368,27 @@ async function admDelete(id){
 
 // ===== 엑셀 업로드 =====
 async function handleAdmUpload(event){
-  const file=event.target.files[0];
-  if(!file) return;
+  const file=event.target.files[0];if(!file) return;
   const statusEl=document.getElementById('adm-upload-status');
   statusEl.textContent='읽는 중...';
   const reader=new FileReader();
   reader.onload=async function(e){
     try{
       const data=new Uint8Array(e.target.result);
-      const wb=XLSX.read(data,{type:'array',cellDates:true});
+      const wb=XLSX.read(data,{type:'array',cellDates:false}); // cellDates:false로 serial 유지
       const sheet=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
       let hr=-1;
-      for(let i=0;i<rows.length;i++){
-        if(rows[i].some(x=>String(x).includes('캠퍼스'))){hr=i;break;}
-      }
+      for(let i=0;i<rows.length;i++){if(rows[i].some(x=>String(x).includes('캠퍼스'))){hr=i;break;}}
       if(hr===-1){statusEl.textContent='❌ 형식 인식 불가';return;}
       const hdrs=rows[hr].map(h=>String(h).trim());
-      const ci=h=>hdrs.findIndex(x=>x===h||x.includes(h));
+      const ci=h=>hdrs.findIndex(x=>x===h||x.replace(/\s/g,'').includes(h.replace(/\s/g,'')));
       const iCamp=ci('캠퍼스'),iAY=ci('응시년도'),iAQ=ci('응시분기'),
             iMeth=ci('응시방식'),iAtt=ci('참석여부'),
             iTest=ci('Test'),iDiv=ci('구분'),iName=ci('이름'),
             iSch=ci('학교'),iGrd=ci('학년'),iCont=ci('연락처'),
             iCls=ci('반배정'),iEnr=ci('입학');
       const ss=(row,idx)=>idx>=0?String(row[idx]||'').trim():'';
-      // 날짜 포맷 - 로컬 날짜 기준 (timezone 문제 방지)
-      const fmtD=v=>{
-        if(!v||v==='') return null;
-        const toLocal=d=>{
-          const y=d.getFullYear();
-          const m=String(d.getMonth()+1).padStart(2,'0');
-          const day=String(d.getDate()).padStart(2,'0');
-          return `${y}-${m}-${day}`;
-        };
-        if(v instanceof Date) return toLocal(v);
-        if(typeof v==='number'){
-          // Excel serial → 로컬 날짜
-          const d=new Date(Math.round((v-25569)*86400*1000));
-          return toLocal(d);
-        }
-        return String(v).substring(0,10)||null;
-      };
       const dataRows=rows.slice(hr+1).filter(r=>r[iName]&&String(r[iName]).trim());
       if(!dataRows.length){statusEl.textContent='❌ 데이터 없음';return;}
       const upCamp=ss(dataRows[0],iCamp);
@@ -4400,9 +4398,7 @@ async function handleAdmUpload(event){
         statusEl.textContent='⏳ 기존 데이터 교체 중...';
         const ex=await db.collection('recordsAdm')
           .where('campus','==',upCamp).where('admYear','==',upAY).where('admQuarter','==',upAQ).get();
-        if(!ex.empty){
-          for(let i=0;i<ex.docs.length;i+=400){const b=db.batch();ex.docs.slice(i,i+400).forEach(d=>b.delete(d.ref));await b.commit();}
-        }
+        if(!ex.empty){for(let i=0;i<ex.docs.length;i+=400){const b=db.batch();ex.docs.slice(i,i+400).forEach(d=>b.delete(d.ref));await b.commit();}}
       }
       const uploadedAt=new Date().toISOString();
       const uploadedBy=currentUser?.email||'';
@@ -4413,14 +4409,18 @@ async function handleAdmUpload(event){
         dataRows.slice(i,i+400).forEach(row=>{
           const admYear=ss(row,iAY).replace('년','').trim();
           const admQtr=ss(row,iAQ);
+          const testDateRaw=row[iTest];
+          const enrollDateRaw=row[iEnr];
           batch.set(db.collection('recordsAdm').doc(),{
             campus:ss(row,iCamp),admYear,admQuarter:admQtr,
             quarter:admYear+' '+admQtr,year:admYear,
             method:ss(row,iMeth),attend:ss(row,iAtt),
-            testDate:fmtD(row[iTest]),division:ss(row,iDiv),
-            name:ss(row,iName),school:ss(row,iSch),grade:ss(row,iGrd),
-            contact:ss(row,iCont),classAssign:ss(row,iCls),
-            enrollDate:fmtD(row[iEnr]),uploadedAt,uploadedBy
+            testDate:toLocalDate(testDateRaw),  // ★ UTC 기반 로컬 날짜
+            division:ss(row,iDiv),name:ss(row,iName),school:ss(row,iSch),
+            grade:ss(row,iGrd),contact:ss(row,iCont),
+            classAssign:ss(row,iCls),
+            enrollDate:toLocalDate(enrollDateRaw),
+            uploadedAt,uploadedBy
           });
           saved++;
         });
@@ -4440,22 +4440,20 @@ async function handleAdmUpload(event){
 
 // ===== 업로드 이력 =====
 async function admLoadHistory(){
-  const el=document.getElementById('adm-history-list');
-  if(!el) return;
+  const el=document.getElementById('adm-history-list');if(!el) return;
   if(!allAdmRecs.length) await loadAdmRecs();
   const groups={};
   allAdmRecs.forEach(r=>{
     const key=r.uploadedAt||'legacy';
     if(!groups[key]) groups[key]={uploadedAt:r.uploadedAt||'',uploadedBy:r.uploadedBy||'',campuses:new Set(),quarters:new Set(),count:0};
     groups[key].campuses.add(r.campus||'');
-    groups[key].quarters.add((r.admYear||r.year||'')+(r.admQuarter?(' '+r.admQuarter):''));
+    groups[key].quarters.add((r.admYear||r.year||'')+(r.admQuarter?' '+r.admQuarter:''));
     groups[key].count++;
   });
   let files=Object.entries(groups).map(([key,f])=>({
     key,uploadedAt:f.uploadedAt,uploadedBy:f.uploadedBy,
     campuses:[...f.campuses].filter(Boolean).sort().join(', '),
-    quarters:[...f.quarters].filter(Boolean).sort().join('·'),
-    count:f.count
+    quarters:[...f.quarters].filter(Boolean).sort().join('·'),count:f.count
   }));
   if(!isSuperAdmin()) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
   files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
@@ -4493,13 +4491,56 @@ async function admDeleteFile(uploadedAt){
       const batch=db.batch();fileRecs.slice(i,i+400).forEach(r=>batch.delete(db.collection('recordsAdm').doc(r.id)));await batch.commit();
     }
     allAdmRecs=allAdmRecs.filter(r=>(r.uploadedAt||'legacy')!==uploadedAt);
-    cacheInvalidate('recordsAdm');
-    admUpdateDropdowns();
-    await admLoadHistory();
+    cacheInvalidate('recordsAdm');admUpdateDropdowns();await admLoadHistory();
   }catch(e){alert('삭제 오류: '+e.message);}
 }
 
-// ===== 통계 계산 =====
+// ===== 필터 (★ 핵심 수정) =====
+function admFilterRecs(){
+  const campus=document.getElementById('adm-f-campus')?.value||'';
+  let recs=allAdmRecs.filter(r=>!campus||r.campus===campus);
+  if(!isSuperAdmin()&&currentUser?.role==='user') recs=recs.filter(r=>r.campus===currentUser?.campus);
+
+  if(admPeriod==='quarter'){
+    // 분기별: C열(응시분기) 기준
+    const sy=document.getElementById('adm-q-sy')?.value||'';
+    const sq=document.getElementById('adm-q-sq')?.value||'';
+    const ey=document.getElementById('adm-q-ey')?.value||'';
+    const eq=document.getElementById('adm-q-eq')?.value||'';
+    if(sy||sq||ey||eq){
+      const sScore=qScore(sy||'0',sq||'겨울');
+      const eScore=qScore(ey||'99',eq||'가을');
+      recs=recs.filter(r=>{
+        const sc=qScore(r.admYear||r.year||'0',r.admQuarter||'');
+        if(!sq&&!eq) return sc>=sScore; // 분기 미선택시 년도만
+        if(!sy&&!ey) return true; // 전체
+        return sc>=sScore&&sc<=eScore;
+      });
+    }
+  } else {
+    // 월별: F열(testDate) 기준으로 년도·월 추출
+    const sy=document.getElementById('adm-m-sy')?.value||'';
+    const sm=document.getElementById('adm-m-sm')?.value||'';
+    const ey=document.getElementById('adm-m-ey')?.value||'';
+    const em=document.getElementById('adm-m-em')?.value||'';
+    if(sy||sm||ey||em){
+      const sKey=(parseInt('20'+(sy||'00'))||0)*100+(parseInt((sm||'').replace('월',''))||1);
+      const eKey=(parseInt('20'+(ey||'99'))||9999)*100+(parseInt((em||'').replace('월',''))||12);
+      recs=recs.filter(r=>{
+        // testDate(F열)에서 년도·월 추출
+        const d=r.testDate||r.enrollDate;
+        if(!d) return false;
+        const dt=new Date(d+'T00:00:00'); // 로컬 파싱
+        const key=dt.getFullYear()*100+(dt.getMonth()+1);
+        if(sy&&!sm&&!ey&&!em) return dt.getFullYear()===parseInt('20'+sy);
+        return key>=sKey&&key<=eKey;
+      });
+    }
+  }
+  return recs;
+}
+
+// ===== 통계 =====
 function admStats(recs){
   const apply=recs.length;
   const attend=recs.filter(r=>r.attend==='참석').length;
@@ -4508,174 +4549,180 @@ function admStats(recs){
   const enrolled=recs.filter(r=>r.enrollDate).length;
   const rate=passed>0?(enrolled/passed*100).toFixed(1)+'%':'0%';
   const byMonth={};
-  recs.filter(r=>r.enrollDate).forEach(r=>{const m=new Date(r.enrollDate).getMonth()+1;byMonth[m]=(byMonth[m]||0)+1;});
+  recs.filter(r=>r.enrollDate).forEach(r=>{
+    const m=new Date(r.enrollDate+'T00:00:00').getMonth()+1;
+    byMonth[m]=(byMonth[m]||0)+1;
+  });
   return{apply,attend,tested,passed,enrolled,rate,byMonth};
-}
-
-// ===== 필터 =====
-function admFilterRecs(){
-  const campus=document.getElementById('adm-f-campus-filter')?.value||'';
-  let recs=allAdmRecs.filter(r=>!campus||r.campus===campus);
-  if(!isSuperAdmin()&&currentUser?.role==='user')
-    recs=recs.filter(r=>r.campus===currentUser?.campus);
-  if(admPeriod==='quarter'){
-    const sy=document.getElementById('adm-q-sy')?.value||'';
-    const sq=document.getElementById('adm-q-sq')?.value||'';
-    const ey=document.getElementById('adm-q-ey')?.value||'';
-    const eq=document.getElementById('adm-q-eq')?.value||'';
-    if(sy||sq||ey||eq){
-      const sScore=(parseInt(sy)||0)*10+(QTR_ORDER[sq]||0);
-      const eScore=(parseInt(ey)||99999)*10+(QTR_ORDER[eq]||9);
-      recs=recs.filter(r=>{
-        const yr=parseInt(r.admYear||r.year)||0;
-        const qt=r.admQuarter||'';
-        const sc=yr*10+(QTR_ORDER[qt]||5);
-        return sc>=sScore&&sc<=eScore;
-      });
-    }
-  } else {
-    const sy=document.getElementById('adm-m-sy')?.value||'';
-    const sm=document.getElementById('adm-m-sm')?.value||'';
-    const ey=document.getElementById('adm-m-ey')?.value||'';
-    const em=document.getElementById('adm-m-em')?.value||'';
-    if(sy||sm||ey||em){
-      const sKey=(parseInt(sy)||0)*100+(parseInt((sm||'').replace('월',''))||0);
-      const eKey=(parseInt(ey)||9999)*100+(parseInt((em||'').replace('월',''))||12);
-      recs=recs.filter(r=>{
-        const d=r.testDate||r.enrollDate;
-        if(!d) return false;
-        const dt=new Date(d);
-        const key=dt.getFullYear()*100+(dt.getMonth()+1);
-        return key>=sKey&&key<=eKey;
-      });
-    }
-  }
-  return recs;
 }
 
 // ===== 메인 렌더 =====
 async function admRender(){
   if(!allAdmRecs.length) await loadAdmRecs();
   const recs=admFilterRecs();
-  admShowView(admView);
-  if(admView==='all') admRenderAll(recs);
-  else admRenderCampus(recs);
-  // 양쪽 다 렌더
   admRenderAll(recs);
   admRenderCampus(recs);
+  admShowView(admView);
 }
 
-// ===== ① 전체 현황 =====
+// ===== ① 전체 현황 (응시방식 컬럼 분리) =====
 function admRenderAll(recs){
   const el=document.getElementById('adm-view-all-content');
-  if(!recs.length){el.innerHTML='<div class="alert alert-info">데이터가 없어요.</div>';return;}
+  if(!recs.length){el.innerHTML='<div class="alert alert-info">조건에 맞는 데이터가 없어요.</div>';return;}
+
   const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
   const divs=['CHESS','ACE'];
-  const enrollMonths=[...new Set(recs.filter(r=>r.enrollDate).map(r=>new Date(r.enrollDate).getMonth()+1))].sort((a,b)=>a-b);
-  const th='padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;';
-  const td='padding:6px 8px;font-size:11px;border-bottom:1px solid #F1F5F9;text-align:center;';
+  // 응시방식 종류 추출 (고정 순서)
+  const methodOrder=['1차 설명회','2차 설명회','3차 설명회','개별 전형'];
+  const methods=[...new Set(recs.map(r=>r.method).filter(Boolean))].sort((a,b)=>{
+    const ia=methodOrder.indexOf(a),ib=methodOrder.indexOf(b);
+    return (ia===-1?99:ia)-(ib===-1?99:ib);
+  });
+  const enrollMonths=[...new Set(recs.filter(r=>r.enrollDate).map(r=>new Date(r.enrollDate+'T00:00:00').getMonth()+1))].sort((a,b)=>a-b);
 
-  const thead=`<tr>
-    <th style="${th}background:#F8FAFC;text-align:left;">캠퍼스</th>
-    <th style="${th}background:#F8FAFC;">구분</th>
-    <th style="${th}background:#EFF6FF;color:#1D4ED8;">신청</th>
-    <th style="${th}background:#F0FDF4;color:#15803D;">참석</th>
-    <th style="${th}background:#FFF7ED;color:var(--org);">응시</th>
-    <th style="${th}background:#EDE9FE;color:#6D28D9;">합격</th>
-    ${enrollMonths.map(m=>`<th style="${th}background:#FFFBEB;color:#854D0E;">${m}월</th>`).join('')}
-    <th style="${th}background:#FEF3C7;color:#854D0E;">등록</th>
-    <th style="${th}background:#FEF9C3;color:#92400E;">등록율</th>
-  </tr>`;
+  const th=(bg,col,rs='',cs='')=>`style="padding:5px 6px;font-size:10px;font-weight:800;border:1px solid #E2E8F0;text-align:center;white-space:nowrap;background:${bg};color:${col||'#374151'};${rs?'border-top:2px solid #E2E8F0;':''}${cs?'border-left:2px solid #E2E8F0;':''}"`;
+  const td=(val,style='')=>`<td style="padding:5px 6px;font-size:11px;border:1px solid #F1F5F9;text-align:center;${style}">${val}</td>`;
 
+  // 헤더: 캠퍼스 | CHESS(방식1/방식2.../소계) | ACE(방식1.../소계) | 총합
+  let theadRow1=`<th ${th('#F8FAFC','',0,0)} rowspan="3">캠퍼스</th>`;
+  divs.forEach(div=>{
+    const divMethods=methods.filter(m=>recs.filter(r=>r.division===div&&r.method===m).length>0);
+    const divColor=div==='CHESS'?'#6D28D9':'#C2410C';
+    const divBg=div==='CHESS'?'#EDE9FE':'#FFF7ED';
+    theadRow1+=`<th ${th(divBg,divColor)} colspan="${(divMethods.length+1)*3}">${div}</th>`;
+  });
+  theadRow1+=`<th ${th('#F8FAFC')} rowspan="3">총합<br>신청</th>
+    <th ${th('#F8FAFC')} rowspan="3">총합<br>참석</th>
+    <th ${th('#F8FAFC')} rowspan="3">총합<br>응시</th>
+    <th ${th('#F8FAFC')} rowspan="3">총합<br>합격</th>
+    ${enrollMonths.map(m=>`<th ${th('#FFFBEB','#854D0E')} rowspan="3">${m}월<br>등록</th>`).join('')}
+    <th ${th('#FEF3C7','#854D0E')} rowspan="3">등록<br>합계</th>
+    <th ${th('#FEF9C3','#92400E')} rowspan="3">등록율</th>`;
+
+  let theadRow2='';
+  divs.forEach(div=>{
+    const divMethods=methods.filter(m=>recs.filter(r=>r.division===div&&r.method===m).length>0);
+    const divColor=div==='CHESS'?'#6D28D9':'#C2410C';
+    const divBg=div==='CHESS'?'#EDE9FE':'#FFF7ED';
+    divMethods.forEach(m=>{
+      const short=m.replace(' 설명회','차').replace('개별 전형','개별');
+      theadRow2+=`<th ${th(divBg,divColor)} colspan="3">${short}</th>`;
+    });
+    theadRow2+=`<th ${th(divBg,divColor)} colspan="3">${div}<br>소계</th>`;
+  });
+
+  const metricCols=['신청','참석','합격'];
+  let theadRow3='';
+  divs.forEach(div=>{
+    const divMethods=methods.filter(m=>recs.filter(r=>r.division===div&&r.method===m).length>0);
+    const divBg=div==='CHESS'?'#EDE9FE':'#FFF7ED';
+    const divColor=div==='CHESS'?'#6D28D9':'#C2410C';
+    [...divMethods,div+'소계'].forEach(()=>{
+      metricCols.forEach(mc=>{ theadRow3+=`<th ${th(divBg,divColor)}>${mc}</th>`; });
+    });
+  });
+
+  // 데이터 행
   let tbody='';
-  const tot={apply:0,attend:0,tested:0,passed:0,enrolled:0,byMonth:{}};
+  const totApply={},totAttend={},totTested={},totPassed={},totEnrolled={};
+  const totByMonth={};
+  let grandApply=0,grandAttend=0,grandTested=0,grandPassed=0,grandEnrolled=0;
+  const grandByMonth={};
 
+  const metricRow=(label, style='')=>{
+    let row=`<td style="padding:5px 6px;font-size:11px;border:1px solid #F1F5F9;text-align:left;padding-left:12px;${style}">${label}</td>`;
+    let rowApply=0,rowAttend=0,rowTested=0,rowPassed=0,rowEnrolled=0;
+    const rowByMonth={};
+
+    divs.forEach(div=>{
+      const divMethods=methods.filter(m=>recs.filter(r=>r.division===div&&r.method===m).length>0);
+      let divApply=0,divAttend=0,divTested=0,divPassed=0,divEnrolled=0;
+      const divByMonth={};
+      divMethods.forEach(m=>{
+        const mr=recs.filter(r=>r.campus===(campuses.length===1?campuses[0]:label.replace(/📍|🏆/g,'').trim())||true);
+        // campusRecs 기준
+        const cname=label.replace(/📍|🏆|\s*소계|\s*합계/g,'').trim();
+        const cr=campuses.includes(cname)?recs.filter(r=>r.campus===cname):recs;
+        const dr=cr.filter(r=>r.division===div&&r.method===m);
+        const s=admStats(dr);
+        row+=td(s.apply)+td(s.attend)+td(s.passed);
+        divApply+=s.apply;divAttend+=s.attend;divTested+=s.tested;divPassed+=s.passed;divEnrolled+=s.enrolled;
+        enrollMonths.forEach(mo=>{divByMonth[mo]=(divByMonth[mo]||0)+(s.byMonth[mo]||0);});
+      });
+      // div 소계
+      row+=td(divApply)+td(divAttend)+td(divPassed);
+      rowApply+=divApply;rowAttend+=divAttend;rowTested+=divTested;rowPassed+=divPassed;rowEnrolled+=divEnrolled;
+      enrollMonths.forEach(mo=>{rowByMonth[mo]=(rowByMonth[mo]||0)+(divByMonth[mo]||0);});
+    });
+    // 총합
+    row+=td(rowApply)+td(rowAttend)+td(rowTested)+td(rowPassed,'color:#6D28D9;font-weight:700;');
+    enrollMonths.forEach(mo=>{ row+=td(rowByMonth[mo]||'','color:#854D0E;'); });
+    const rRate=rowPassed>0?(rowEnrolled/rowPassed*100).toFixed(1)+'%':'0%';
+    row+=td(rowEnrolled,'color:#854D0E;font-weight:700;')+td(rRate,'color:#92400E;font-weight:700;');
+    return row;
+  };
+
+  // 캠퍼스별 행 생성 (단순화)
   campuses.forEach(campus=>{
     const cr=recs.filter(r=>r.campus===campus);
-    const activeDivs=divs.filter(d=>cr.filter(r=>r.division===d).length>0);
-    let campApply=0,campAttend=0,campTested=0,campPassed=0,campEnrolled=0;
-    const campByMonth={};
+    let row=`<td style="padding:5px 6px;font-size:11px;border:1px solid #F1F5F9;text-align:left;padding-left:10px;font-weight:700;">${campus}</td>`;
+    let cApply=0,cAttend=0,cTested=0,cPassed=0,cEnrolled=0;
+    const cByMonth={};
 
-    activeDivs.forEach((div,di)=>{
-      const dr=cr.filter(r=>r.division===div);
+    divs.forEach(div=>{
+      const divMethods=methods.filter(m=>recs.filter(r=>r.division===div&&r.method===m).length>0);
+      let dApply=0,dAttend=0,dTested=0,dPassed=0,dEnrolled=0;
+      const dByMonth={};
+      divMethods.forEach(m=>{
+        const dr=cr.filter(r=>r.division===div&&r.method===m);
+        const s=admStats(dr);
+        row+=td(s.apply||'')+td(s.attend||'')+td(s.passed||'');
+        dApply+=s.apply;dAttend+=s.attend;dTested+=s.tested;dPassed+=s.passed;dEnrolled+=s.enrolled;
+        enrollMonths.forEach(mo=>{dByMonth[mo]=(dByMonth[mo]||0)+(s.byMonth[mo]||0);});
+      });
+      row+=td(dApply||'')+td(dAttend||'')+td(dPassed||'');
+      cApply+=dApply;cAttend+=dAttend;cTested+=dTested;cPassed+=dPassed;cEnrolled+=dEnrolled;
+      enrollMonths.forEach(mo=>{cByMonth[mo]=(cByMonth[mo]||0)+(dByMonth[mo]||0);});
+    });
+    row+=td(cApply||'')+td(cAttend||'')+td(cTested||'')+td(cPassed||'','color:#6D28D9;font-weight:700;');
+    enrollMonths.forEach(mo=>{row+=td(cByMonth[mo]||'','color:#854D0E;');});
+    const cRate=cPassed>0?(cEnrolled/cPassed*100).toFixed(1)+'%':'0%';
+    row+=td(cEnrolled||'','color:#854D0E;font-weight:700;')+td(cRate,'color:#92400E;font-weight:700;');
+    tbody+=`<tr>${row}</tr>`;
+    grandApply+=cApply;grandAttend+=cAttend;grandTested+=cTested;grandPassed+=cPassed;grandEnrolled+=cEnrolled;
+    enrollMonths.forEach(mo=>{grandByMonth[mo]=(grandByMonth[mo]||0)+(cByMonth[mo]||0);});
+  });
+
+  // 전체 합계
+  let totalRow=`<td style="padding:5px 6px;font-size:11px;border:1px solid #F1F5F9;text-align:left;padding-left:10px;font-weight:900;color:var(--org);">🏆 합계</td>`;
+  divs.forEach(div=>{
+    const divMethods=methods.filter(m=>recs.filter(r=>r.division===div&&r.method===m).length>0);
+    let dApply=0,dAttend=0,dPassed=0;
+    divMethods.forEach(m=>{
+      const dr=recs.filter(r=>r.division===div&&r.method===m);
       const s=admStats(dr);
-      campApply+=s.apply;campAttend+=s.attend;campTested+=s.tested;campPassed+=s.passed;campEnrolled+=s.enrolled;
-      enrollMonths.forEach(m=>{campByMonth[m]=(campByMonth[m]||0)+(s.byMonth[m]||0);});
-      const divBg=div==='CHESS'?'#EDE9FE':'#FFF7ED';
-      const divColor=div==='CHESS'?'#6D28D9':'#C2410C';
-      tbody+=`<tr>
-        ${di===0?`<td style="${td}font-weight:700;text-align:left;padding-left:12px;" rowspan="${activeDivs.length}">${campus}</td>`:''}
-        <td style="${td}"><span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${divBg};color:${divColor};">${div}</span></td>
-        <td style="${td}">${s.apply}</td><td style="${td}">${s.attend}</td>
-        <td style="${td}">${s.tested}</td><td style="${td}color:#6D28D9;font-weight:700;">${s.passed}</td>
-        ${enrollMonths.map(m=>`<td style="${td}">${s.byMonth[m]||''}</td>`).join('')}
-        <td style="${td}color:#854D0E;font-weight:700;">${s.enrolled}</td>
-        <td style="${td}color:#92400E;">${s.rate}</td>
-      </tr>`;
+      totalRow+=td(s.apply,'color:var(--org);font-weight:700;')+td(s.attend,'color:var(--org);font-weight:700;')+td(s.passed,'color:var(--org);font-weight:700;');
+      dApply+=s.apply;dAttend+=s.attend;dPassed+=s.passed;
     });
-
-    // 캠퍼스 소계
-    const cRate=campPassed>0?(campEnrolled/campPassed*100).toFixed(1)+'%':'0%';
-    tbody+=`<tr style="background:#EFF6FF;font-weight:800;border-top:1.5px solid #93C5FD;">
-      <td style="${td}color:#1D4ED8;text-align:left;padding-left:10px;" colspan="2">📍 ${campus} 소계</td>
-      <td style="${td}color:#1D4ED8;">${campApply}</td><td style="${td}color:#1D4ED8;">${campAttend}</td>
-      <td style="${td}color:#1D4ED8;">${campTested}</td><td style="${td}color:#6D28D9;font-weight:900;">${campPassed}</td>
-      ${enrollMonths.map(m=>`<td style="${td}color:#1D4ED8;">${campByMonth[m]||''}</td>`).join('')}
-      <td style="${td}color:#854D0E;font-weight:800;">${campEnrolled}</td>
-      <td style="${td}color:#92400E;font-weight:800;">${cRate}</td>
-    </tr>`;
-    tot.apply+=campApply;tot.attend+=campAttend;tot.tested+=campTested;tot.passed+=campPassed;tot.enrolled+=campEnrolled;
-    enrollMonths.forEach(m=>{tot.byMonth[m]=(tot.byMonth[m]||0)+(campByMonth[m]||0);});
+    totalRow+=td(dApply,'color:var(--org);font-weight:800;')+td(dAttend,'color:var(--org);font-weight:800;')+td(dPassed,'color:#6D28D9;font-weight:800;');
   });
+  const grandRate=grandPassed>0?(grandEnrolled/grandPassed*100).toFixed(1)+'%':'0%';
+  totalRow+=td(grandApply,'color:var(--org);font-weight:900;')+td(grandAttend,'color:var(--org);font-weight:900;')+td(grandTested,'color:var(--org);font-weight:900;')+td(grandPassed,'color:#6D28D9;font-weight:900;');
+  enrollMonths.forEach(mo=>{totalRow+=td(grandByMonth[mo]||'','color:#854D0E;font-weight:800;');});
+  totalRow+=td(grandEnrolled,'color:#854D0E;font-weight:900;')+td(grandRate,'color:#92400E;font-weight:900;');
+  tbody+=`<tr style="background:var(--org-lt);">${totalRow}</tr>`;
 
-  const totRate=tot.passed>0?(tot.enrolled/tot.passed*100).toFixed(1)+'%':'0%';
-  tbody+=`<tr style="background:var(--org-lt);font-weight:900;border-top:2px solid var(--org);">
-    <td style="${td}color:var(--org);text-align:left;padding-left:10px;" colspan="2">🏆 전체 합계</td>
-    <td style="${td}color:var(--org);">${tot.apply}</td><td style="${td}color:var(--org);">${tot.attend}</td>
-    <td style="${td}color:var(--org);">${tot.tested}</td><td style="${td}color:#6D28D9;">${tot.passed}</td>
-    ${enrollMonths.map(m=>`<td style="${td}color:var(--org);">${tot.byMonth[m]||''}</td>`).join('')}
-    <td style="${td}color:#854D0E;">${tot.enrolled}</td>
-    <td style="${td}color:#92400E;">${totRate}</td>
-  </tr>`;
-
-  // 막대 차트
-  const chartData=campuses.map(cp=>admStats(recs.filter(r=>r.campus===cp)));
-
-  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:flex-start;">
-    <div class="tbl-card" style="overflow-x:auto;">
-      <div class="tbl-title">📊 전체 현황</div>
-      <table style="width:100%;border-collapse:collapse;min-width:560px;">
-        <thead>${thead}</thead><tbody>${tbody}</tbody>
-      </table>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">📊 캠퍼스별 등록 인원</div>
-      <div style="height:260px;"><canvas id="ch-adm-bar"></canvas></div>
-    </div>
+  el.innerHTML=`<div class="tbl-card" style="overflow-x:auto;margin-bottom:14px;">
+    <div class="tbl-title">📊 전체 현황</div>
+    <table style="width:100%;border-collapse:collapse;min-width:600px;">
+      <thead>
+        <tr>${theadRow1}</tr>
+        <tr>${theadRow2}</tr>
+        <tr>${theadRow3}</tr>
+      </thead>
+      <tbody>${tbody}</tbody>
+    </table>
   </div>`;
-
-  requestAnimationFrame(()=>{
-    destroyChart('ch-adm-bar');
-    const barEl=document.getElementById('ch-adm-bar');
-    if(barEl) charts['ch-adm-bar']=new Chart(barEl.getContext('2d'),{
-      type:'bar',
-      data:{
-        labels:campuses,
-        datasets:[{
-          label:'등록 인원',
-          data:chartData.map(d=>d.enrolled),
-          backgroundColor:campuses.map(cp=>getCColorA(cp,0.8)),
-          borderColor:campuses.map(cp=>getCColor(cp)),
-          borderWidth:2,borderRadius:5,maxBarThickness:60
-        }]
-      },
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},datalabels:{anchor:'end',align:'top',font:{size:12,weight:'bold'},color:'#374151',formatter:v=>v?v+'명':''}},
-        scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'명'}}}
-      }
-    });
-  });
 }
 
 // ===== ② 캠퍼스별 현황 =====
@@ -4683,67 +4730,63 @@ function admRenderCampus(recs){
   const el=document.getElementById('adm-view-campus-content');
   if(!recs.length){el.innerHTML='<div class="alert alert-info">데이터가 없어요.</div>';return;}
   let campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
-  if(!isSuperAdmin()&&currentUser?.role==='user')
-    campuses=campuses.filter(cp=>cp===currentUser?.campus);
-  const enrollMonths=[...new Set(recs.filter(r=>r.enrollDate).map(r=>new Date(r.enrollDate).getMonth()+1))].sort((a,b)=>a-b);
+  if(!isSuperAdmin()&&currentUser?.role==='user') campuses=campuses.filter(cp=>cp===currentUser?.campus);
+  const enrollMonths=[...new Set(recs.filter(r=>r.enrollDate).map(r=>new Date(r.enrollDate+'T00:00:00').getMonth()+1))].sort((a,b)=>a-b);
   const th='padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;';
   const td='padding:6px 8px;font-size:11px;border-bottom:1px solid #F1F5F9;text-align:center;';
 
   let html='';
   campuses.forEach(campus=>{
     const cr=recs.filter(r=>r.campus===campus);
-    const divs=['CHESS','ACE'].filter(d=>cr.filter(r=>r.division===d).length>0);
-    let tot={apply:0,attend:0,tested:0,passed:0,enrolled:0,byMonth:{}};
-    let tbody='';
+    const divs=['CHESS','ACE'].filter(d=>cr.some(r=>r.division===d));
+    let tbody='';let totA=0,totAt=0,totT=0,totP=0,totE=0;const totBM={};
 
     divs.forEach(div=>{
-      const divRecs=cr.filter(r=>r.division===div);
-      const gradeList=(div==='CHESS'?CHESS_GRADES:ACE_GRADES).filter(g=>divRecs.some(r=>r.grade===g));
-      if(!gradeList.length) return;
-      let dApply=0,dAttend=0,dTested=0,dPassed=0,dEnrolled=0;
-      const dByMonth={};
+      const dr=cr.filter(r=>r.division===div);
+      const grades=(div==='CHESS'?CHESS_GRADES:ACE_GRADES).filter(g=>dr.some(r=>r.grade===g));
+      if(!grades.length) return;
+      let dA=0,dAt=0,dT=0,dP=0,dE=0;const dBM={};
 
-      gradeList.forEach((grade,gi)=>{
-        const gr=divRecs.filter(r=>r.grade===grade);
+      grades.forEach((grade,gi)=>{
+        const gr=dr.filter(r=>r.grade===grade);
         const s=admStats(gr);
-        dApply+=s.apply;dAttend+=s.attend;dTested+=s.tested;dPassed+=s.passed;dEnrolled+=s.enrolled;
-        enrollMonths.forEach(m=>{dByMonth[m]=(dByMonth[m]||0)+(s.byMonth[m]||0);});
+        dA+=s.apply;dAt+=s.attend;dT+=s.tested;dP+=s.passed;dE+=s.enrolled;
+        enrollMonths.forEach(m=>{dBM[m]=(dBM[m]||0)+(s.byMonth[m]||0);});
         const divBg=div==='CHESS'?'#EDE9FE':'#FFF7ED';
         const divColor=div==='CHESS'?'#6D28D9':'#C2410C';
         tbody+=`<tr>
-          ${gi===0?`<td style="${td}font-weight:700;background:${divBg};color:${divColor};" rowspan="${gradeList.length}">${div}</td>`:''}
+          ${gi===0?`<td style="${td}font-weight:700;background:${divBg};color:${divColor};" rowspan="${grades.length}">${div}</td>`:''}
           <td style="${td}font-weight:600;">${grade}</td>
-          <td style="${td}">${s.apply}</td><td style="${td}">${s.attend}</td>
-          <td style="${td}">${s.tested}</td><td style="${td}color:#6D28D9;font-weight:700;">${s.passed}</td>
+          <td style="${td}">${s.apply||''}</td><td style="${td}">${s.attend||''}</td>
+          <td style="${td}">${s.tested||''}</td><td style="${td}color:#6D28D9;font-weight:700;">${s.passed||''}</td>
           ${enrollMonths.map(m=>`<td style="${td}">${s.byMonth[m]||''}</td>`).join('')}
-          <td style="${td}color:#854D0E;font-weight:700;">${s.enrolled}</td>
+          <td style="${td}color:#854D0E;font-weight:700;">${s.enrolled||''}</td>
           <td style="${td}color:#92400E;">${s.rate}</td>
         </tr>`;
       });
 
-      // 구분 소계
-      const dRate=dPassed>0?(dEnrolled/dPassed*100).toFixed(1)+'%':'0%';
-      const divBg2=div==='CHESS'?'#F5F3FF':'#FFF7ED';
-      tbody+=`<tr style="background:${divBg2};font-weight:700;border-top:1.5px solid ${div==='CHESS'?'#A78BFA':'#FCA5A5'};">
-        <td style="${td}font-weight:800;color:${div==='CHESS'?'#6D28D9':'#C2410C'};text-align:left;padding-left:10px;" colspan="2">${div} 소계</td>
-        <td style="${td}">${dApply}</td><td style="${td}">${dAttend}</td>
-        <td style="${td}">${dTested}</td><td style="${td}color:#6D28D9;font-weight:800;">${dPassed}</td>
-        ${enrollMonths.map(m=>`<td style="${td}">${dByMonth[m]||''}</td>`).join('')}
-        <td style="${td}color:#854D0E;font-weight:800;">${dEnrolled}</td>
+      const dRate=dP>0?(dE/dP*100).toFixed(1)+'%':'0%';
+      const dBg=div==='CHESS'?'#F5F3FF':'#FFF7ED';
+      const dCol=div==='CHESS'?'#6D28D9':'#C2410C';
+      tbody+=`<tr style="background:${dBg};font-weight:700;border-top:1.5px solid ${div==='CHESS'?'#A78BFA':'#FCA5A5'};">
+        <td style="${td}font-weight:800;color:${dCol};text-align:left;padding-left:10px;" colspan="2">${div} 소계</td>
+        <td style="${td}">${dA}</td><td style="${td}">${dAt}</td>
+        <td style="${td}">${dT}</td><td style="${td}color:#6D28D9;font-weight:800;">${dP}</td>
+        ${enrollMonths.map(m=>`<td style="${td}">${dBM[m]||''}</td>`).join('')}
+        <td style="${td}color:#854D0E;font-weight:800;">${dE}</td>
         <td style="${td}color:#92400E;font-weight:800;">${dRate}</td>
       </tr>`;
-      tot.apply+=dApply;tot.attend+=dAttend;tot.tested+=dTested;tot.passed+=dPassed;tot.enrolled+=dEnrolled;
-      enrollMonths.forEach(m=>{tot.byMonth[m]=(tot.byMonth[m]||0)+(dByMonth[m]||0);});
+      totA+=dA;totAt+=dAt;totT+=dT;totP+=dP;totE+=dE;
+      enrollMonths.forEach(m=>{totBM[m]=(totBM[m]||0)+(dBM[m]||0);});
     });
 
-    const totRate=tot.passed>0?(tot.enrolled/tot.passed*100).toFixed(1)+'%':'0%';
+    const totRate=totP>0?(totE/totP*100).toFixed(1)+'%':'0%';
     tbody+=`<tr style="background:var(--org-lt);font-weight:900;border-top:2px solid var(--org);">
       <td style="${td}color:var(--org);text-align:left;padding-left:10px;" colspan="2">🏆 총 합계</td>
-      <td style="${td}color:var(--org);">${tot.apply}</td><td style="${td}color:var(--org);">${tot.attend}</td>
-      <td style="${td}color:var(--org);">${tot.tested}</td><td style="${td}color:#6D28D9;">${tot.passed}</td>
-      ${enrollMonths.map(m=>`<td style="${td}color:var(--org);">${tot.byMonth[m]||''}</td>`).join('')}
-      <td style="${td}color:#854D0E;">${tot.enrolled}</td>
-      <td style="${td}color:#92400E;">${totRate}</td>
+      <td style="${td}color:var(--org);">${totA}</td><td style="${td}color:var(--org);">${totAt}</td>
+      <td style="${td}color:var(--org);">${totT}</td><td style="${td}color:#6D28D9;">${totP}</td>
+      ${enrollMonths.map(m=>`<td style="${td}color:var(--org);">${totBM[m]||''}</td>`).join('')}
+      <td style="${td}color:#854D0E;">${totE}</td><td style="${td}color:#92400E;">${totRate}</td>
     </tr>`;
 
     html+=`<div class="tbl-card" style="margin-bottom:16px;overflow-x:auto;">
@@ -4764,11 +4807,10 @@ function admRenderCampus(recs){
       </table>
     </div>`;
   });
-
   el.innerHTML=html||'<div class="alert alert-info">데이터가 없어요.</div>';
 }
 
-// ====== SEED DATA ======// ====== SEED DATA ======
+// ====== SEED DATA ======// ====== SEED DATA ======// ====== SEED DATA ======
 // ====== 모의고사 ======
 // ====== 업로드 이력 관리 ======
 // ADMIN1 이메일 (슈퍼관리자)
