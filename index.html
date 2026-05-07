@@ -620,6 +620,14 @@ tr:hover td{background:#FFFBF5;}
         </div>
       </div>
 
+      <!-- 업로드 이력 -->
+      <div style="background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:800;color:#15803D;margin-bottom:10px;">📋 업로드 이력</div>
+        <div id="adm-upload-history-list" style="overflow-x:auto;max-height:250px;overflow-y:auto;">
+          <div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력을 불러오는 중...</div>
+        </div>
+      </div>
+
       <!-- 조회 섹션 -->
       <div style="background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
         <div style="font-size:13px;font-weight:800;color:var(--txt);margin-bottom:12px;">🔍 데이터 조회 / 수정</div>
@@ -4102,7 +4110,17 @@ function getQuarterScore(year,quarter){
 async function loadAdmRecords(force=false){
   if(!force && allAdmRecords.length && cacheGet('recordsAdm')) return;
   const snap = await db.collection('recordsAdm').get();
-  allAdmRecords = snap.docs.map(d=>({id:d.id,...d.data()}));
+  allAdmRecords = snap.docs.map(d=>{
+    const data={id:d.id,...d.data()};
+    // Firestore Timestamp → 문자열 변환
+    if(data.testDate&&typeof data.testDate==='object'&&data.testDate.toDate){
+      data.testDate=data.testDate.toDate().toISOString().substring(0,10);
+    }
+    if(data.enrollDate&&typeof data.enrollDate==='object'&&data.enrollDate.toDate){
+      data.enrollDate=data.enrollDate.toDate().toISOString().substring(0,10);
+    }
+    return data;
+  });
   cacheSet('recordsAdm', true);
 }
 
@@ -4110,6 +4128,7 @@ async function initAdmissionTab(){
   if(!allAdmRecords.length) await loadAdmRecords();
   updateAdmDropdowns();
   document.getElementById('adm-form-modal').style.display='none';
+  await loadAdmUploadHistory();
 }
 
 function updateAdmDropdowns(){
@@ -4158,12 +4177,17 @@ function showAdmTab(tab){
 }
 
 // ===== 이름 검색 =====
-function searchAdmByName(){
+async function searchAdmByName(){
+  if(!allAdmRecords.length) await loadAdmRecords();
   const q=document.getElementById('adm-search-name').value.trim();
   const sug=document.getElementById('adm-search-name-suggestions');
   if(!q){sug.style.display='none';return;}
   const matches=[...new Map(
-    allAdmRecords.filter(r=>r.name&&r.name.includes(q))
+    allAdmRecords.filter(r=>{
+      if(!r.name||!r.name.includes(q)) return false;
+      if(!isSuperAdmin()&&currentUser?.role!=='admin'&&r.campus!==currentUser?.campus) return false;
+      return true;
+    })
     .map(r=>[r.name+'|'+r.contact, {name:r.name,contact:r.contact||'-',campus:r.campus||''}])
   ).values()];
   if(!matches.length){sug.style.display='none';return;}
@@ -4186,11 +4210,21 @@ function selectAdmPerson(name, contact){
 
 // ===== 날짜 검색 =====
 async function searchAdmission(){
+  // 데이터가 없으면 먼저 로드
+  if(!allAdmRecords.length) await loadAdmRecords();
+
   if(admSearchMode==='date'){
     const date=document.getElementById('adm-search-date').value;
     if(!date){alert('날짜를 선택해 주세요.');return;}
-    const recs=allAdmRecords.filter(r=>r.testDate&&r.testDate.substring(0,10)===date);
-    renderAdmTable(recs.slice(0,10), true, recs.length);
+    const recs=allAdmRecords.filter(r=>{
+      if(!r.testDate) return false;
+      // 비관리자: 본인 캠퍼스만
+      if(!isSuperAdmin()&&currentUser?.role!=='admin'&&r.campus!==currentUser?.campus) return false;
+      const td=r.testDate;
+      const tdStr=typeof td==='object'&&td.toDate?td.toDate().toISOString().substring(0,10):String(td).substring(0,10);
+      return tdStr===date;
+    });
+    renderAdmTable(recs, true, recs.length);
   } else {
     const q=document.getElementById('adm-search-name').value.trim();
     if(q) searchAdmByName();
@@ -4236,8 +4270,11 @@ function renderAdmTable(recs, limitNote=false, total=0){
           <td style="${tdS}text-align:center;color:${r.enrollDate?'#C2410C':'#94A3B8'};">${r.enrollDate?r.enrollDate.substring(0,10):'-'}</td>
           <td style="${tdS}">
             <div style="display:flex;gap:4px;">
-              <button onclick="editAdmRecord('${r.id}')" style="padding:3px 8px;border:1.5px solid var(--tif);border-radius:4px;background:#fff;color:var(--tif-dk);font-size:11px;cursor:pointer;">수정</button>
-              <button onclick="deleteAdmRecord('${r.id}')" style="padding:3px 8px;border:1.5px solid #EF4444;border-radius:4px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;">삭제</button>
+              ${isSuperAdmin()||r.campus===currentUser?.campus
+                ? `<button onclick="editAdmRecord('${r.id}')" style="padding:3px 8px;border:1.5px solid var(--tif);border-radius:4px;background:#fff;color:var(--tif-dk);font-size:11px;cursor:pointer;">수정</button>
+                   <button onclick="deleteAdmRecord('${r.id}')" style="padding:3px 8px;border:1.5px solid #EF4444;border-radius:4px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;">삭제</button>`
+                : `<span style="font-size:11px;color:#94A3B8;">열람만 가능</span>`
+              }
             </div>
           </td>
         </tr>`).join('')}
@@ -4276,9 +4313,19 @@ function closeAdmissionForm(){
   document.getElementById('adm-form-modal').style.display='none';
 }
 
-function editAdmRecord(id){openAdmissionForm(id);}
+function editAdmRecord(id){
+  const r=allAdmRecords.find(x=>x.id===id);
+  if(r&&!isSuperAdmin()&&r.campus!==currentUser?.campus){
+    alert('소속 분원의 데이터만 수정할 수 있어요.');return;
+  }
+  openAdmissionForm(id);
+}
 
 async function deleteAdmRecord(id){
+  const r=allAdmRecords.find(x=>x.id===id);
+  if(r&&!isSuperAdmin()&&r.campus!==currentUser?.campus){
+    alert('소속 분원의 데이터만 삭제할 수 있어요.');return;
+  }
   if(!confirm('이 항목을 삭제하시겠습니까?')) return;
   try{
     await db.collection('recordsAdm').doc(id).delete();
@@ -4387,6 +4434,7 @@ async function handleAdmissionUpload(event){
       cacheInvalidate('recordsAdm');
       await loadAdmRecords(true);
       updateAdmDropdowns();
+      await loadAdmUploadHistory();
       statusEl.innerHTML=`<span style="color:#15803D">✅ ${saved}건 저장 완료! (${upCampus} ${upQtr})</span>`;
     }catch(err){statusEl.textContent='❌ 오류: '+err.message;console.error(err);}
   };
@@ -4572,15 +4620,24 @@ function renderAdmAll(recs){
       type:'bar',
       data:{
         labels:chartCampuses,
-        datasets:[
-          {label:'신청',data:chartData.map(d=>d.apply),backgroundColor:getCColorA('남동탄',0.4),borderColor:getCColor('남동탄'),borderWidth:1.5},
-          {label:'참석',data:chartData.map(d=>d.attend),backgroundColor:getCColorA('서수원',0.6),borderColor:getCColor('서수원'),borderWidth:1.5},
-          {label:'응시',data:chartData.map(d=>d.tested),backgroundColor:getCColorA('수원',0.6),borderColor:getCColor('수원'),borderWidth:1.5},
-          {label:'합격',data:chartData.map(d=>d.passed),backgroundColor:getCColorA('운정1',0.7),borderColor:getCColor('운정1'),borderWidth:1.5},
-          {label:'등록',data:chartData.map(d=>d.enrolled),backgroundColor:'rgba(249,115,22,0.8)',borderColor:'#F97316',borderWidth:1.5},
-        ]
+        datasets:[{
+          label:'등록 인원',
+          data:chartData.map(d=>d.enrolled),
+          backgroundColor:chartCampuses.map(cp=>getCColorA(cp,0.8)),
+          borderColor:chartCampuses.map(cp=>getCColor(cp)),
+          borderWidth:2,
+          borderRadius:5
+        }]
       },
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'},datalabels:{anchor:'end',align:'top',font:{size:10},formatter:v=>v||''}},scales:{y:{beginAtZero:true}}}
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          datalabels:{anchor:'end',align:'top',font:{size:12,weight:'bold'},
+            color:'#374151',formatter:v=>v?v+'명':''}
+        },
+        scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'명'}}}
+      }
     });
   });
 }
@@ -4588,18 +4645,22 @@ function renderAdmAll(recs){
 function renderAdmCampus(recs){
   const el=document.getElementById('adm-content-campus');
   if(!recs.length){el.innerHTML='<div class="alert alert-info">조건에 맞는 데이터가 없어요.</div>';return;}
-  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
-  const divisions=[...new Set(recs.map(r=>r.division).filter(Boolean))].sort();
   const GRADES=['초등1','초등2','초등3','초등4','초등5','초등6','중등1','중등2','중등3'];
+  // 비관리자: 본인 캠퍼스만
+  let campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
+  if(!isSuperAdmin()&&currentUser?.role!=='admin'){
+    campuses=campuses.filter(cp=>cp===currentUser?.campus);
+  }
   const allMonths=[...new Set(recs.filter(r=>r.enrollDate).map(r=>new Date(r.enrollDate).getMonth()+1))].sort((a,b)=>a-b);
-  const thS='padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;';
+  const thS='padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;background:#F8FAFC;';
   const tdS='padding:6px 8px;font-size:11px;border-bottom:1px solid #F1F5F9;text-align:center;';
 
   let html='';
   campuses.forEach(campus=>{
     const campusRecs=recs.filter(r=>r.campus===campus);
+    const divisions=[...new Set(campusRecs.map(r=>r.division).filter(Boolean))].sort();
     const campusGrades=[...new Set(campusRecs.map(r=>r.grade).filter(Boolean))].sort((a,b)=>{
-      const oi=GRADES.indexOf(a), oj=GRADES.indexOf(b);
+      const oi=GRADES.indexOf(a),oj=GRADES.indexOf(b);
       return (oi===-1?99:oi)-(oj===-1?99:oj);
     });
 
@@ -4612,6 +4673,7 @@ function renderAdmCampus(recs){
       if(!divRecs.length) return;
       let dApply=0,dAttend=0,dTested=0,dPassed=0,dEnrolled=0;
       const dByMonth={};
+      let firstRow=true;
 
       campusGrades.forEach(grade=>{
         const gr=divRecs.filter(r=>r.grade===grade);
@@ -4620,21 +4682,29 @@ function renderAdmCampus(recs){
         dApply+=s.apply;dAttend+=s.attend;dTested+=s.tested;dPassed+=s.passed;dEnrolled+=s.enrolled;
         allMonths.forEach(m=>{dByMonth[m]=(dByMonth[m]||0)+(s.byMonth[m]||0);});
         tbody+=`<tr>
-          <td style="${tdS}text-align:left;padding-left:16px;">${div}</td>
+          ${firstRow?`<td style="${tdS}text-align:center;font-weight:700;vertical-align:middle;background:#F5F3FF;padding:6px 10px;" rowspan="${campusGrades.filter(g=>divRecs.filter(r=>r.grade===g).length).length}">
+            <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:800;background:${div==='CHESS'?'#EDE9FE':'#FFF7ED'};color:${div==='CHESS'?'#6D28D9':'#C2410C'};">${div}</span>
+          </td>`:''}
           <td style="${tdS}font-weight:600;">${grade}</td>
-          <td style="${tdS}">${s.apply}</td><td style="${tdS}">${s.attend}</td>
-          <td style="${tdS}">${s.tested}</td><td style="${tdS}color:#6D28D9;font-weight:700;">${s.passed}</td>
+          <td style="${tdS}">${s.apply}</td>
+          <td style="${tdS}">${s.attend}</td>
+          <td style="${tdS}">${s.tested}</td>
+          <td style="${tdS}color:#6D28D9;font-weight:700;">${s.passed}</td>
           ${allMonths.map(m=>`<td style="${tdS}">${s.byMonth[m]||''}</td>`).join('')}
           <td style="${tdS}color:#854D0E;font-weight:700;">${s.enrolled}</td>
           <td style="${tdS}color:#92400E;">${s.rate}%</td>
         </tr>`;
+        firstRow=false;
       });
 
+      // 구분 소계
       const dRate=dPassed>0?(dEnrolled/dPassed*100).toFixed(1):0;
-      tbody+=`<tr style="background:#F5F3FF;font-weight:700;border-top:1px solid #DDD6FE;">
-        <td style="${tdS}color:#6D28D9;text-align:left;padding-left:10px;" colspan="2">${div} 소계</td>
-        <td style="${tdS}color:#6D28D9;">${dApply}</td><td style="${tdS}color:#6D28D9;">${dAttend}</td>
-        <td style="${tdS}color:#6D28D9;">${dTested}</td><td style="${tdS}color:#6D28D9;font-weight:800;">${dPassed}</td>
+      tbody+=`<tr style="background:#EDE9FE;font-weight:700;border-top:1.5px solid #A78BFA;">
+        <td style="${tdS}color:#6D28D9;text-align:left;padding-left:12px;font-weight:800;" colspan="2">${div} 소계</td>
+        <td style="${tdS}color:#6D28D9;">${dApply}</td>
+        <td style="${tdS}color:#6D28D9;">${dAttend}</td>
+        <td style="${tdS}color:#6D28D9;">${dTested}</td>
+        <td style="${tdS}color:#6D28D9;font-weight:800;">${dPassed}</td>
         ${allMonths.map(m=>`<td style="${tdS}color:#6D28D9;">${dByMonth[m]||''}</td>`).join('')}
         <td style="${tdS}color:#854D0E;font-weight:800;">${dEnrolled}</td>
         <td style="${tdS}color:#92400E;font-weight:800;">${dRate}%</td>
@@ -4645,34 +4715,133 @@ function renderAdmCampus(recs){
 
     const tRate=totPassed>0?(totEnrolled/totPassed*100).toFixed(1):0;
     tbody+=`<tr style="background:var(--org-lt);font-weight:800;border-top:2px solid var(--org);">
-      <td style="${tdS}color:var(--org);text-align:left;padding-left:10px;" colspan="2">🏆 ${campus} 합계</td>
-      <td style="${tdS}color:var(--org);">${totApply}</td><td style="${tdS}color:var(--org);">${totAttend}</td>
-      <td style="${tdS}color:var(--org);">${totTested}</td><td style="${tdS}color:#6D28D9;font-weight:900;">${totPassed}</td>
+      <td style="${tdS}color:var(--org);text-align:left;padding-left:10px;font-weight:900;" colspan="2">🏆 ${campus} 합계</td>
+      <td style="${tdS}color:var(--org);">${totApply}</td>
+      <td style="${tdS}color:var(--org);">${totAttend}</td>
+      <td style="${tdS}color:var(--org);">${totTested}</td>
+      <td style="${tdS}color:#6D28D9;font-weight:900;">${totPassed}</td>
       ${allMonths.map(m=>`<td style="${tdS}color:var(--org);">${totByMonth[m]||''}</td>`).join('')}
       <td style="${tdS}color:#854D0E;font-weight:900;">${totEnrolled}</td>
       <td style="${tdS}color:#92400E;font-weight:900;">${tRate}%</td>
     </tr>`;
 
-    html+=`<div class="tbl-card" style="margin-bottom:14px;overflow-x:auto;">
+    html+=`<div class="tbl-card" style="margin-bottom:16px;overflow-x:auto;">
       <div class="tbl-title">🏢 ${campus} 캠퍼스 현황</div>
-      <table style="width:100%;border-collapse:collapse;min-width:600px;">
-        <thead><tr>
-          <th style="${thS}background:#F8FAFC;text-align:left;">구분</th>
-          <th style="${thS}background:#F8FAFC;">학년</th>
-          <th style="${thS}background:#EFF6FF;color:#1D4ED8;">신청</th>
-          <th style="${thS}background:#F0FDF4;color:#15803D;">참석</th>
-          <th style="${thS}background:#FFF7ED;color:var(--org);">응시</th>
-          <th style="${thS}background:#EDE9FE;color:#6D28D9;">합격</th>
-          ${allMonths.map(m=>`<th style="${thS}background:#FFFBEB;color:#854D0E;">${m}월 등록</th>`).join('')}
-          <th style="${thS}background:#FEF3C7;color:#854D0E;">등록 합계</th>
-          <th style="${thS}background:#FEF9C3;color:#92400E;">등록율</th>
-        </tr></thead>
+      <table style="width:100%;border-collapse:collapse;min-width:620px;">
+        <thead>
+          <tr>
+            <th style="${thS}text-align:left;" rowspan="1">구분</th>
+            <th style="${thS}">학년</th>
+            <th style="padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;background:#EFF6FF;color:#1D4ED8;">신청</th>
+            <th style="padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;background:#F0FDF4;color:#15803D;">참석</th>
+            <th style="padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;background:#FFF7ED;color:var(--org);">응시</th>
+            <th style="padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;background:#EDE9FE;color:#6D28D9;">합격</th>
+            ${allMonths.map(m=>`<th style="padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;background:#FFFBEB;color:#854D0E;">${m}월 등록</th>`).join('')}
+            <th style="padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;background:#FEF3C7;color:#854D0E;">등록합계</th>
+            <th style="padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;background:#FEF9C3;color:#92400E;">등록율</th>
+          </tr>
+        </thead>
         <tbody>${tbody}</tbody>
       </table>
     </div>`;
   });
 
   el.innerHTML=html||'<div class="alert alert-info">조건에 맞는 데이터가 없어요.</div>';
+}
+
+// ===== 신입전형 업로드 이력 =====
+async function loadAdmUploadHistory(){
+  const el=document.getElementById('adm-upload-history-list');
+  if(!el) return;
+  if(!allAdmRecords.length) await loadAdmRecords();
+
+  // uploadedAt 기준 파일 단위 그룹핑
+  const fileGroups={};
+  allAdmRecords.forEach(r=>{
+    const key=r.uploadedAt||'legacy';
+    if(!fileGroups[key]){
+      fileGroups[key]={
+        uploadedAt:r.uploadedAt||'',
+        uploadedBy:r.uploadedBy||'',
+        uploadedByName:r.uploadedByName||'',
+        campuses:new Set(), quarters:new Set(), count:0
+      };
+    }
+    fileGroups[key].campuses.add(r.campus||'');
+    fileGroups[key].quarters.add(r.quarter||'');
+    fileGroups[key].count++;
+  });
+
+  let files=Object.entries(fileGroups).map(([key,f])=>({
+    key,
+    uploadedAt:f.uploadedAt,
+    uploadedBy:f.uploadedBy,
+    uploadedByName:f.uploadedByName,
+    campuses:[...f.campuses].filter(Boolean).sort().join(', '),
+    quarters:[...f.quarters].filter(Boolean).sort().join('·'),
+    count:f.count
+  }));
+
+  // 권한 필터: 슈퍼관리자는 전체, 나머지는 본인 캠퍼스 것만
+  if(!isSuperAdmin()){
+    if(currentUser?.role==='admin'){
+      // 일반 관리자: 본인 캠퍼스 파일만
+      files=files.filter(f=>f.campuses.includes(currentUser?.campus||''));
+    } else {
+      files=files.filter(f=>f.campuses.includes(currentUser?.campus||'')||f.uploadedBy===currentUser?.email);
+    }
+  }
+  files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
+
+  if(!files.length){
+    el.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';
+    return;
+  }
+
+  const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:#F8FAFC;">
+      <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
+      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">업로드한 사람</th>`:''}
+      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">캠퍼스</th>
+      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">응시분기</th>
+      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">건수</th>
+      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">삭제</th>
+    </tr></thead>
+    <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
+      <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'(이전 업로드)'}</td>
+      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedByName||f.uploadedBy||'-'}</td>`:''}
+      <td style="${tdS}text-align:center;color:#15803D;font-weight:600;">${f.campuses||'-'}</td>
+      <td style="${tdS}text-align:center;">${f.quarters||'-'}</td>
+      <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
+      <td style="${tdS}text-align:center;">
+        <button onclick="deleteAdmFile('${f.key}')" style="padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;font-weight:700;">🗑️ 삭제</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+async function deleteAdmFile(uploadedAt){
+  const fileRecs=allAdmRecords.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
+  if(!fileRecs.length){alert('데이터를 찾을 수 없어요.');return;}
+  // 권한 체크
+  const camps=[...new Set(fileRecs.map(r=>r.campus))];
+  if(!isSuperAdmin()&&!camps.every(cp=>cp===currentUser?.campus)){
+    alert('본인 소속 분원 데이터만 삭제할 수 있어요.');return;
+  }
+  if(!confirm(`[${camps.join(', ')}] 업로드 파일 (${fileRecs.length}건)을 전체 삭제하시겠습니까?`)) return;
+  try{
+    const ids=fileRecs.map(r=>r.id);
+    for(let i=0;i<ids.length;i+=400){
+      const batch=db.batch();
+      ids.slice(i,i+400).forEach(id=>batch.delete(db.collection('recordsAdm').doc(id)));
+      await batch.commit();
+    }
+    allAdmRecords=allAdmRecords.filter(r=>(r.uploadedAt||'legacy')!==uploadedAt);
+    cacheInvalidate('recordsAdm');
+    updateAdmDropdowns();
+    await loadAdmUploadHistory();
+  }catch(e){alert('삭제 오류: '+e.message);}
 }
 
 // ====== SEED DATA ======
@@ -4764,6 +4933,101 @@ async function deleteMockFile(uploadedAt){
 
 
 // ====== 신입전형 ======
+// ===== 신입전형 업로드 이력 =====
+async function loadAdmUploadHistory(){
+  const el=document.getElementById('adm-upload-history-list');
+  if(!el) return;
+  if(!allAdmRecords.length) await loadAdmRecords();
+
+  // uploadedAt 기준 파일 단위 그룹핑
+  const fileGroups={};
+  allAdmRecords.forEach(r=>{
+    const key=r.uploadedAt||'legacy';
+    if(!fileGroups[key]){
+      fileGroups[key]={
+        uploadedAt:r.uploadedAt||'',
+        uploadedBy:r.uploadedBy||'',
+        uploadedByName:r.uploadedByName||'',
+        campuses:new Set(), quarters:new Set(), count:0
+      };
+    }
+    fileGroups[key].campuses.add(r.campus||'');
+    fileGroups[key].quarters.add(r.quarter||'');
+    fileGroups[key].count++;
+  });
+
+  let files=Object.entries(fileGroups).map(([key,f])=>({
+    key,
+    uploadedAt:f.uploadedAt,
+    uploadedBy:f.uploadedBy,
+    uploadedByName:f.uploadedByName,
+    campuses:[...f.campuses].filter(Boolean).sort().join(', '),
+    quarters:[...f.quarters].filter(Boolean).sort().join('·'),
+    count:f.count
+  }));
+
+  // 권한 필터: 슈퍼관리자는 전체, 나머지는 본인 캠퍼스 것만
+  if(!isSuperAdmin()){
+    if(currentUser?.role==='admin'){
+      // 일반 관리자: 본인 캠퍼스 파일만
+      files=files.filter(f=>f.campuses.includes(currentUser?.campus||''));
+    } else {
+      files=files.filter(f=>f.campuses.includes(currentUser?.campus||'')||f.uploadedBy===currentUser?.email);
+    }
+  }
+  files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
+
+  if(!files.length){
+    el.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';
+    return;
+  }
+
+  const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:#F8FAFC;">
+      <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
+      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">업로드한 사람</th>`:''}
+      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">캠퍼스</th>
+      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">응시분기</th>
+      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">건수</th>
+      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">삭제</th>
+    </tr></thead>
+    <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
+      <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'(이전 업로드)'}</td>
+      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedByName||f.uploadedBy||'-'}</td>`:''}
+      <td style="${tdS}text-align:center;color:#15803D;font-weight:600;">${f.campuses||'-'}</td>
+      <td style="${tdS}text-align:center;">${f.quarters||'-'}</td>
+      <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
+      <td style="${tdS}text-align:center;">
+        <button onclick="deleteAdmFile('${f.key}')" style="padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;font-weight:700;">🗑️ 삭제</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+async function deleteAdmFile(uploadedAt){
+  const fileRecs=allAdmRecords.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
+  if(!fileRecs.length){alert('데이터를 찾을 수 없어요.');return;}
+  // 권한 체크
+  const camps=[...new Set(fileRecs.map(r=>r.campus))];
+  if(!isSuperAdmin()&&!camps.every(cp=>cp===currentUser?.campus)){
+    alert('본인 소속 분원 데이터만 삭제할 수 있어요.');return;
+  }
+  if(!confirm(`[${camps.join(', ')}] 업로드 파일 (${fileRecs.length}건)을 전체 삭제하시겠습니까?`)) return;
+  try{
+    const ids=fileRecs.map(r=>r.id);
+    for(let i=0;i<ids.length;i+=400){
+      const batch=db.batch();
+      ids.slice(i,i+400).forEach(id=>batch.delete(db.collection('recordsAdm').doc(id)));
+      await batch.commit();
+    }
+    allAdmRecords=allAdmRecords.filter(r=>(r.uploadedAt||'legacy')!==uploadedAt);
+    cacheInvalidate('recordsAdm');
+    updateAdmDropdowns();
+    await loadAdmUploadHistory();
+  }catch(e){alert('삭제 오류: '+e.message);}
+}
+
 // ====== SEED DATA ======
 const SEED_DATA = [{"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초1", "prev": 0, "newIn": 8, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 8, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초2", "prev": 13, "newIn": 6, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 19, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초3", "prev": 36, "newIn": 11, "transferIn": 0, "withdrawal": 1, "transferOut": 1, "graduation": 0, "current": 45, "notes": "수원분원 전출"}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초4", "prev": 53, "newIn": 12, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 64, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초5", "prev": 39, "newIn": 4, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 41, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "초6", "prev": 60, "newIn": 2, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 60, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "중1", "prev": 27, "newIn": 4, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 28, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "중2", "prev": 18, "newIn": 2, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 19, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "봄", "month": "3월", "grade": "중3", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 4, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초2", "prev": 15, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 13, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초3", "prev": 39, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 36, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초4", "prev": 57, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 53, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초5", "prev": 43, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 39, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "초6", "prev": 63, "newIn": 1, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 60, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "중1", "prev": 28, "newIn": 2, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 27, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "중2", "prev": 20, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "2월", "grade": "중3", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초2", "prev": 15, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 15, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초3", "prev": 40, "newIn": 2, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 39, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초4", "prev": 56, "newIn": 3, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 57, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초5", "prev": 41, "newIn": 3, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "초6", "prev": 65, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 63, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "중1", "prev": 29, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 28, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "중2", "prev": 20, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 20, "notes": ""}, {"campus": "남동탄", "year": "2026", "semester": "겨울", "month": "1월", "grade": "중3", "prev": 5, "newIn": 1, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초2", "prev": 8, "newIn": 7, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 15, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초3", "prev": 31, "newIn": 11, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 40, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초4", "prev": 51, "newIn": 8, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 56, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초5", "prev": 43, "newIn": 4, "transferIn": 0, "withdrawal": 6, "transferOut": 0, "graduation": 0, "current": 41, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "초6", "prev": 69, "newIn": 3, "transferIn": 0, "withdrawal": 7, "transferOut": 0, "graduation": 0, "current": 65, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "중1", "prev": 33, "newIn": 1, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "중2", "prev": 21, "newIn": 1, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 20, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "12월", "grade": "중3", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초1", "prev": 8, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 8, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초2", "prev": 32, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 31, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초3", "prev": 56, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 51, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초4", "prev": 50, "newIn": 0, "transferIn": 0, "withdrawal": 7, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초5", "prev": 72, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 69, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "초6", "prev": 33, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 33, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "중1", "prev": 22, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 21, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "중2", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "11월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초1", "prev": 8, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 8, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초2", "prev": 32, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 32, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초3", "prev": 59, "newIn": 1, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 56, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초4", "prev": 50, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 50, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초5", "prev": 73, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 72, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "초6", "prev": 34, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 33, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "중1", "prev": 22, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 22, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "중2", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "10월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초1", "prev": 5, "newIn": 3, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 8, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초2", "prev": 29, "newIn": 3, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 32, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초3", "prev": 50, "newIn": 10, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 59, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초4", "prev": 46, "newIn": 4, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 50, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초5", "prev": 75, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 73, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "초6", "prev": 32, "newIn": 2, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 34, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "중1", "prev": 23, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 22, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "중2", "prev": 6, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "가을", "month": "9월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초1", "prev": 5, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초2", "prev": 29, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초3", "prev": 55, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 50, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초4", "prev": 50, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 46, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초5", "prev": 85, "newIn": 0, "transferIn": 0, "withdrawal": 10, "transferOut": 0, "graduation": 0, "current": 75, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "초6", "prev": 33, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 32, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "중1", "prev": 24, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 23, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "중2", "prev": 5, "newIn": 1, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "8월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초1", "prev": 5, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초2", "prev": 30, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초3", "prev": 55, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 55, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초4", "prev": 52, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 50, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초5", "prev": 86, "newIn": 2, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 85, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "초6", "prev": 37, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 33, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "중1", "prev": 26, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 24, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "중2", "prev": 5, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "7월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초1", "prev": 5, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초2", "prev": 30, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 30, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초3", "prev": 51, "newIn": 5, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 55, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초4", "prev": 49, "newIn": 5, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 52, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초5", "prev": 83, "newIn": 5, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 86, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "초6", "prev": 39, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 37, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "중1", "prev": 27, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 26, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "중2", "prev": 13, "newIn": 1, "transferIn": 0, "withdrawal": 9, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "여름", "month": "6월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초1", "prev": 7, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 5, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초2", "prev": 31, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 30, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초3", "prev": 52, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 51, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초4", "prev": 54, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 49, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초5", "prev": 88, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 83, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "초6", "prev": 43, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 39, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "중1", "prev": 27, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 27, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "중2", "prev": 16, "newIn": 1, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 13, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "5월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초1", "prev": 6, "newIn": 1, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 7, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초2", "prev": 29, "newIn": 2, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 31, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초3", "prev": 52, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 52, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초4", "prev": 55, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 54, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초5", "prev": 91, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 88, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "초6", "prev": 44, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "중1", "prev": 28, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 27, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "중2", "prev": 16, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 16, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "4월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초1", "prev": 0, "newIn": 6, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 6, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초2", "prev": 19, "newIn": 10, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초3", "prev": 47, "newIn": 7, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 52, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초4", "prev": 45, "newIn": 11, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 55, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초5", "prev": 84, "newIn": 7, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 91, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "초6", "prev": 40, "newIn": 6, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 44, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "중1", "prev": 26, "newIn": 3, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 28, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "중2", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 16, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "봄", "month": "3월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초2", "prev": 21, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 19, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초3", "prev": 50, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초4", "prev": 47, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초5", "prev": 92, "newIn": 0, "transferIn": 0, "withdrawal": 8, "transferOut": 0, "graduation": 0, "current": 84, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "초6", "prev": 45, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 40, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "중1", "prev": 25, "newIn": 1, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 26, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "중2", "prev": 17, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "2월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초2", "prev": 21, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 21, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초3", "prev": 49, "newIn": 2, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 50, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초4", "prev": 47, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초5", "prev": 93, "newIn": 2, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 92, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "초6", "prev": 46, "newIn": 1, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "중1", "prev": 25, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 25, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "중2", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2025", "semester": "겨울", "month": "1월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초2", "prev": 18, "newIn": 4, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 21, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초3", "prev": 44, "newIn": 5, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 49, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초4", "prev": 39, "newIn": 11, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초5", "prev": 84, "newIn": 10, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 93, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초6", "prev": 44, "newIn": 4, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 46, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중1", "prev": 23, "newIn": 3, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 25, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중2", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초1", "prev": 18, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초2", "prev": 45, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 44, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초3", "prev": 47, "newIn": 0, "transferIn": 0, "withdrawal": 8, "transferOut": 0, "graduation": 0, "current": 39, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초4", "prev": 89, "newIn": 0, "transferIn": 0, "withdrawal": 5, "transferOut": 0, "graduation": 0, "current": 84, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초5", "prev": 47, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 44, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "초6", "prev": 26, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 23, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "중1", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "11월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초1", "prev": 19, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초2", "prev": 49, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초3", "prev": 47, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초4", "prev": 87, "newIn": 2, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 89, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초5", "prev": 45, "newIn": 2, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "초6", "prev": 30, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 26, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "중1", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "10월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초1", "prev": 15, "newIn": 4, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 19, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초2", "prev": 46, "newIn": 4, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 49, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초3", "prev": 41, "newIn": 9, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초4", "prev": 76, "newIn": 11, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 87, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초5", "prev": 45, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "초6", "prev": 27, "newIn": 3, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 30, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "중1", "prev": 17, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "가을", "month": "9월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초1", "prev": 17, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 15, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초2", "prev": 47, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 46, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초3", "prev": 43, "newIn": 0, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 41, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초4", "prev": 77, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 76, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초5", "prev": 48, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "초6", "prev": 29, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 27, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "중1", "prev": 18, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "8월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초1", "prev": 18, "newIn": 1, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 17, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초2", "prev": 48, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 47, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초3", "prev": 43, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초4", "prev": 77, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 77, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초5", "prev": 49, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 48, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "초6", "prev": 29, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "중1", "prev": 18, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "7월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초1", "prev": 14, "newIn": 4, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초2", "prev": 41, "newIn": 8, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 48, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초3", "prev": 41, "newIn": 3, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초4", "prev": 66, "newIn": 12, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 77, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초5", "prev": 45, "newIn": 4, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 49, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "초6", "prev": 21, "newIn": 9, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "중1", "prev": 16, "newIn": 4, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 18, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "여름", "month": "6월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초1", "prev": 14, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 14, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초2", "prev": 42, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 41, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초3", "prev": 42, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 41, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초4", "prev": 70, "newIn": 0, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 66, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초5", "prev": 45, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "초6", "prev": 22, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 21, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "중1", "prev": 16, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 16, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "5월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초1", "prev": 14, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 14, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초2", "prev": 42, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 42, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초3", "prev": 43, "newIn": 1, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 42, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초4", "prev": 73, "newIn": 0, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 70, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초5", "prev": 45, "newIn": 1, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "초6", "prev": 23, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 22, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "중1", "prev": 16, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 16, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "4월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초1", "prev": 1, "newIn": 13, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 14, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초2", "prev": 23, "newIn": 20, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 42, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초3", "prev": 29, "newIn": 15, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 43, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초4", "prev": 54, "newIn": 19, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 73, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초5", "prev": 34, "newIn": 12, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 45, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "초6", "prev": 0, "newIn": 23, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 23, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "중1", "prev": 0, "newIn": 16, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 16, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "봄", "month": "3월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초1", "prev": 1, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 1, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초2", "prev": 24, "newIn": 0, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 23, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초3", "prev": 31, "newIn": 1, "transferIn": 0, "withdrawal": 3, "transferOut": 0, "graduation": 0, "current": 29, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초4", "prev": 54, "newIn": 2, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 54, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초5", "prev": 34, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 34, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "초6", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "중1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "2월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초1", "prev": 1, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 1, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초2", "prev": 21, "newIn": 4, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 24, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초3", "prev": 27, "newIn": 4, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 31, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초4", "prev": 51, "newIn": 5, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 54, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초5", "prev": 37, "newIn": 1, "transferIn": 0, "withdrawal": 4, "transferOut": 0, "graduation": 0, "current": 34, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "초6", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "중1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "1월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초1", "prev": 0, "newIn": 1, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 1, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초2", "prev": 15, "newIn": 8, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 21, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초3", "prev": 17, "newIn": 10, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 27, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초4", "prev": 41, "newIn": 11, "transferIn": 0, "withdrawal": 1, "transferOut": 0, "graduation": 0, "current": 51, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초5", "prev": 24, "newIn": 15, "transferIn": 0, "withdrawal": 2, "transferOut": 0, "graduation": 0, "current": 37, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "초6", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중1", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중2", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}, {"campus": "남동탄", "year": "2024", "semester": "겨울", "month": "12월", "grade": "중3", "prev": 0, "newIn": 0, "transferIn": 0, "withdrawal": 0, "transferOut": 0, "graduation": 0, "current": 0, "notes": ""}];
 
