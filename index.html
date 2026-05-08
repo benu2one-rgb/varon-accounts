@@ -4602,7 +4602,7 @@ function admRenderAll(recs){
 
   // 열 헤더
   const colHead=`<tr>
-    <th ${TH('#F3F4F6','#374151')} colspan="2">캠퍼스</th>
+    <th ${TH('#F3F4F6','#374151')} colspan="3">캠퍼스</th>
     ${campuses.map(cp=>`<th ${TH('#F9FAFB','#374151')}>${cp}</th>`).join('')}
     <th ${TH('#E5E7EB','#374151','border-left:2px solid #9CA3AF;')}>캠퍼스 소계</th>
   </tr>`;
@@ -4626,7 +4626,7 @@ function admRenderAll(recs){
         const stats=getS(r=>r.division===div&&normalizeMethod(r.method)===method);
         const cells=stats.map((s,ci)=>{
           const isSubtotal=ci===stats.length-1;
-          return `<td ${TD(isSubtotal?'#F3F4F6':'',col||'#374151',isSubtotal,isSubtotal?'border-left:2px solid #9CA3AF;':'')}>${s[key]||''}</td>`;
+          return `<td ${TD(isSubtotal?'#F3F4F6':'',col||'#374151',isSubtotal,isSubtotal?'border-left:2px solid #9CA3AF;font-weight:800;':'')}>${s[key]||''}</td>`;
         }).join('');
 
         tableBody+=`<tr>
@@ -4644,7 +4644,7 @@ function admRenderAll(recs){
       const stats=getS(r=>r.division===div);
       const cells=stats.map((s,ci)=>{
         const isSubtotal=ci===stats.length-1;
-        return `<td ${TD(subBg,subCol,true,isSubtotal?'border-left:2px solid '+subBorder+';':'')}>${s[key]||''}</td>`;
+        return `<td ${TD(subBg+'CC',subCol,true,isSubtotal?'border-left:2px solid '+subBorder+';background:'+subBg+';':'')}>${s[key]||''}</td>`;
       }).join('');
       tableBody+=`<tr style="background:${subBg}40;">
         ${ki===0?`<td ${TH(subBg,subCol,'vertical-align:middle;border-top:2px solid '+subBorder+';')} rowspan="5">${divLabel}<br>소계</td>`:''}
