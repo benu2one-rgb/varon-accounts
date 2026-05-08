@@ -600,7 +600,7 @@ tr:hover td{background:#FFFBF5;}
 
       <!-- 업로드 -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-        <div style="background:#F0FDF4;border:1.5px dashed #16A34A;border-radius:var(--rad);padding:14px 18px;">
+        <div id="adm-upload-box" style="background:#F0FDF4;border:1.5px dashed #16A34A;border-radius:var(--rad);padding:14px 18px;">
           <div style="font-size:13px;font-weight:800;color:#15803D;margin-bottom:4px;">📂 다량 업로드 (엑셀)</div>
           <div style="font-size:11px;color:var(--mut);margin-bottom:10px;">같은 캠퍼스·응시년도·응시분기 데이터는 덮어씁니다.</div>
           <div style="display:flex;gap:8px;align-items:center;">
@@ -610,7 +610,7 @@ tr:hover td{background:#FFFBF5;}
             <div id="adm-upload-status" style="font-size:12px;color:#15803D;font-weight:600;"></div>
           </div>
         </div>
-        <div style="background:#EFF6FF;border:1.5px dashed #2563EB;border-radius:var(--rad);padding:14px 18px;">
+        <div id="adm-input-box" style="background:#EFF6FF;border:1.5px dashed #2563EB;border-radius:var(--rad);padding:14px 18px;">
           <div style="font-size:13px;font-weight:800;color:#1D4ED8;margin-bottom:4px;">✏️ 개별 입력</div>
           <div style="font-size:11px;color:var(--mut);margin-bottom:10px;">한 명씩 직접 입력합니다.</div>
           <button onclick="openAdmForm()" style="padding:7px 16px;background:#2563EB;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">+ 개별 입력</button>
@@ -4146,6 +4146,12 @@ async function initAdmissionTab(){
   if(!allAdmRecs.length) await loadAdmRecs();
   admUpdateDropdowns();
   document.getElementById('adm-modal').style.display='none';
+  // 뷰어는 업로드/개별입력 숨기기
+  const isViewer=currentUser?.role==='viewer';
+  const uploadBox=document.getElementById('adm-upload-box');
+  const inputBox=document.getElementById('adm-input-box');
+  if(uploadBox) uploadBox.style.display=isViewer?'none':'block';
+  if(inputBox) inputBox.style.display=isViewer?'none':'block';
   await admLoadHistory();
 }
 
@@ -4197,7 +4203,7 @@ function admNameSuggest(){
   const dd=document.getElementById('adm-name-dropdown');
   if(!q){dd.style.display='none';return;}
   let pool=allAdmRecs.filter(r=>r.name&&r.name.includes(q));
-  if(!isSuperAdmin()&&currentUser?.role!=='admin') pool=pool.filter(r=>r.campus===currentUser?.campus);
+  // 전체 캠퍼스 조회 허용
   const uniq=[...new Map(pool.map(r=>[r.name+'|'+(r.contact||''),{name:r.name,contact:r.contact||'-',campus:r.campus||''}])).values()];
   if(!uniq.length){dd.style.display='none';return;}
   dd.style.display='block';
@@ -4214,7 +4220,7 @@ function admSelectPerson(name,contact){
   document.getElementById('adm-sq-name-val').value=name;
   document.getElementById('adm-name-dropdown').style.display='none';
   let recs=allAdmRecs.filter(r=>r.name===name&&(r.contact===contact||!contact||contact==='-'));
-  if(!isSuperAdmin()&&currentUser?.role!=='admin') recs=recs.filter(r=>r.campus===currentUser?.campus);
+  // 전체 캠퍼스 조회 허용
   admRenderTable(recs);
 }
 
@@ -4227,7 +4233,7 @@ async function admSearch(){
     if(!date){alert('날짜를 선택해 주세요.');return;}
     let recs=allAdmRecs.filter(r=>{
       if(!r.testDate) return false;
-      if(!isSuperAdmin()&&currentUser?.role!=='admin'&&r.campus!==currentUser?.campus) return false;
+      // 전체 캠퍼스 조회 허용
       return String(r.testDate).substring(0,10)===date;
     });
     admRenderTable(recs);
@@ -4499,7 +4505,7 @@ async function admDeleteFile(uploadedAt){
 function admFilterRecs(){
   const campus=document.getElementById('adm-f-campus')?.value||'';
   let recs=allAdmRecs.filter(r=>!campus||r.campus===campus);
-  if(!isSuperAdmin()&&currentUser?.role==='user') recs=recs.filter(r=>r.campus===currentUser?.campus);
+  // 사용자도 전체 캠퍼스 조회 가능 (캠퍼스 드롭다운으로만 필터)
 
   if(admPeriod==='quarter'){
     // 분기별: C열(응시분기) 기준
@@ -4693,7 +4699,7 @@ function admRenderCampus(recs){
   const el=document.getElementById('adm-view-campus-content');
   if(!recs.length){el.innerHTML='<div class="alert alert-info">데이터가 없어요.</div>';return;}
   let campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
-  if(!isSuperAdmin()&&currentUser?.role==='user') campuses=campuses.filter(cp=>cp===currentUser?.campus);
+  // 전체 캠퍼스 조회 허용
   const enrollMonths=[...new Set(recs.filter(r=>r.enrollDate).map(r=>new Date(r.enrollDate+'T00:00:00').getMonth()+1))].sort((a,b)=>a-b);
   const th='padding:6px 8px;font-size:11px;font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;';
   const td='padding:6px 8px;font-size:11px;border-bottom:1px solid #F1F5F9;text-align:center;';
