@@ -4571,137 +4571,332 @@ async function admRender(){
   admShowView(admView);
 }
 
-// ===== ① 전체 현황 (응시방식 컬럼 분리) =====
+// ===== ① 전체 현황 (행=구분/방식/지표, 열=캠퍼스) =====
 function admRenderAll(recs){
   const el=document.getElementById('adm-view-all-content');
   if(!recs.length){el.innerHTML='<div class="alert alert-info">조건에 맞는 데이터가 없어요.</div>';return;}
 
   const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
-  const methodOrder=['1차 설명회','2차 설명회','3차 설명회','개별 전형'];
+  const methodOrder=['1차 설명회','2차 설명회','3차 설명회','개별 전형','개별상담'];
   const methodsOf=div=>[...new Set(recs.filter(r=>r.division===div).map(r=>r.method).filter(Boolean))]
     .sort((a,b)=>(methodOrder.indexOf(a)===-1?99:methodOrder.indexOf(a))-(methodOrder.indexOf(b)===-1?99:methodOrder.indexOf(b)));
   const chessMethods=methodsOf('CHESS');
   const aceMethods=methodsOf('ACE');
   const enrollMonths=[...new Set(recs.filter(r=>r.enrollDate).map(r=>new Date(r.enrollDate+'T00:00:00').getMonth()+1))].sort((a,b)=>a-b);
+  const allCols=[...campuses,'캠퍼스 소계'];
 
-  const chessTotal=(chessMethods.length+1)*3;
-  const aceTotal=(aceMethods.length+1)*3;
-  const grandTotal=4+enrollMonths.length+1;
+  const BASE='padding:4px 7px;font-size:10px;font-weight:800;border:1px solid #E2E8F0;text-align:center;white-space:nowrap;';
+  const TDB='padding:4px 7px;font-size:11px;border:1px solid #EAECF0;text-align:center;';
 
-  // 스타일 상수
-  const BASE='padding:5px 8px;font-size:10px;font-weight:800;border:1px solid #E2E8F0;text-align:center;white-space:nowrap;';
-  const TDB='padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:center;';
+  // 열 헤더
+  const colHeader=`
+    <tr>
+      <th style="${BASE}background:#F8FAFC;" colspan="2">캠퍼스</th>
+      ${campuses.map(cp=>`<th style="${BASE}background:#F1F5F9;color:#374151;">${cp}</th>`).join('')}
+      <th style="${BASE}background:#E2E8F0;color:#374151;border-left:2px solid #94A3B8;">캠퍼스 소계</th>
+    </tr>`;
 
-  // 배경 없는 일반 헤더
-  const thPlain=`style="${BASE}background:#F8FAFC;color:#374151;"`;
-  // CHESS 소계 헤더 (보라)
-  const thChSub=`style="${BASE}background:#6D28D9;color:#fff;border-left:2px solid #6D28D9;border-right:2px solid #6D28D9;"`;
-  // ACE 소계 헤더 (오렌지)
-  const thAcSub=`style="${BASE}background:#EA580C;color:#fff;border-left:2px solid #EA580C;border-right:2px solid #EA580C;"`;
-  // CHESS 대분류
-  const thCh=`style="${BASE}background:#EDE9FE;color:#4C1D95;"`;
-  // ACE 대분류
-  const thAc=`style="${BASE}background:#FFF7ED;color:#7C2D12;"`;
-  // 총합
-  const thGrand=`style="${BASE}background:#1E293B;color:#fff;"`;
+  // 값 추출 헬퍼
+  const getStats=(filterFn)=>allCols.map(col=>{
+    const cr=col==='캠퍼스 소계'?recs.filter(filterFn):recs.filter(r=>r.campus===col).filter(filterFn);
+    return admStats(cr);
+  });
 
-  // ====== 헤더 3행 ======
-  const R1=`
-    <th ${thPlain} rowspan="3">캠퍼스</th>
-    <th ${thCh} colspan="${chessTotal}">CHESS</th>
-    <th ${thAc} colspan="${aceTotal}">ACE</th>
-    <th ${thGrand} colspan="${grandTotal}">총합</th>`;
-
-  // Row2: 방식명(no bg) | 소계(색) | ... | 신청참석응시합격등록율(rowspan=2)
-  const R2=
-    chessMethods.map(m=>`<th ${thPlain} colspan="3">${m}</th>`).join('')+
-    `<th ${thChSub} colspan="3">CHESS 소계</th>`+
-    aceMethods.map(m=>`<th ${thPlain} colspan="3">${m}</th>`).join('')+
-    `<th ${thAcSub} colspan="3">ACE 소계</th>`+
-    ['신청','참석','응시','합격'].map(s=>`<th ${thGrand} rowspan="2">${s}</th>`).join('')+
-    enrollMonths.map(m=>`<th style="${BASE}background:#1E293B;color:#FCD34D;" rowspan="2">${m}월<br>등록</th>`).join('')+
-    `<th style="${BASE}background:#1E293B;color:#6EE7B7;" rowspan="2">등록율</th>`;
-
-  // Row3: 신청/참석/합격 per method+소계
-  const sub3=(bg,color,borderStyle='')=>
-    ['신청','참석','합격'].map(s=>`<th style="${BASE}background:${bg};color:${color};${borderStyle}">${s}</th>`).join('');
-  const R3=
-    chessMethods.map(()=>sub3('#F8FAFC','#374151')).join('')+
-    sub3('#EDE9FE','#6D28D9','border-left:2px solid #6D28D9;border-right:2px solid #6D28D9;')+
-    aceMethods.map(()=>sub3('#F8FAFC','#374151')).join('')+
-    sub3('#FFF7ED','#EA580C','border-left:2px solid #EA580C;border-right:2px solid #EA580C;');
-
-  // ====== 데이터 행 생성 ======
-  const makeRow=(rowRecs,label,rowStyle='',labelColor='#374151')=>{
-    let row=`<td style="${TDB}text-align:left;padding-left:10px;font-weight:700;color:${labelColor};">${label}</td>`;
-    let grandApply=0,grandAttend=0,grandTested=0,grandPassed=0,grandEnrolled=0;
-    const grandBM={};
-
-    ['CHESS','ACE'].forEach(div=>{
-      const divMethods=div==='CHESS'?chessMethods:aceMethods;
-      const dr=rowRecs.filter(r=>r.division===div);
-      const isChess=div==='CHESS';
-
-      divMethods.forEach(m=>{
-        const mr=dr.filter(r=>r.method===m);
-        const s=admStats(mr);
-        // 일반 방식 셀 - 배경 없음
-        row+=`<td style="${TDB}">${s.apply||''}</td>`;
-        row+=`<td style="${TDB}">${s.attend||''}</td>`;
-        row+=`<td style="${TDB}">${s.passed||''}</td>`;
-      });
-
-      // 소계 - 색 강조 (모든 셀에 좌우 border 일관 적용)
-      const ds=admStats(dr);
-      const subBg=isChess?'#F5F3FF':'#FFF7ED';
-      const subCol=isChess?'#6D28D9':'#EA580C';
-      const subBorderL=isChess?'border-left:2px solid #6D28D9;':'border-left:2px solid #EA580C;';
-      const subBorderR=isChess?'border-right:2px solid #6D28D9;':'border-right:2px solid #EA580C;';
-      row+=`<td style="${TDB}background:${subBg};color:${subCol};font-weight:800;${subBorderL}">${ds.apply||''}</td>`;
-      row+=`<td style="${TDB}background:${subBg};color:${subCol};font-weight:800;">${ds.attend||''}</td>`;
-      row+=`<td style="${TDB}background:${subBg};color:${subCol};font-weight:800;${subBorderR}">${ds.passed||''}</td>`;
-
-      grandApply+=ds.apply;grandAttend+=ds.attend;grandTested+=ds.tested;grandPassed+=ds.passed;grandEnrolled+=ds.enrolled;
-      enrollMonths.forEach(m=>{grandBM[m]=(grandBM[m]||0)+(ds.byMonth[m]||0);});
+  // 행 생성 헬퍼
+  const makeMetricRows=(filterFn, metrics, rowBg='', textColor='#374151', subBg='', subBorder='')=>{
+    return metrics.map(({label,key,color})=>{
+      const stats=getStats(filterFn);
+      const cells=stats.map((s,i)=>{
+        const isSubtotal=i===stats.length-1;
+        const val=key==='rate'?(s.passed>0?(s.enrolled/s.passed*100).toFixed(1)+'%':'0%'):s[key];
+        const bg=isSubtotal?(subBg||rowBg):'';
+        const bl=isSubtotal&&subBorder?subBorder:'';
+        return `<td style="${TDB}${bg?'background:'+bg+';':''}${color?'color:'+color+';':''}${isSubtotal?'font-weight:800;':''}${bl}">${val||''}</td>`;
+      }).join('');
+      return `<tr style="${rowBg?'background:'+rowBg+';':''}">
+        <td style="${TDB}text-align:left;padding-left:10px;${rowBg?'background:'+rowBg+';':''}">${label}</td>
+        ${cells}
+      </tr>`;
     });
-
-    // 총합 셀
-    const grandRate=grandPassed>0?(grandEnrolled/grandPassed*100).toFixed(1)+'%':'0%';
-    const gStyle=`${TDB}background:#F8FAFC;font-weight:800;border-left:2px solid #CBD5E1;`;
-    row+=`<td style="${gStyle}color:#374151;">${grandApply||''}</td>`;
-    row+=`<td style="${gStyle}color:#374151;">${grandAttend||''}</td>`;
-    row+=`<td style="${gStyle}color:#374151;">${grandTested||''}</td>`;
-    row+=`<td style="${gStyle}color:#6D28D9;">${grandPassed||''}</td>`;
-    // 등록(월별) + 등록율 - 박스 강조
-    enrollMonths.forEach((m,mi)=>{
-      const isFirst=mi===0;
-      const isLast=mi===enrollMonths.length-1&&enrollMonths.length>0;
-      row+=`<td style="${TDB}background:#FEF3C7;color:#854D0E;font-weight:800;border-top:2px solid #F59E0B;border-bottom:2px solid #F59E0B;${isFirst?'border-left:2px solid #F59E0B;':''}">${grandBM[m]||''}</td>`;
-    });
-    // 등록율 - 강조 박스
-    row+=`<td style="${TDB}background:#DCFCE7;color:#15803D;font-weight:900;font-size:12px;border:2px solid #16A34A;">${grandRate}</td>`;
-
-    return `<tr style="${rowStyle}">${row}</tr>`;
   };
 
-  let tbody='';
-  campuses.forEach(cp=>{tbody+=makeRow(recs.filter(r=>r.campus===cp),cp);});
-  tbody+=makeRow(recs,'🏆 합계','background:var(--org-lt);border-top:2px solid var(--org);','var(--org)');
+  let tableRows='';
 
-  el.innerHTML=`<div class="tbl-card" style="overflow-x:auto;margin-bottom:14px;">
-    <div class="tbl-title">📊 전체 현황 (응시방식별)</div>
-    <table style="width:100%;border-collapse:collapse;min-width:600px;">
-      <thead>
-        <tr>${R1}</tr>
-        <tr>${R2}</tr>
-        <tr>${R3}</tr>
-      </thead>
-      <tbody>${tbody}</tbody>
-    </table>
+  // CHESS 섹션
+  const chessRowspan=(chessMethods.length*4)+5; // 방식별4행 + 소계4행 + 등록율1행
+  tableRows+=`<tr>
+    <td style="${BASE}background:#FDE68A;color:#78350F;font-weight:900;writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:4px;text-align:center;vertical-align:middle;" rowspan="${chessRowspan}">C H E S S</td>
+  </tr>`;
+
+  chessMethods.forEach((method,mi)=>{
+    const firstRow=mi===0;
+    const metrics=[
+      {label:'신청',key:'apply',color:''},
+      {label:'참석',key:'attend',color:''},
+      {label:'합격',key:'passed',color:'#6D28D9'},
+      {label:'등록',key:'enrolled',color:'#854D0E'},
+    ];
+    tableRows+=`<tr style="background:#FFFBEB;">
+      <td style="${TDB}background:#FEF3C7;color:#78350F;font-weight:800;text-align:center;" rowspan="4">${method}</td>
+      <td style="${TDB}background:#FFFBEB;">${''}</td>
+      ${allCols.map(col=>{
+        const cr=col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col);
+        const s=admStats(cr.filter(r=>r.division==='CHESS'&&r.method===method));
+        return `<td style="${TDB}">${s.apply||''}</td>`;
+      }).join('')}
+    </tr>`;
+    // 나머지 행들은 루프로 - 실제로는 아래서 처리
+  });
+
+  // 위 방식 대신 단순하게 방식별 4행씩 생성
+  tableRows=''; // 리셋
+
+  // CHESS
+  const chessRs=chessMethods.length*4+5;
+  const aceRs=aceMethods.length*4+5;
+  const grandRs=enrollMonths.length+4; // 신청/참석/합격/등록월/등록율
+
+  let html='';
+  html+=`<table style="width:100%;border-collapse:collapse;min-width:500px;">`;
+  html+=`<thead>${colHeader}</thead><tbody>`;
+
+  // ===== CHESS =====
+  const chessTotal=chessMethods.length*4+5;
+  let chessRows='';
+
+  chessMethods.forEach((method)=>{
+    const mFn=r=>r.division==='CHESS'&&r.method===method;
+    ['신청','참석','합격','등록'].forEach((metric,mi)=>{
+      const key=['apply','attend','passed','enrolled'][mi];
+      const color=['','','#6D28D9','#854D0E'][mi];
+      const vals=allCols.map(col=>{
+        const cr=(col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col)).filter(mFn);
+        const s=admStats(cr);
+        const v=s[key];
+        return `<td style="${TDB}${color?'color:'+color+';':''}">${v||''}</td>`;
+      }).join('');
+      const isFirstRow=mi===0;
+      chessRows+=`<tr style="background:#FFFBEB;">
+        ${isFirstRow?`<td style="${TDB}background:#FEF3C7;color:#78350F;font-weight:800;text-align:center;vertical-align:middle;border-top:1px solid #FDE68A;" rowspan="4">${method}</td>`:''}
+        <td style="${TDB}background:#FFFBEB;font-size:10px;">${metric}</td>
+        ${vals}
+      </tr>`;
+    });
+  });
+
+  // CHESS 소계
+  const chessFn=r=>r.division==='CHESS';
+  ['신청','참석','합격','등록'].forEach((metric,mi)=>{
+    const key=['apply','attend','passed','enrolled'][mi];
+    const color=['#78350F','#78350F','#78350F','#D97706'][mi];
+    const vals=allCols.map(col=>{
+      const cr=(col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col)).filter(chessFn);
+      const s=admStats(cr);
+      return `<td style="${TDB}background:#FFFBEB;color:${color};font-weight:800;${col==='캠퍼스 소계'?'border-left:2px solid #D97706;':''}">${s[key]||''}</td>`;
+    }).join('');
+    const isFirst=mi===0;
+    chessRows+=`<tr style="background:#FEF3C7;">
+      ${isFirst?`<td style="${TDB}background:#F59E0B;color:#fff;font-weight:900;text-align:center;vertical-align:middle;border-top:2px solid #D97706;" rowspan="4">CHESS<br>소계</td>`:''}
+      <td style="${TDB}background:#FEF3C7;font-size:10px;font-weight:700;color:#78350F;">${metric}</td>
+      ${vals}
+    </tr>`;
+  });
+  // 등록율
+  const rateVals=allCols.map(col=>{
+    const cr=(col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col)).filter(chessFn);
+    const s=admStats(cr);
+    const rate=s.passed>0?(s.enrolled/s.passed*100).toFixed(1)+'%':'0%';
+    return `<td style="${TDB}background:#FEF3C7;color:#D97706;font-weight:800;font-size:11px;">${rate}</td>`;
+  }).join('');
+  chessRows+=`<tr style="background:#FEF3C7;">
+    <td style="${TDB}background:#FDE68A;color:#78350F;font-weight:900;font-size:11px;text-align:center;">등록율</td>
+    ${rateVals}
+  </tr>`;
+
+  html+=`<tr>
+    <td style="${TDB}background:#FDE68A;color:#78350F;font-weight:900;writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:3px;text-align:center;vertical-align:middle;padding:10px 4px;" rowspan="${chessTotal}">CHESS</td>
+    ${chessRows.match(/<tr[^>]*>(.*?)<\/tr>/s)?'':''}
+  </tr>`;
+  // 위 방식 안됨, 직접 삽입
+
+  // 실제 렌더는 innerHTML로
+  let tableBody='';
+
+  // CHESS 첫 행에 rowspan 셀 포함
+  let chessFirstDone=false;
+  chessMethods.forEach((method)=>{
+    ['신청','참석','합격','등록'].forEach((metric,mi)=>{
+      const key=['apply','attend','passed','enrolled'][mi];
+      const color=['','','#6D28D9','#854D0E'][mi];
+      const isFirstMethod=!chessFirstDone&&mi===0;
+      const isFirstMetric=mi===0;
+      const vals=allCols.map(col=>{
+        const cr=(col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col)).filter(r=>r.division==='CHESS'&&r.method===method);
+        const s=admStats(cr);
+        return `<td style="${TDB}${color?'color:'+color+';':''}">${s[key]||''}</td>`;
+      }).join('');
+      tableBody+=`<tr style="background:#FFFBEB;">
+        ${isFirstMethod?`<td style="${TDB}background:#FDE68A;color:#78350F;font-weight:900;writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:3px;text-align:center;vertical-align:middle;padding:10px 4px;" rowspan="${chessTotal}">CHESS</td>`:''}
+        ${isFirstMetric?`<td style="${TDB}background:#FEF3C7;color:#78350F;font-weight:800;text-align:center;vertical-align:middle;border-top:1px solid #FDE68A;" rowspan="4">${method}</td>`:''}
+        <td style="${TDB}background:#FFFBEB;font-size:10px;">${metric}</td>
+        ${vals}
+      </tr>`;
+      if(isFirstMethod) chessFirstDone=true;
+    });
+  });
+
+  // CHESS 소계
+  ['신청','참석','합격','등록'].forEach((metric,mi)=>{
+    const key=['apply','attend','passed','enrolled'][mi];
+    const color='#78350F';
+    const isFirst=mi===0;
+    const vals=allCols.map(col=>{
+      const cr=(col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col)).filter(r=>r.division==='CHESS');
+      const s=admStats(cr);
+      return `<td style="${TDB}background:#FEF3C7;color:${color};font-weight:800;${col==='캠퍼스 소계'?'border-left:2px solid #D97706;':''}">${s[key]||''}</td>`;
+    }).join('');
+    tableBody+=`<tr style="background:#FEF3C7;">
+      ${isFirst?`<td style="${TDB}background:#F59E0B;color:#fff;font-weight:900;text-align:center;vertical-align:middle;border-top:2px solid #D97706;" rowspan="5">CHESS<br>소계</td>`:''}
+      <td style="${TDB}background:#FEF3C7;font-size:10px;font-weight:700;color:#78350F;">${metric}</td>
+      ${vals}
+    </tr>`;
+  });
+  // CHESS 등록율
+  tableBody+=`<tr style="background:#FEF3C7;">
+    <td style="${TDB}background:#FDE68A;color:#78350F;font-weight:900;font-size:10px;text-align:center;">등록율</td>
+    ${allCols.map(col=>{
+      const cr=(col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col)).filter(r=>r.division==='CHESS');
+      const s=admStats(cr);
+      const rate=s.passed>0?(s.enrolled/s.passed*100).toFixed(1)+'%':'0%';
+      return `<td style="${TDB}background:#FEF3C7;color:#D97706;font-weight:900;">${rate}</td>`;
+    }).join('')}
+  </tr>`;
+
+  // ACE 섹션
+  const aceTotal=aceMethods.length*4+5;
+  let aceFirstDone=false;
+  aceMethods.forEach((method)=>{
+    ['신청','참석','합격','등록'].forEach((metric,mi)=>{
+      const key=['apply','attend','passed','enrolled'][mi];
+      const color=['','','#1D4ED8','#0369A1'][mi];
+      const isFirstMethod=!aceFirstDone&&mi===0;
+      const isFirstMetric=mi===0;
+      const vals=allCols.map(col=>{
+        const cr=(col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col)).filter(r=>r.division==='ACE'&&r.method===method);
+        const s=admStats(cr);
+        return `<td style="${TDB}${color?'color:'+color+';':''}">${s[key]||''}</td>`;
+      }).join('');
+      tableBody+=`<tr style="background:#F0F9FF;">
+        ${isFirstMethod?`<td style="${TDB}background:#BAE6FD;color:#0C4A6E;font-weight:900;writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:3px;text-align:center;vertical-align:middle;padding:10px 4px;border-top:3px solid #0EA5E9;" rowspan="${aceTotal}">ACE</td>`:''}
+        ${isFirstMetric?`<td style="${TDB}background:#E0F2FE;color:#0C4A6E;font-weight:800;text-align:center;vertical-align:middle;border-top:1px solid #BAE6FD;" rowspan="4">${method}</td>`:''}
+        <td style="${TDB}background:#F0F9FF;font-size:10px;">${metric}</td>
+        ${vals}
+      </tr>`;
+      if(isFirstMethod) aceFirstDone=true;
+    });
+  });
+  // ACE 소계
+  ['신청','참석','합격','등록'].forEach((metric,mi)=>{
+    const key=['apply','attend','passed','enrolled'][mi];
+    const isFirst=mi===0;
+    const vals=allCols.map(col=>{
+      const cr=(col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col)).filter(r=>r.division==='ACE');
+      const s=admStats(cr);
+      return `<td style="${TDB}background:#E0F2FE;color:#0C4A6E;font-weight:800;${col==='캠퍼스 소계'?'border-left:2px solid #0284C7;':''}">${s[key]||''}</td>`;
+    }).join('');
+    tableBody+=`<tr style="background:#E0F2FE;">
+      ${isFirst?`<td style="${TDB}background:#0EA5E9;color:#fff;font-weight:900;text-align:center;vertical-align:middle;border-top:2px solid #0284C7;" rowspan="5">ACE<br>소계</td>`:''}
+      <td style="${TDB}background:#E0F2FE;font-size:10px;font-weight:700;color:#0C4A6E;">${metric}</td>
+      ${vals}
+    </tr>`;
+  });
+  // ACE 등록율
+  tableBody+=`<tr style="background:#E0F2FE;">
+    <td style="${TDB}background:#BAE6FD;color:#0C4A6E;font-weight:900;font-size:10px;text-align:center;">등록율</td>
+    ${allCols.map(col=>{
+      const cr=(col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col)).filter(r=>r.division==='ACE');
+      const s=admStats(cr);
+      const rate=s.passed>0?(s.enrolled/s.passed*100).toFixed(1)+'%':'0%';
+      return `<td style="${TDB}background:#E0F2FE;color:#0284C7;font-weight:900;">${rate}</td>`;
+    }).join('')}
+  </tr>`;
+
+  // 총합 섹션
+  const grandMetrics=['신청','참석','합격',...enrollMonths.map(m=>m+'월 등록'),'등록율'];
+  const grandKeys=['apply','attend','passed',...enrollMonths.map(m=>'month_'+m),'rate'];
+  const grandTotal2=grandMetrics.length;
+  tableBody+=grandMetrics.map((metric,mi)=>{
+    const isFirst=mi===0;
+    const isRate=metric==='등록율';
+    const isEnroll=metric.includes('월 등록');
+    const vals=allCols.map(col=>{
+      const cr=(col==='캠퍼스 소계'?recs:recs.filter(r=>r.campus===col));
+      const s=admStats(cr);
+      let v='';
+      if(isRate) v=s.passed>0?(s.enrolled/s.passed*100).toFixed(1)+'%':'0%';
+      else if(isEnroll){const m=parseInt(metric);v=s.byMonth[m]||'';}
+      else v=s[grandKeys[mi]]||'';
+      const highlight=isRate||isEnroll;
+      return `<td style="${TDB}${isRate?'background:#ECFDF5;color:#065F46;font-weight:900;border:2px solid #059669;':isEnroll?'background:#ECFDF5;color:#065F46;font-weight:800;':'background:#EFF6FF;color:#1E40AF;font-weight:800;'}">${v}</td>`;
+    }).join('');
+    return `<tr style="background:#EFF6FF;">
+      ${isFirst?`<td style="${TDB}background:#1E40AF;color:#fff;font-weight:900;writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:3px;text-align:center;vertical-align:middle;padding:10px 4px;border-top:3px solid #1E40AF;" rowspan="${grandTotal2}">총 합</td>`:''}
+      <td style="${TDB}background:#DBEAFE;color:#1E40AF;font-size:10px;font-weight:700;">${metric}</td>
+      ${vals}
+    </tr>`;
+  }).join('');
+
+  // 차트용 데이터
+  const chessEnrolled=campuses.map(cp=>admStats(recs.filter(r=>r.campus===cp&&r.division==='CHESS')).enrolled);
+  const aceEnrolled=campuses.map(cp=>admStats(recs.filter(r=>r.campus===cp&&r.division==='ACE')).enrolled);
+
+  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 260px;gap:16px;align-items:flex-start;">
+    <div class="tbl-card" style="overflow-x:auto;">
+      <div class="tbl-title">📊 전체 현황</div>
+      <table style="width:100%;border-collapse:collapse;min-width:400px;">
+        <thead>${colHeader}</thead>
+        <tbody>${tableBody}</tbody>
+      </table>
+    </div>
+    <div>
+      <div class="chart-card" style="margin-bottom:12px;">
+        <div class="chart-title" style="font-size:11px;">CHESS 등록인원</div>
+        <div style="height:160px;"><canvas id="ch-adm-chess"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title" style="font-size:11px;">ACE 등록인원</div>
+        <div style="height:160px;"><canvas id="ch-adm-ace"></canvas></div>
+      </div>
+    </div>
   </div>`;
+
+  requestAnimationFrame(()=>{
+    const chartOpts=(colors)=>({
+      type:'bar',
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},datalabels:{anchor:'end',align:'top',font:{size:10,weight:'bold'},color:'#374151',formatter:v=>v||''}},
+        scales:{y:{beginAtZero:true}},
+        datasets:{bar:{maxBarThickness:40}}
+      }
+    });
+    destroyChart('ch-adm-chess');
+    const chessEl=document.getElementById('ch-adm-chess');
+    if(chessEl) charts['ch-adm-chess']=new Chart(chessEl.getContext('2d'),{
+      type:'bar',
+      data:{labels:campuses,datasets:[{data:chessEnrolled,backgroundColor:campuses.map(cp=>getCColorA(cp,0.8)),borderColor:campuses.map(cp=>getCColor(cp)),borderWidth:2,borderRadius:4,maxBarThickness:40}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'top',font:{size:10,weight:'bold'},color:'#374151',formatter:v=>v||''}},scales:{y:{beginAtZero:true}}}
+    });
+    destroyChart('ch-adm-ace');
+    const aceEl=document.getElementById('ch-adm-ace');
+    if(aceEl) charts['ch-adm-ace']=new Chart(aceEl.getContext('2d'),{
+      type:'bar',
+      data:{labels:campuses,datasets:[{data:aceEnrolled,backgroundColor:campuses.map(cp=>getCColorA(cp,0.7)),borderColor:campuses.map(cp=>getCColor(cp)),borderWidth:2,borderRadius:4,maxBarThickness:40}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'top',font:{size:10,weight:'bold'},color:'#374151',formatter:v=>v||''}},scales:{y:{beginAtZero:true}}}
+    });
+  });
 }
 
-// ===== ② 캠퍼스별 현황 =====// ===== ② 캠퍼스별 현황 =====// ===== ② 캠퍼스별 현황 =====
+// ===== ② 캠퍼스별 현황 =====// ===== ② 캠퍼스별 현황 =====// ===== ② 캠퍼스별 현황 =====// ===== ② 캠퍼스별 현황 =====// ===== ② 캠퍼스별 현황 =====
 function admRenderCampus(recs){
   const el=document.getElementById('adm-view-campus-content');
   if(!recs.length){el.innerHTML='<div class="alert alert-info">데이터가 없어요.</div>';return;}
