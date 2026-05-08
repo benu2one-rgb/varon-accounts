@@ -4651,14 +4651,15 @@ function admRenderAll(recs){
         row+=`<td style="${TDB}">${s.passed||''}</td>`;
       });
 
-      // 소계 - 색 강조
+      // 소계 - 색 강조 (모든 셀에 좌우 border 일관 적용)
       const ds=admStats(dr);
       const subBg=isChess?'#F5F3FF':'#FFF7ED';
       const subCol=isChess?'#6D28D9':'#EA580C';
-      const subBorder=isChess?'border-left:2px solid #6D28D9;border-right:2px solid #6D28D9;':'border-left:2px solid #EA580C;border-right:2px solid #EA580C;';
-      row+=`<td style="${TDB}background:${subBg};color:${subCol};font-weight:800;${subBorder}">${ds.apply||''}</td>`;
+      const subBorderL=isChess?'border-left:2px solid #6D28D9;':'border-left:2px solid #EA580C;';
+      const subBorderR=isChess?'border-right:2px solid #6D28D9;':'border-right:2px solid #EA580C;';
+      row+=`<td style="${TDB}background:${subBg};color:${subCol};font-weight:800;${subBorderL}">${ds.apply||''}</td>`;
       row+=`<td style="${TDB}background:${subBg};color:${subCol};font-weight:800;">${ds.attend||''}</td>`;
-      row+=`<td style="${TDB}background:${subBg};color:${subCol};font-weight:800;${isChess?'border-right:2px solid #6D28D9;':'border-right:2px solid #EA580C;'}">${ds.passed||''}</td>`;
+      row+=`<td style="${TDB}background:${subBg};color:${subCol};font-weight:800;${subBorderR}">${ds.passed||''}</td>`;
 
       grandApply+=ds.apply;grandAttend+=ds.attend;grandTested+=ds.tested;grandPassed+=ds.passed;grandEnrolled+=ds.enrolled;
       enrollMonths.forEach(m=>{grandBM[m]=(grandBM[m]||0)+(ds.byMonth[m]||0);});
@@ -4671,8 +4672,14 @@ function admRenderAll(recs){
     row+=`<td style="${gStyle}color:#374151;">${grandAttend||''}</td>`;
     row+=`<td style="${gStyle}color:#374151;">${grandTested||''}</td>`;
     row+=`<td style="${gStyle}color:#6D28D9;">${grandPassed||''}</td>`;
-    enrollMonths.forEach(m=>{row+=`<td style="${TDB}background:#FFFBEB;color:#854D0E;font-weight:700;">${grandBM[m]||''}</td>`;});
-    row+=`<td style="${TDB}background:#F0FDF4;color:#15803D;font-weight:800;">${grandRate}</td>`;
+    // 등록(월별) + 등록율 - 박스 강조
+    enrollMonths.forEach((m,mi)=>{
+      const isFirst=mi===0;
+      const isLast=mi===enrollMonths.length-1&&enrollMonths.length>0;
+      row+=`<td style="${TDB}background:#FEF3C7;color:#854D0E;font-weight:800;border-top:2px solid #F59E0B;border-bottom:2px solid #F59E0B;${isFirst?'border-left:2px solid #F59E0B;':''}">${grandBM[m]||''}</td>`;
+    });
+    // 등록율 - 강조 박스
+    row+=`<td style="${TDB}background:#DCFCE7;color:#15803D;font-weight:900;font-size:12px;border:2px solid #16A34A;">${grandRate}</td>`;
 
     return `<tr style="${rowStyle}">${row}</tr>`;
   };
