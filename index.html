@@ -477,6 +477,12 @@ tr:hover td{background:#FFFBF5;}
         <div id="wd-upload-status" style="font-size:12px;color:#1D4ED8;font-weight:600;"></div>
       </div>
 
+      <!-- 업로드 이력 -->
+      <div style="background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:800;color:#1D4ED8;margin-bottom:10px;">📋 업로드 이력</div>
+        <div id="wd-history-list"><div style="padding:8px;color:var(--mut);font-size:12px;">로딩 중...</div></div>
+      </div>
+
       <div id="wd-content"></div>
     </div>
 
@@ -1163,7 +1169,7 @@ function showTab(tab){
   else if(tab==='grade') renderGrade();
   else if(tab==='closing') renderClosing();
   else if(tab==='allclosing') renderAllClosing();
-  else if(tab==='withdrawal') renderWithdrawal();
+  else if(tab==='withdrawal') { renderWithdrawal(); loadWdHistory(); }
   else if(tab==='score') initScoreTab();
   else if(tab==='mock') initMockTab();
   else if(tab==='admission') initAdmissionTab();
@@ -2648,6 +2654,8 @@ async function handleWdUpload(event){
         if(!existing.empty){const db2=db.batch();existing.docs.forEach(d=>db2.delete(d.ref));await db2.commit();}
       }
 
+      const uploadedAt=new Date().toISOString();
+      const uploadedBy=currentUser?.email||'';
       let saved=0;
       for(let i=0;i<dataRows.length;i+=400){
         const batch=db.batch();
@@ -2668,20 +2676,108 @@ async function handleWdUpload(event){
             course:safeStr(iCourse),teacher:safeStr(iTeacher),
             tenure:parseInt(tenureStr)||0,
             status:safeStr(iStatus),wdDate:safeStr(iWdDate),
-            reason:safeStr(iReason),detail:safeStr(iDetail)
+            reason:safeStr(iReason),detail:safeStr(iDetail),
+            uploadedAt,uploadedBy
           });
           saved++;
         });
         await batch.commit();
         statusEl.textContent=`⏳ ${Math.min(i+400,dataRows.length)}/${dataRows.length}건 저장 중...`;
       }
-      await loadRecordsWd();
+      cacheInvalidate('recordsWd');
+      await loadRecordsWd(true);
+      await loadWdHistory();
       statusEl.innerHTML=`<span style="color:#1D4ED8">✅ ${saved}건 저장 완료! (${batchCampus} ${batchYear}년 ${batchMonth})</span>`;
       renderWithdrawal();
     }catch(err){statusEl.textContent='❌ 오류: '+err.message;console.error(err);}
   };
   reader.readAsArrayBuffer(file);
   event.target.value='';
+}
+
+// ===== 퇴원생 업로드 이력 =====
+async function loadWdHistory(){
+  const el=document.getElementById('wd-history-list');
+  if(!el) return;
+  if(!allRecordsWd.length) await loadRecordsWd();
+
+  // uploadedAt 기준 파일 단위 그룹핑
+  const groups={};
+  allRecordsWd.forEach(r=>{
+    const key=r.uploadedAt||'legacy';
+    if(!groups[key]) groups[key]={
+      uploadedAt:r.uploadedAt||'',
+      uploadedBy:r.uploadedBy||'',
+      campuses:new Set(), years:new Set(), months:new Set(), count:0
+    };
+    groups[key].campuses.add(r.campus||'');
+    groups[key].years.add(r.year||'');
+    groups[key].months.add(r.month||'');
+    groups[key].count++;
+  });
+
+  let files=Object.entries(groups).map(([key,f])=>({
+    key,
+    uploadedAt:f.uploadedAt,
+    uploadedBy:f.uploadedBy,
+    campuses:[...f.campuses].filter(Boolean).sort().join(', '),
+    period:[...f.years].filter(Boolean).sort().join('·')+'년 '+[...f.months].filter(Boolean).sort((a,b)=>parseInt(a)-parseInt(b)).join('·'),
+    count:f.count
+  }));
+
+  // 슈퍼관리자: 전체 / 나머지: 본인 업로드만
+  if(!isSuperAdmin()) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
+  files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
+
+  if(!files.length){
+    el.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';
+    return;
+  }
+
+  const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:#F8FAFC;">
+      <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
+      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
+      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
+      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">기간</th>
+      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">건수</th>
+      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">삭제</th>
+    </tr></thead>
+    <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
+      <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'이전 업로드'}</td>
+      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
+      <td style="${tdS}text-align:center;color:#1D4ED8;font-weight:600;">${f.campuses}</td>
+      <td style="${tdS}text-align:center;">${f.period}</td>
+      <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
+      <td style="${tdS}text-align:center;">
+        <button onclick="deleteWdFile('${f.key}')" style="padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;font-weight:700;">🗑️ 삭제</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+async function deleteWdFile(uploadedAt){
+  const fileRecs=allRecordsWd.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
+  if(!fileRecs.length){alert('데이터를 찾을 수 없어요.');return;}
+  const camps=[...new Set(fileRecs.map(r=>r.campus))].join(', ');
+  // 권한 체크: 본인 업로드 또는 슈퍼관리자만
+  const uploader=fileRecs[0]?.uploadedBy||'';
+  if(!isSuperAdmin()&&uploader&&uploader!==currentUser?.email){
+    alert('본인이 업로드한 파일만 삭제할 수 있어요.');return;
+  }
+  if(!confirm(`[${camps}] 업로드 파일 (${fileRecs.length}건)을 전체 삭제하시겠습니까?`)) return;
+  try{
+    for(let i=0;i<fileRecs.length;i+=400){
+      const batch=db.batch();
+      fileRecs.slice(i,i+400).forEach(r=>batch.delete(db.collection('recordsWd').doc(r.id)));
+      await batch.commit();
+    }
+    allRecordsWd=allRecordsWd.filter(r=>(r.uploadedAt||'legacy')!==uploadedAt);
+    cacheInvalidate('recordsWd');
+    await loadWdHistory();
+    renderWithdrawal();
+  }catch(e){alert('삭제 오류: '+e.message);}
 }
 
 async function renderWithdrawal(){
@@ -4681,7 +4777,7 @@ function admRenderAll(recs){
     }).join('');
     rows+=`<tr>
       ${gi===0?`<td ${thS('#1E3A8A','#fff','writing-mode:vertical-rl;letter-spacing:4px;vertical-align:middle;padding:12px 5px;border-top:3px solid #1E3A8A;')} rowspan="${grandMetrics.length}">총 합</td>`:''}
-      <td colspan="2" ${tdS('#DBEAFE','#1E40AF',true,'font-size:10px;')}>${label}</td>
+      <td ${tdS('#DBEAFE','#1E40AF',true,'font-size:10px;')} colspan="2">${label}</td>
       ${cells}
     </tr>`;
   });
