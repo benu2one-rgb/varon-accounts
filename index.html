@@ -2633,7 +2633,8 @@ async function handleWdUpload(event){
       const iCampus=ci('캠퍼스'),iYear=ci('년도'),iMonth=ci('월'),iName=ci('이름'),
             iGrade=ci('학년'),iDiv=ci('구분'),iClass=ci('반이름'),iCourse=ci('반과정'),
             iTeacher=ci('담임'),iEnroll=ci('입학일'),iTenure=ci('재원기간'),
-            iStatus=ci('상태'),iWdDate=ci('퇴원일'),iReason=ci('퇴원사유'),iDetail=ci('구체사유');
+            iStatus=ci('상태'),iWdDate=ci('퇴원일'),iReason=ci('퇴원사유'),iDetail=ci('구체사유'),
+            iSchool=ci('학교');  // 학교명 컬럼
 
       const dataRows=rows.slice(headerRow+1).filter(r=>r[iName]&&String(r[iName]).trim());
       if(!dataRows.length){statusEl.textContent='❌ 데이터 없음';return;}
@@ -2677,6 +2678,7 @@ async function handleWdUpload(event){
             tenure:parseInt(tenureStr)||0,
             status:safeStr(iStatus),wdDate:safeStr(iWdDate),
             reason:safeStr(iReason),detail:safeStr(iDetail),
+            school:safeStr(iSchool),
             uploadedAt,uploadedBy
           });
           saved++;
@@ -2778,6 +2780,94 @@ async function deleteWdFile(uploadedAt){
     await loadWdHistory();
     renderWithdrawal();
   }catch(e){alert('삭제 오류: '+e.message);}
+}
+
+// ===== 학교별 현황 표 =====
+function buildSchoolTable(stayRecs){
+  if(!stayRecs.length) return '';
+
+  const elem_grades=['초1','초2','초3','초4','초5','초6'];
+  const mid_grades=['중1','중2','중3'];
+  const norm=g=>g?String(g).trim().replace('초등','초').replace('중등','중').replace('고등','고'):'';
+
+  // 학교별 집계 함수
+  function makeSchoolData(grades){
+    const schools=[...new Set(stayRecs.filter(r=>grades.includes(norm(r.grade))).map(r=>r.school).filter(Boolean))];
+    const rows=schools.map(school=>{
+      const sr=stayRecs.filter(r=>r.school===school&&grades.includes(norm(r.grade)));
+      const gradeCounts=grades.map(g=>sr.filter(r=>norm(r.grade)===g).length);
+      const total=sr.length;
+      return{school,gradeCounts,total};
+    }).filter(r=>r.total>0).sort((a,b)=>b.total-a.total); // 소계 높은 순
+    return rows;
+  }
+
+  // 표 생성 함수
+  function makeTable(title,grades,rows,allRecs,color,lightColor){
+    const totalAll=allRecs.filter(r=>grades.includes(norm(r.grade))).length;
+    const thS=`padding:5px 8px;font-size:11px;font-weight:800;border:1px solid #E2E8F0;text-align:center;white-space:nowrap;`;
+    const tdS=`padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:center;`;
+
+    // 학년별 합계 (비율 계산용)
+    const gradeTotals=grades.map(g=>allRecs.filter(r=>norm(r.grade)===g).length);
+
+    const tbody=rows.map((row,i)=>{
+      const pct=totalAll>0?(row.total/totalAll*100).toFixed(1):'0.0';
+      return `<tr style="${i%2===0?'':'background:#FAFAFA'}">
+        <td style="${tdS}text-align:left;padding-left:10px;font-weight:600;">${row.school}</td>
+        ${row.gradeCounts.map(n=>`<td style="${tdS}">${n||''}</td>`).join('')}
+        <td style="${tdS}color:${color};font-weight:700;">${pct}%</td>
+        <td style="${tdS}font-weight:800;color:#374151;">${row.total}</td>
+      </tr>`;
+    }).join('');
+
+    // 학년별 비율 행
+    const gradeRatioRow=gradeTotals.map(cnt=>`<td style="${tdS}color:${color};font-weight:700;">
+      ${totalAll>0?(cnt/totalAll*100).toFixed(2)+'%':'0%'}
+    </td>`).join('');
+
+    // 총합 행
+    const gradeSumRow=gradeTotals.map(cnt=>`<td style="${tdS}font-weight:800;color:#374151;">${cnt||''}</td>`).join('');
+
+    return `<div class="tbl-card" style="margin-bottom:14px;overflow-x:auto;">
+      <div class="tbl-title">④ ${title} 재원생 학교별 현황</div>
+      <table style="width:100%;border-collapse:collapse;min-width:400px;">
+        <thead>
+          <tr>
+            <th style="${thS}background:#F8FAFC;text-align:left;min-width:120px;">학교명</th>
+            ${grades.map(g=>`<th style="${thS}background:${lightColor};color:${color};">${g}</th>`).join('')}
+            <th style="${thS}background:${lightColor};color:${color};">학교별 비율</th>
+            <th style="${thS}background:#F1F5F9;">소계</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tbody||`<tr><td colspan="${grades.length+3}" style="${tdS}color:var(--mut);">데이터 없음</td></tr>`}
+          <tr style="background:${lightColor};">
+            <td style="${tdS}font-weight:800;color:${color};text-align:left;padding-left:10px;">학년별 비율</td>
+            ${gradeRatioRow}
+            <td style="${tdS}"></td>
+            <td style="${tdS}"></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr style="background:#F1F5F9;font-weight:900;border-top:2px solid #CBD5E1;">
+            <td style="${tdS}font-weight:800;text-align:left;padding-left:10px;">총 합</td>
+            ${gradeSumRow}
+            <td style="${tdS}"></td>
+            <td style="${tdS}font-weight:900;font-size:14px;">${totalAll}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+  }
+
+  const elemRows=makeSchoolData(elem_grades);
+  const midRows=makeSchoolData(mid_grades);
+
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;align-items:flex-start;">
+    ${makeTable('초등학교',elem_grades,elemRows,stayRecs,'#0ABAB5','#F0FDFB')}
+    ${makeTable('중학교',mid_grades,midRows,stayRecs,'#6D28D9','#F5F3FF')}
+  </div>`;
 }
 
 async function renderWithdrawal(){
@@ -2919,6 +3009,10 @@ async function renderWithdrawal(){
       </table>
       </div>
     </div>`;
+
+  // ④ 재원생 학교별 현황 추가
+  const schoolHtml=buildSchoolTable(stayRecs);
+  content.innerHTML+=schoolHtml;
 
   // 차트 그리기
   const pieOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'},datalabels:{display:true,formatter:(v,ctx)=>{const tot=ctx.dataset.data.reduce((a,b)=>a+b,0);return tot>0&&v>0?v+'명\n('+Math.round(v/tot*100)+'%)':''}, color:'#374151',font:{weight:'bold',size:10},textAlign:'center'}},cutout:'50%'};
