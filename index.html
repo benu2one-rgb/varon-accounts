@@ -395,7 +395,7 @@ tr:hover td{background:#FFFBF5;}
       <!-- 업로드 이력 -->
       <div style="background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
         <div style="font-size:13px;font-weight:800;color:var(--tif-dk);margin-bottom:10px;">📋 업로드 이력</div>
-        <div id="input-history-list"><div style="padding:8px;color:var(--mut);font-size:12px;">업로드 이력을 불러오는 중...</div></div>
+        <div id="input-history-list" style="max-height:220px;overflow-y:auto;"><div style="padding:8px;color:var(--mut);font-size:12px;">업로드 이력을 불러오는 중...</div></div>
       </div>
 
       <div class="input-table-wrap">
@@ -486,7 +486,7 @@ tr:hover td{background:#FFFBF5;}
       <!-- 업로드 이력 -->
       <div style="background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
         <div style="font-size:13px;font-weight:800;color:#1D4ED8;margin-bottom:10px;">📋 업로드 이력</div>
-        <div id="wd-history-list"><div style="padding:8px;color:var(--mut);font-size:12px;">로딩 중...</div></div>
+        <div id="wd-history-list" style="max-height:220px;overflow-y:auto;"><div style="padding:8px;color:var(--mut);font-size:12px;">로딩 중...</div></div>
       </div>
 
       <div id="wd-content"></div>
@@ -521,7 +521,7 @@ tr:hover td{background:#FFFBF5;}
             <button class="btn-tif" onclick="loadScoreHistory()" style="padding:7px 14px;">조회</button>
           </div>
         </div>
-        <div id="score-upload-log-list"></div>
+        <div id="score-upload-log-list" style="max-height:220px;overflow-y:auto;"></div>
       </div>
 
       <!-- 조회 필터 -->
@@ -584,7 +584,7 @@ tr:hover td{background:#FFFBF5;}
       <!-- 업로드 이력 -->
       <div id="mock-upload-history" style="display:none;background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
         <div style="font-size:13px;font-weight:800;color:#6D28D9;margin-bottom:10px;">📋 업로드 이력</div>
-        <div id="mock-history-content" style="overflow-x:auto;max-height:350px;overflow-y:auto;"></div>
+        <div id="mock-history-content" style="overflow-x:auto;max-height:220px;overflow-y:auto;"></div>
       </div>
 
       <!-- 조회 필터 -->
@@ -632,7 +632,7 @@ tr:hover td{background:#FFFBF5;}
       <!-- 업로드 이력 -->
       <div style="background:#fff;border:1px solid var(--bdr);border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;">
         <div style="font-size:13px;font-weight:800;color:#15803D;margin-bottom:10px;">📋 업로드 이력</div>
-        <div id="adm-history-list"></div>
+        <div id="adm-history-list" style="max-height:220px;overflow-y:auto;"></div>
       </div>
 
       <!-- 데이터 조회/수정 -->
@@ -1749,7 +1749,7 @@ async function loadInputHistory(){
 
   const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
-    <thead><tr style="background:#F8FAFC;">
+    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
       ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
@@ -2834,7 +2834,7 @@ async function loadWdHistory(){
 
   const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
-    <thead><tr style="background:#F8FAFC;">
+    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
       ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
@@ -3307,7 +3307,7 @@ async function loadScoreUploadHistory(){
 
   const tdS='padding:7px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   logEl.innerHTML=`<table style="width:100%;border-collapse:collapse;">
-    <thead><tr style="background:#F8FAFC;">
+    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
       ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">포함 캠퍼스</th>
@@ -4348,7 +4348,7 @@ async function loadMockHistory(){
 
   const tdS='padding:7px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
-    <thead><tr style="background:#F8FAFC;">
+    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
       ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">포함 캠퍼스</th>
@@ -4763,7 +4763,7 @@ async function admLoadHistory(){
   if(!files.length){el.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';return;}
   const t='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
-    <thead><tr style="background:#F8FAFC;">
+    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${t}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
       ${isSuperAdmin()?`<th style="${t}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${t}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
@@ -5158,7 +5158,7 @@ async function loadMockHistory(){
 
   const tdS='padding:7px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
-    <thead><tr style="background:#F8FAFC;">
+    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
       ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">포함 캠퍼스</th>
@@ -5251,7 +5251,7 @@ async function loadAdmUploadHistory(){
 
   const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
-    <thead><tr style="background:#F8FAFC;">
+    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
       ${isSuperAdmin()?`<th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">캠퍼스</th>
