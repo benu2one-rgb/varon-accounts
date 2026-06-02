@@ -3952,20 +3952,8 @@ async function handleMockUpload(event){
       const uploadMonth=ss2(dataRows[0],iMonth);
       const uploadType=ss2(dataRows[0],iType);
 
-      // 같은 캠퍼스+년도+월+시험유형의 기존 데이터만 삭제 (다른 데이터 보존)
-      if(uploadCampus&&uploadYear&&uploadMonth&&uploadType){
-        statusEl.textContent=`⏳ ${uploadCampus} 기존 데이터 교체 중...`;
-        const existing=await db.collection('recordsMock')
-          .where('campus','==',uploadCampus)
-          .where('year','==',uploadYear)
-          .where('month','==',uploadMonth)
-          .where('type','==',uploadType).get();
-        if(!existing.empty){
-          for(let i=0;i<existing.docs.length;i+=400){
-            const batch=db.batch();existing.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));await batch.commit();
-          }
-        }
-      }
+      // 누적 저장 방식 - 기존 데이터 삭제 없이 추가
+      // (같은 파일 재업로드 시 중복 방지가 필요하면 업로드 이력에서 파일 삭제 후 재업로드)
 
       statusEl.textContent=`⏳ ${dataRows.length}건 저장 중...`;
       const uploadedAt=new Date().toISOString();
@@ -4007,7 +3995,7 @@ async function handleMockUpload(event){
       document.getElementById('mock-filter-bar').style.display='flex';
       document.getElementById('mock-upload-history').style.display='block';
       await loadMockHistory();
-      statusEl.innerHTML=`<span style="color:#6D28D9">✅ ${saved}건 저장 완료! (${uploadCampus} ${uploadYear}년 ${uploadMonth} ${uploadType})</span>`;
+      statusEl.innerHTML=`<span style="color:#6D28D9">✅ ${saved}건 추가 완료! (${uploadCampus} ${uploadYear}년 ${uploadMonth} ${uploadType}) — 기존 데이터 유지</span>`;
     }catch(err){statusEl.textContent='❌ 오류: '+err.message;console.error(err);}
   };
   reader.readAsArrayBuffer(file);
