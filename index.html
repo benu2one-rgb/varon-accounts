@@ -2912,7 +2912,10 @@ async function renderWithdrawal(){
   if(!recs.length){content.innerHTML='<div class="alert alert-info">조건에 맞는 데이터가 없어요.</div>';return;}
   const selectedCampus=document.getElementById('wd-campus')?.value||'';
   const isSingleCampus=!!selectedCampus;
-  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
+  // 고정 6개 캠퍼스 + 업로드 데이터에 있는 추가 캠퍼스
+  const FIXED_CAMPUSES=['남동탄','서수원','수원','운정1','운정2','장안'];
+  const dataCampuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))];
+  const campuses=[...new Set([...FIXED_CAMPUSES,...dataCampuses])].sort();
 
   // ===== ① 퇴원생 재원기간 분포 =====
   const tenureHtml=buildTenureSection(wdRecs,campuses,isSingleCampus,selectedCampus);
@@ -2940,26 +2943,50 @@ function mkTd(val,bg='',col='',bold=false,extra=''){
 
 // 조회 기간 내 월 목록 생성 (개별 캠퍼스용 열 헤더)
 function getMonthCols(wdRecs){
-  // 데이터에 있는 월 기준으로 추출 (필터 적용된 recs 기준)
   const monthOrder=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
   if(wdPeriodType==='semester'){
-    // 학기별: 학기를 열로
+    // 학기별: 학기를 열로 (데이터 기반)
     const sems=[...new Set(wdRecs.map(r=>(r.year||'')+'년 '+(r.semester||'')).filter(s=>s.includes('년 ')))];
     return sems.sort((a,b)=>{
       const [ya,sa]=a.split('년 ');const [yb,sb]=b.split('년 ');
       return parseInt(ya)-parseInt(yb)||SEMESTERS_ORDER.indexOf(sa.trim())-SEMESTERS_ORDER.indexOf(sb.trim());
     });
   }
-  // 월별: 년+월 목록 정렬
-  const months=[...new Set(wdRecs.map(r=>{
-    const y=r.year||'';const m=r.month||'';return y&&m?y+'_'+m:'';
-  }).filter(Boolean))];
-  return months.sort((a,b)=>{
-    const [ya,ma]=a.split('_');const [yb,mb]=b.split('_');
-    const yi=parseInt(ya),yj=parseInt(yb);
-    if(yi!==yj)return yi-yj;
-    return monthOrder.indexOf(ma)-monthOrder.indexOf(mb);
-  }).map(k=>{const[y,m]=k.split('_');return y+'년 '+m;});
+
+  // 월별: 조회 필터에서 시작~종료 범위의 모든 월 생성
+  const sy=parseInt(document.getElementById('wd-sy')?.value||'0')||0;
+  const smv=document.getElementById('wd-sm')?.value||'';
+  const ey=parseInt(document.getElementById('wd-ey')?.value||'0')||0;
+  const emv=document.getElementById('wd-em')?.value||'';
+
+  // 필터가 없으면 데이터에 있는 월만
+  if(!sy&&!ey){
+    const months=[...new Set(wdRecs.map(r=>{
+      const y=r.year||'';const m=r.month||'';return y&&m?y+'_'+m:'';
+    }).filter(Boolean))];
+    return months.sort((a,b)=>{
+      const [ya,ma]=a.split('_');const [yb,mb]=b.split('_');
+      const yi=parseInt(ya),yj=parseInt(yb);
+      if(yi!==yj)return yi-yj;
+      return monthOrder.indexOf(ma)-monthOrder.indexOf(mb);
+    }).map(k=>{const[y,m]=k.split('_');return y+'년 '+m;});
+  }
+
+  // 필터 범위 내 모든 월 생성
+  const startM=smv?monthOrder.indexOf(smv)+1:1;
+  const endM=emv?monthOrder.indexOf(emv)+1:12;
+  const startYear=sy||ey;
+  const endYear=ey||sy;
+  const cols=[];
+  for(let yr=startYear;yr<=endYear;yr++){
+    const fromM=(yr===startYear?startM:1);
+    const toM=(yr===endYear?endM:12);
+    for(let m=fromM;m<=toM;m++){
+      cols.push(yr+'년 '+m+'월');
+    }
+  }
+  return cols;
 }
 
 function getColLabel(col){
@@ -3277,7 +3304,10 @@ function calcBands(recs){
 // 분원별 크로스 표 + 도넛 차트
 function makeCampusTable(recs){
   const BAND_COLORS=['#4ADE80','#A3E635','#FDE047','#FB923C','#F87171'];
-  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
+  // 고정 6개 캠퍼스 + 업로드 데이터에 있는 추가 캠퍼스
+  const FIXED_CAMPUSES=['남동탄','서수원','수원','운정1','운정2','장안'];
+  const dataCampuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))];
+  const campuses=[...new Set([...FIXED_CAMPUSES,...dataCampuses])].sort();
   const allGroups=[...campuses,'전체'];
 
   // 행 목록
@@ -3340,7 +3370,10 @@ function makeCampusTable(recs){
 // 학년별 성적 현황
 function makeGradeTable(recs){
   const SCORE_GRADES=['중등1','중등2','중등3'];
-  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
+  // 고정 6개 캠퍼스 + 업로드 데이터에 있는 추가 캠퍼스
+  const FIXED_CAMPUSES=['남동탄','서수원','수원','운정1','운정2','장안'];
+  const dataCampuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))];
+  const campuses=[...new Set([...FIXED_CAMPUSES,...dataCampuses])].sort();
   const BAND_HDR=['100점','90점 이상','80점 이상','70점 이상','70점 미만'];
   const thS='padding:6px 8px;text-align:center;font-size:11px;font-weight:800;white-space:nowrap;border-bottom:2px solid var(--bdr);';
   const tdS='padding:6px 8px;text-align:center;font-size:11px;border-bottom:1px solid #F1F5F9;';
@@ -3454,7 +3487,10 @@ function makeGradeTable(recs){
 // 캠퍼스별 묶음 표 (담임, 학교) - 캠퍼스 내 평균 높은 순 정렬
 function makeCampusGroupedTable(title,icon,recs,keyFn){
   const BAND_COLORS=['#4ADE80','#A3E635','#FDE047','#FB923C','#F87171'];
-  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
+  // 고정 6개 캠퍼스 + 업로드 데이터에 있는 추가 캠퍼스
+  const FIXED_CAMPUSES=['남동탄','서수원','수원','운정1','운정2','장안'];
+  const dataCampuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))];
+  const campuses=[...new Set([...FIXED_CAMPUSES,...dataCampuses])].sort();
   const BAND_HDR=['100점','90점 이상','80점 이상','70점 이상','70점 미만'];
   const thS='padding:6px 8px;text-align:center;font-size:11px;font-weight:800;white-space:nowrap;border-bottom:2px solid var(--bdr);';
   const tdS='padding:6px 8px;text-align:center;font-size:11px;border-bottom:1px solid #F1F5F9;';
@@ -3629,7 +3665,10 @@ async function renderScore(){
     return;
   }
 
-  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
+  // 고정 6개 캠퍼스 + 업로드 데이터에 있는 추가 캠퍼스
+  const FIXED_CAMPUSES=['남동탄','서수원','수원','운정1','운정2','장안'];
+  const dataCampuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))];
+  const campuses=[...new Set([...FIXED_CAMPUSES,...dataCampuses])].sort();
   const teachers=[...new Set(recs.map(r=>r.teacher).filter(Boolean))].sort();
   const schools=[...new Set(recs.map(r=>r.school).filter(Boolean))].sort();
   const books=[...new Set(recs.map(r=>r.book).filter(Boolean))].sort();
@@ -3946,7 +3985,10 @@ async function renderMock(){
     return;
   }
 
-  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
+  // 고정 6개 캠퍼스 + 업로드 데이터에 있는 추가 캠퍼스
+  const FIXED_CAMPUSES=['남동탄','서수원','수원','운정1','운정2','장안'];
+  const dataCampuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))];
+  const campuses=[...new Set([...FIXED_CAMPUSES,...dataCampuses])].sort();
   const types=[...new Set(recs.map(r=>r.type).filter(Boolean))].sort();
   const courses=[...new Set(recs.map(r=>r.course).filter(Boolean))].sort();
   const teachers=[...new Set(recs.map(r=>r.teacher).filter(Boolean))].sort();
@@ -4627,7 +4669,10 @@ function admRenderAll(recs){
   const el=document.getElementById('adm-view-all-content');
   if(!recs.length){el.innerHTML='<div class="alert alert-info">조건에 맞는 데이터가 없어요.</div>';return;}
 
-  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
+  // 고정 6개 캠퍼스 + 업로드 데이터에 있는 추가 캠퍼스
+  const FIXED_CAMPUSES=['남동탄','서수원','수원','운정1','운정2','장안'];
+  const dataCampuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))];
+  const campuses=[...new Set([...FIXED_CAMPUSES,...dataCampuses])].sort();
   const methodOrder=['1차 설명회','2차 설명회','3차 설명회','개별 전형','개별상담'];
   const norm=m=>m?m.replace(/\s+/g,' ').trim():'';
   const methodsOf=div=>[...new Set(recs.filter(r=>r.division===div).map(r=>norm(r.method)).filter(Boolean))]
