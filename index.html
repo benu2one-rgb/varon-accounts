@@ -2714,10 +2714,16 @@ function setWdPeriod(type){
 }
 
 function updateWdDropdowns(){
-  const campuses=[...new Set(allRecordsWd.map(r=>r.campus).filter(Boolean))].sort();
+  // 고정 캠퍼스 6개 + 데이터에 있는 추가 캠퍼스
+  const FIXED=['남동탄','서수원','수원','운정1','운정2','장안'];
+  const dataCamps=[...new Set(allRecordsWd.map(r=>r.campus).filter(Boolean))];
+  const campuses=[...new Set([...FIXED,...dataCamps])].sort();
   const years=[...new Set(allRecordsWd.map(r=>String(r.year||'').replace('년','')).filter(Boolean))].sort();
   const camSel=document.getElementById('wd-campus');
-  if(camSel){camSel.innerHTML='<option value="">전체</option>'+campuses.map(cp=>`<option>${cp}</option>`).join('');}
+  if(camSel){
+    const curCampus=camSel.value; // 현재 선택값 보존
+    camSel.innerHTML='<option value="">전체</option>'+campuses.map(cp=>`<option value="${cp}"${cp===curCampus?' selected':''}>${cp}</option>`).join('');
+  }
   ['wd-sy','wd-ey','wd-ssy','wd-sey'].forEach(id=>{
     const sel=document.getElementById(id);if(!sel)return;
     const cur=sel.value;
@@ -2904,13 +2910,17 @@ async function deleteWdFile(uploadedAt){
 // ===== 메인 렌더 =====
 async function renderWithdrawal(){
   if(!allRecordsWd.length)await loadRecordsWd();
+  // ★ 선택값을 먼저 읽고, 드롭다운 업데이트 후 복원
+  const selectedCampus=document.getElementById('wd-campus')?.value||'';
   updateWdDropdowns();
+  // 드롭다운 업데이트 후 선택값 재적용
+  const camSel2=document.getElementById('wd-campus');
+  if(camSel2&&selectedCampus) camSel2.value=selectedCampus;
   const recs=filterWdRecs();
   const wdRecs=recs.filter(r=>r.status==='퇴원'||r.wdDate);
   const content=document.getElementById('wd-content');
   if(!content)return;
   if(!recs.length){content.innerHTML='<div class="alert alert-info">조건에 맞는 데이터가 없어요.</div>';return;}
-  const selectedCampus=document.getElementById('wd-campus')?.value||'';
   const isSingleCampus=!!selectedCampus;
   // 고정 6개 캠퍼스 + 업로드 데이터에 있는 추가 캠퍼스
   const FIXED_CAMPUSES=['남동탄','서수원','수원','운정1','운정2','장안'];
