@@ -426,55 +426,12 @@ tr:hover td{background:#FFFBF5;}
     <!-- ===== 퇴원생 분석 ===== -->
     <div id="tab-withdrawal" class="tab-content">
       <div class="sec-title">퇴원생 분석</div>
-      <div class="filter-bar">
-        <div class="fg">
-          <div class="fl">기간 유형</div>
-          <div class="ptabs">
-            <button class="ptab active" id="wd-pt-monthly" onclick="setWdPeriod('monthly')">월별</button>
-            <button class="ptab" id="wd-pt-semester" onclick="setWdPeriod('semester')">학기별</button>
-          </div>
-        </div>
-        <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="wd-campus">
-          <option value="">전 캠퍼스</option>
-          <option>남동탄</option><option>서수원</option><option>수원</option>
-          <option>운정1</option><option>운정2</option><option>장안</option>
-        </select></div>
-        <div id="wd-monthly-filters" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="wd-sy"></select></div>
-          <div class="fg"><div class="fl">시작 월</div><select class="fi" id="wd-sm">
-            <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
-            <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
-            <option>9월</option><option>10월</option><option>11월</option><option>12월</option>
-          </select></div>
-          <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
-          <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="wd-ey"></select></div>
-          <div class="fg"><div class="fl">종료 월</div><select class="fi" id="wd-em">
-            <option>1월</option><option>2월</option><option>3월</option><option>4월</option>
-            <option>5월</option><option>6월</option><option>7월</option><option>8월</option>
-            <option>9월</option><option>10월</option><option>11월</option><option value="12월" selected>12월</option>
-          </select></div>
-        </div>
-        <div id="wd-semester-filters" style="display:none;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-          <div class="fg"><div class="fl">시작 연도</div><select class="fi" id="wd-sem-sy"></select></div>
-          <div class="fg"><div class="fl">시작 학기</div><select class="fi" id="wd-sem-ss">
-            <option value="겨울">겨울</option><option value="봄" selected>봄</option>
-            <option value="여름">여름</option><option value="가을">가을</option>
-          </select></div>
-          <div style="display:flex;align-items:flex-end;padding-bottom:2px;color:#94A3B8;font-weight:700;">~</div>
-          <div class="fg"><div class="fl">종료 연도</div><select class="fi" id="wd-sem-ey"></select></div>
-          <div class="fg"><div class="fl">종료 학기</div><select class="fi" id="wd-sem-es">
-            <option value="겨울">겨울</option><option value="봄">봄</option>
-            <option value="여름">여름</option><option value="가을" selected>가을</option>
-          </select></div>
-        </div>
-        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderWithdrawal()">조회</button></div>
-      </div>
 
       <!-- 파일 업로드 -->
-      <div style="background:#EFF6FF;border:1.5px dashed #2563EB;border-radius:var(--rad);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div style="background:#EFF6FF;border:1.5px dashed #2563EB;border-radius:var(--rad);padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
         <div>
-          <div style="font-size:13px;font-weight:800;color:#1D4ED8;margin-bottom:4px;">📂 마감양식(기본2) 업로드</div>
-          <div style="font-size:11px;color:var(--mut);">개인 명단 파일 업로드 시 퇴원생 분석 데이터가 자동 저장됩니다</div>
+          <div style="font-size:13px;font-weight:800;color:#1D4ED8;margin-bottom:4px;">📂 마감양식 업로드</div>
+          <div style="font-size:11px;color:var(--mut);">같은 캠퍼스·년도·월 데이터는 덮어씁니다.</div>
         </div>
         <label style="padding:8px 18px;background:#2563EB;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
           📤 파일 선택
@@ -489,10 +446,37 @@ tr:hover td{background:#FFFBF5;}
         <div id="wd-history-list" style="max-height:220px;overflow-y:auto;"><div style="padding:8px;color:var(--mut);font-size:12px;">로딩 중...</div></div>
       </div>
 
+      <!-- 조회 필터 -->
+      <div class="filter-bar" style="margin-bottom:14px;">
+        <div class="fg"><div class="fl">캠퍼스</div><select class="fi" id="wd-campus"><option value="">전체</option></select></div>
+        <div class="fg">
+          <div class="fl">기간 유형</div>
+          <div class="ptabs">
+            <button class="ptab active" id="wd-pt-m" onclick="setWdPeriod('month')">월별</button>
+            <button class="ptab" id="wd-pt-s" onclick="setWdPeriod('semester')">학기별</button>
+          </div>
+        </div>
+        <div id="wd-month-wrap" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="fg"><div class="fl">시작 년도</div><select class="fi" id="wd-sy"></select></div>
+          <div class="fg"><div class="fl">시작 월</div><select class="fi" id="wd-sm"><option value="">전체</option><option>1월</option><option>2월</option><option>3월</option><option>4월</option><option>5월</option><option>6월</option><option>7월</option><option>8월</option><option>9월</option><option>10월</option><option>11월</option><option>12월</option></select></div>
+          <div style="align-self:flex-end;padding-bottom:4px;color:#94A3B8;font-weight:700;">~</div>
+          <div class="fg"><div class="fl">종료 년도</div><select class="fi" id="wd-ey"></select></div>
+          <div class="fg"><div class="fl">종료 월</div><select class="fi" id="wd-em"><option value="">전체</option><option>1월</option><option>2월</option><option>3월</option><option>4월</option><option>5월</option><option>6월</option><option>7월</option><option>8월</option><option>9월</option><option>10월</option><option>11월</option><option>12월</option></select></div>
+        </div>
+        <div id="wd-semester-wrap" style="display:none;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="fg"><div class="fl">시작 년도</div><select class="fi" id="wd-ssy"></select></div>
+          <div class="fg"><div class="fl">시작 학기</div><select class="fi" id="wd-ssm"><option value="">전체</option><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
+          <div style="align-self:flex-end;padding-bottom:4px;color:#94A3B8;font-weight:700;">~</div>
+          <div class="fg"><div class="fl">종료 년도</div><select class="fi" id="wd-sey"></select></div>
+          <div class="fg"><div class="fl">종료 학기</div><select class="fi" id="wd-sem2"><option value="">전체</option><option>겨울</option><option>봄</option><option>여름</option><option>가을</option></select></div>
+        </div>
+        <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderWithdrawal()">조회</button></div>
+      </div>
+
       <div id="wd-content"></div>
     </div>
 
-    <!-- ===== 내신성적 ===== -->
+    <!-- ===== 내신성적 ===== -->    <!-- ===== 내신성적 ===== -->
     <div id="tab-score" class="tab-content">
       <div class="sec-title">내신성적</div>
 
@@ -1175,7 +1159,7 @@ function showTab(tab){
   else if(tab==='grade') renderGrade();
   else if(tab==='closing') renderClosing();
   else if(tab==='allclosing') renderAllClosing();
-  else if(tab==='withdrawal') { renderWithdrawal(); loadWdHistory(); }
+  else if(tab==='withdrawal') { if(!allRecordsWd.length)loadRecordsWd().then(()=>{updateWdDropdowns();loadWdHistory();}); else{updateWdDropdowns();loadWdHistory();} renderWithdrawal(); }
   else if(tab==='score') initScoreTab();
   else if(tab==='mock') initMockTab();
   else if(tab==='admission') initAdmissionTab();
@@ -2688,150 +2672,202 @@ async function handleExcel2Upload(event){
 
 // ====== 퇴원생 분석 ======
 let allRecordsWd=[];
-let wdPeriodType='monthly';
+let wdPeriodType='month';
+const WD_TENURE_BANDS=['3개월 미만','3~6개월','6~12개월','12~24개월','24개월 이상'];
+const WD_TENURE_COLORS=['#93C5FD','#6EE7B7','#FDE68A','#FCA5A5','#C4B5FD'];
+const WD_CHESS=['초1','초2','초3','초4','초5'];
+const WD_ACE=['초6','중1','중2','중3'];
+const SEMESTERS_ORDER=['겨울','봄','여름','가을'];
 
-function setWdPeriod(type){
-  wdPeriodType=type;
-  document.getElementById('wd-pt-monthly').classList.toggle('active',type==='monthly');
-  document.getElementById('wd-pt-semester').classList.toggle('active',type==='semester');
-  document.getElementById('wd-monthly-filters').style.display=type==='monthly'?'flex':'none';
-  document.getElementById('wd-semester-filters').style.display=type==='semester'?'flex':'none';
+function getTenureBand(months){
+  const m=parseInt(months)||0;
+  if(m<3) return '3개월 미만';
+  if(m<6) return '3~6개월';
+  if(m<12) return '6~12개월';
+  if(m<24) return '12~24개월';
+  return '24개월 이상';
+}
+
+function normGrade(g){
+  return String(g||'').trim().replace('초등','초').replace('중등','중').replace('고등','고');
+}
+function normDiv(d){
+  const s=String(d||'').trim();
+  if(s==='A'||s==='ACE') return 'ACE';
+  if(s==='C'||s==='CHESS') return 'CHESS';
+  return s;
 }
 
 async function loadRecordsWd(force=false){
-  if(!force && allRecordsWd.length && cacheGet('recordsWd')) return;
+  if(!force&&allRecordsWd.length&&cacheGet('recordsWd')) return;
   const snap=await db.collection('recordsWd').get();
   allRecordsWd=snap.docs.map(d=>({id:d.id,...d.data()}));
-  cacheSet('recordsWd', true);
+  cacheSet('recordsWd',true);
 }
 
+function setWdPeriod(type){
+  wdPeriodType=type;
+  document.getElementById('wd-pt-m').classList.toggle('active',type==='month');
+  document.getElementById('wd-pt-s').classList.toggle('active',type==='semester');
+  document.getElementById('wd-month-wrap').style.display=type==='month'?'flex':'none';
+  document.getElementById('wd-semester-wrap').style.display=type==='semester'?'flex':'none';
+}
+
+function updateWdDropdowns(){
+  const campuses=[...new Set(allRecordsWd.map(r=>r.campus).filter(Boolean))].sort();
+  const years=[...new Set(allRecordsWd.map(r=>String(r.year||'').replace('년','')).filter(Boolean))].sort();
+  const camSel=document.getElementById('wd-campus');
+  if(camSel){camSel.innerHTML='<option value="">전체</option>'+campuses.map(cp=>`<option>${cp}</option>`).join('');}
+  ['wd-sy','wd-ey','wd-ssy','wd-sey'].forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">전체</option>'+years.map(y=>`<option value="${y}"${y===cur?' selected':''}>${y}년</option>`).join('');
+  });
+}
+
+// 필터링
+function filterWdRecs(){
+  const campus=document.getElementById('wd-campus')?.value||'';
+  let recs=allRecordsWd.filter(r=>!campus||r.campus===campus);
+  if(wdPeriodType==='month'){
+    const sy=document.getElementById('wd-sy')?.value||'';
+    const sm=document.getElementById('wd-sm')?.value||'';
+    const ey=document.getElementById('wd-ey')?.value||'';
+    const em=document.getElementById('wd-em')?.value||'';
+    if(sy||sm||ey||em){
+      const sKey=(parseInt(sy)||0)*100+(parseInt((sm||'').replace('월',''))||0);
+      const eKey=(parseInt(ey)||9999)*100+(parseInt((em||'').replace('월',''))||12);
+      recs=recs.filter(r=>{
+        const ry=parseInt(r.year)||0;
+        const rm=parseInt(String(r.month||'').replace('월',''))||0;
+        const key=ry*100+rm;
+        if(!sy&&!ey) return true;
+        return key>=sKey&&key<=eKey;
+      });
+    }
+  } else {
+    const ssy=document.getElementById('wd-ssy')?.value||'';
+    const ssm=document.getElementById('wd-ssm')?.value||'';
+    const sey=document.getElementById('wd-sey')?.value||'';
+    const sem2=document.getElementById('wd-sem2')?.value||'';
+    if(ssy||ssm||sey||sem2){
+      const sScore=(parseInt(ssy)||0)*10+(SEMESTERS_ORDER.indexOf(ssm)+1||0);
+      const eScore=(parseInt(sey)||9999)*10+(SEMESTERS_ORDER.indexOf(sem2)+1||9);
+      recs=recs.filter(r=>{
+        const ry=parseInt(r.year)||0;
+        const rs=SEMESTERS_ORDER.indexOf(r.semester)+1||5;
+        const sc=ry*10+rs;
+        if(!ssy&&!sey) return true;
+        return sc>=sScore&&sc<=eScore;
+      });
+    }
+  }
+  return recs;
+}
+
+// ===== handleWdUpload (신규 양식) =====
 async function handleWdUpload(event){
-  const file=event.target.files[0];
-  if(!file) return;
+  const file=event.target.files[0];if(!file)return;
   const statusEl=document.getElementById('wd-upload-status');
   statusEl.textContent='읽는 중...';
   const reader=new FileReader();
   reader.onload=async function(e){
     try{
       const data=new Uint8Array(e.target.result);
-      const wb=XLSX.read(data,{type:'array',cellDates:true});
+      const wb=XLSX.read(data,{type:'array',cellDates:false});
       const sheet=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
-
-      let headerRow=-1;
+      // 헤더 행 찾기
+      let hr=-1;
       for(let i=0;i<rows.length;i++){
-        if(rows[i].some(x=>String(x).includes('캠퍼스')||String(x).includes('이름'))){headerRow=i;break;}
+        if(rows[i].some(x=>String(x).includes('캠퍼스')||String(x).includes('이름'))){hr=i;break;}
       }
-      if(headerRow===-1){statusEl.textContent='❌ 형식 인식 불가';return;}
-
-      const headers=rows[headerRow].map(h=>String(h).replace(/\n/g,' ').trim());
-      const ci=h=>headers.findIndex(x=>x.includes(h));
-      const iCampus=ci('캠퍼스'),iYear=ci('년도'),iMonth=ci('월'),iName=ci('이름'),
-            iGrade=ci('학년'),iDiv=ci('구분'),iClass=ci('반이름'),iCourse=ci('반과정'),
-            iTeacher=ci('담임'),iEnroll=ci('입학일'),iTenure=ci('재원기간'),
-            iStatus=ci('상태'),iWdDate=ci('퇴원일'),iReason=ci('퇴원사유'),iDetail=ci('구체사유'),
-            iSchool=ci('학교');  // 학교명 컬럼
-
-      const dataRows=rows.slice(headerRow+1).filter(r=>r[iName]&&String(r[iName]).trim());
+      if(hr===-1){statusEl.textContent='❌ 형식 인식 불가';return;}
+      const hdrs=rows[hr].map(h=>String(h).replace(/\n/g,' ').trim());
+      const ci=h=>hdrs.findIndex(x=>x===h||x.includes(h));
+      const iYear=ci('년도'),iMonth=ci('월'),iSem=ci('학기'),iCampus=ci('캠퍼스'),
+            iName=ci('이름'),iCode=ci('회원코드'),iSchool=ci('학교'),iGrade=ci('학년'),
+            iPhone=ci('전화'),iDiv=ci('구분'),iClass=ci('반이름'),iCourse=ci('반과정'),
+            iTeacher=ci('담임'),iEnroll=ci('입학'),iTenure=ci('재원기간'),
+            iStatus=ci('상태'),iWdDate=ci('퇴원일'),iReason=ci('퇴원사유'),iDetail=ci('구체사유');
+      const ss=(row,idx)=>idx>=0?String(row[idx]||'').trim():'';
+      const dataRows=rows.slice(hr+1).filter(r=>r[iName]&&String(r[iName]).trim());
       if(!dataRows.length){statusEl.textContent='❌ 데이터 없음';return;}
-      statusEl.textContent=`⏳ ${dataRows.length}건 저장 중...`;
-
-      const firstRow=dataRows[0];
-      const batchCampus=String(firstRow[iCampus]||'').trim();
-      const batchYear=String(firstRow[iYear]||'').replace('년','').trim().substring(0,4);
-      const rawMo=firstRow[iMonth];
-      let batchMoNum=0;
-      if(rawMo instanceof Date){batchMoNum=rawMo.getMonth()+1;}
-      else if(typeof rawMo==='number'){const d=new Date(Math.round((rawMo-25569)*86400*1000));batchMoNum=d.getMonth()+1;}
-      else{const ms=String(rawMo||'');const mt=ms.match(/(\d{1,2})월/)||ms.match(/-(\d{2})-/);batchMoNum=mt?parseInt(mt[1]):0;}
-      const batchMonth=batchMoNum>0?batchMoNum+'월':'';
-
-      if(batchCampus&&batchYear&&batchMonth){
-        const existing=await db.collection('recordsWd').where('campus','==',batchCampus).where('year','==',batchYear).where('month','==',batchMonth).get();
-        if(!existing.empty){const db2=db.batch();existing.docs.forEach(d=>db2.delete(d.ref));await db2.commit();}
+      // 같은 캠퍼스+년도+월 기존 데이터 삭제
+      const upCampus=ss(dataRows[0],iCampus);
+      const upYear=ss(dataRows[0],iYear).replace('년','').trim();
+      const upMonth=ss(dataRows[0],iMonth)+'월';
+      if(upCampus&&upYear&&upMonth){
+        statusEl.textContent='⏳ 기존 데이터 교체 중...';
+        const ex=await db.collection('recordsWd')
+          .where('campus','==',upCampus).where('year','==',upYear).where('month','==',upMonth).get();
+        if(!ex.empty){for(let i=0;i<ex.docs.length;i+=400){const b=db.batch();ex.docs.slice(i,i+400).forEach(d=>b.delete(d.ref));await b.commit();}}
       }
-
+      statusEl.textContent=`⏳ ${dataRows.length}건 저장 중...`;
       const uploadedAt=new Date().toISOString();
       const uploadedBy=currentUser?.email||'';
       let saved=0;
       for(let i=0;i<dataRows.length;i+=400){
         const batch=db.batch();
         dataRows.slice(i,i+400).forEach(row=>{
-          const safeStr=idx=>idx>=0?String(row[idx]||'').trim():'';
-          const rawM=row[iMonth];
-          let moNum=0;
-          if(rawM instanceof Date){moNum=rawM.getMonth()+1;}
-          else if(typeof rawM==='number'){const d=new Date(Math.round((rawM-25569)*86400*1000));moNum=d.getMonth()+1;}
-          else{const ms=String(rawM||'');const mt=ms.match(/(\d{1,2})월/)||ms.match(/-(\d{2})-/);moNum=mt?parseInt(mt[1]):0;}
-          const tenureStr=safeStr(iTenure).replace('개월','').trim();
+          const tenureStr=ss(row,iTenure).replace(/[^0-9]/g,'');
+          const monthNum=parseInt(String(row[iMonth]||''))||0;
           batch.set(db.collection('recordsWd').doc(),{
-            campus:safeStr(iCampus),
-            year:String(row[iYear]||'').replace('년','').trim().substring(0,4),
-            month:moNum>0?moNum+'월':'',
-            name:safeStr(iName),grade:safeStr(iGrade),
-            division:safeStr(iDiv),className:safeStr(iClass),
-            course:safeStr(iCourse),teacher:safeStr(iTeacher),
+            year:ss(row,iYear).replace('년','').trim(),
+            month:monthNum>0?monthNum+'월':'',
+            semester:ss(row,iSem),
+            campus:ss(row,iCampus),
+            name:ss(row,iName),
+            code:ss(row,iCode),
+            school:ss(row,iSchool),
+            grade:normGrade(ss(row,iGrade)),
+            phone:ss(row,iPhone),
+            division:normDiv(ss(row,iDiv)),
+            className:ss(row,iClass),
+            course:ss(row,iCourse),
+            teacher:ss(row,iTeacher),
+            enrollDate:ss(row,iEnroll),
             tenure:parseInt(tenureStr)||0,
-            status:safeStr(iStatus),wdDate:safeStr(iWdDate),
-            reason:safeStr(iReason),detail:safeStr(iDetail),
-            school:safeStr(iSchool),
+            status:ss(row,iStatus),
+            wdDate:ss(row,iWdDate),
+            reason:ss(row,iReason),
+            detail:ss(row,iDetail),
             uploadedAt,uploadedBy
-          });
-          saved++;
+          });saved++;
         });
         await batch.commit();
         statusEl.textContent=`⏳ ${Math.min(i+400,dataRows.length)}/${dataRows.length}건 저장 중...`;
       }
       cacheInvalidate('recordsWd');
       await loadRecordsWd(true);
+      updateWdDropdowns();
       await loadWdHistory();
-      statusEl.innerHTML=`<span style="color:#1D4ED8">✅ ${saved}건 저장 완료! (${batchCampus} ${batchYear}년 ${batchMonth})</span>`;
-      renderWithdrawal();
+      statusEl.innerHTML=`<span style="color:#1D4ED8">✅ ${saved}건 저장 완료!</span>`;
     }catch(err){statusEl.textContent='❌ 오류: '+err.message;console.error(err);}
   };
   reader.readAsArrayBuffer(file);
   event.target.value='';
 }
 
-// ===== 퇴원생 업로드 이력 =====
+// ===== 업로드 이력 =====
 async function loadWdHistory(){
-  const el=document.getElementById('wd-history-list');
-  if(!el) return;
-  if(!allRecordsWd.length) await loadRecordsWd();
-
-  // uploadedAt 기준 파일 단위 그룹핑
+  const el=document.getElementById('wd-history-list');if(!el)return;
+  if(!allRecordsWd.length)await loadRecordsWd();
   const groups={};
   allRecordsWd.forEach(r=>{
     const key=r.uploadedAt||'legacy';
-    if(!groups[key]) groups[key]={
-      uploadedAt:r.uploadedAt||'',
-      uploadedBy:r.uploadedBy||'',
-      campuses:new Set(), years:new Set(), months:new Set(), count:0
-    };
-    groups[key].campuses.add(r.campus||'');
-    groups[key].years.add(r.year||'');
-    groups[key].months.add(r.month||'');
-    groups[key].count++;
+    if(!groups[key])groups[key]={uploadedAt:r.uploadedAt||'',uploadedBy:r.uploadedBy||'',campuses:new Set(),years:new Set(),months:new Set(),count:0};
+    groups[key].campuses.add(r.campus||'');groups[key].years.add(r.year||'');groups[key].months.add(r.month||'');groups[key].count++;
   });
-
   let files=Object.entries(groups).map(([key,f])=>({
-    key,
-    uploadedAt:f.uploadedAt,
-    uploadedBy:f.uploadedBy,
+    key,uploadedAt:f.uploadedAt,uploadedBy:f.uploadedBy,
     campuses:[...f.campuses].filter(Boolean).sort().join(', '),
     period:[...f.years].filter(Boolean).sort().join('·')+'년 '+[...f.months].filter(Boolean).sort((a,b)=>parseInt(a)-parseInt(b)).join('·'),
     count:f.count
   }));
-
-  // 슈퍼관리자: 전체 / 나머지: 본인 업로드만
-  if(!isSuperAdmin()) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
+  if(!isSuperAdmin())files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
   files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
-
-  if(!files.length){
-    el.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';
-    return;
-  }
-
+  if(!files.length){el.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';return;}
   const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
@@ -2848,647 +2884,343 @@ async function loadWdHistory(){
       <td style="${tdS}text-align:center;color:#1D4ED8;font-weight:600;">${f.campuses}</td>
       <td style="${tdS}text-align:center;">${f.period}</td>
       <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
-      <td style="${tdS}text-align:center;">
-        <button onclick="deleteWdFile('${f.key}')" style="padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;font-weight:700;">🗑️ 삭제</button>
-      </td>
-    </tr>`).join('')}</tbody>
-  </table>`;
+      <td style="${tdS}text-align:center;"><button onclick="deleteWdFile('${f.key}')" style="padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;font-weight:700;">🗑️ 삭제</button></td>
+    </tr>`).join('')}</tbody></table>`;
 }
 
 async function deleteWdFile(uploadedAt){
   const fileRecs=allRecordsWd.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
   if(!fileRecs.length){alert('데이터를 찾을 수 없어요.');return;}
-  const camps=[...new Set(fileRecs.map(r=>r.campus))].join(', ');
-  // 권한 체크: 본인 업로드 또는 슈퍼관리자만
   const uploader=fileRecs[0]?.uploadedBy||'';
-  if(!isSuperAdmin()&&uploader&&uploader!==currentUser?.email){
-    alert('본인이 업로드한 파일만 삭제할 수 있어요.');return;
-  }
-  if(!confirm(`[${camps}] 업로드 파일 (${fileRecs.length}건)을 전체 삭제하시겠습니까?`)) return;
+  if(!isSuperAdmin()&&uploader&&uploader!==currentUser?.email){alert('본인이 업로드한 파일만 삭제할 수 있어요.');return;}
+  if(!confirm(`파일 ${fileRecs.length}건을 전체 삭제하시겠습니까?`))return;
   try{
-    for(let i=0;i<fileRecs.length;i+=400){
-      const batch=db.batch();
-      fileRecs.slice(i,i+400).forEach(r=>batch.delete(db.collection('recordsWd').doc(r.id)));
-      await batch.commit();
-    }
+    for(let i=0;i<fileRecs.length;i+=400){const batch=db.batch();fileRecs.slice(i,i+400).forEach(r=>batch.delete(db.collection('recordsWd').doc(r.id)));await batch.commit();}
     allRecordsWd=allRecordsWd.filter(r=>(r.uploadedAt||'legacy')!==uploadedAt);
-    cacheInvalidate('recordsWd');
-    await loadWdHistory();
-    renderWithdrawal();
+    cacheInvalidate('recordsWd');updateWdDropdowns();await loadWdHistory();renderWithdrawal();
   }catch(e){alert('삭제 오류: '+e.message);}
 }
 
-// ===== 학교별 현황 표 =====
-function buildSchoolTable(stayRecs){
-  if(!stayRecs.length) return '';
-
-  const elem_grades=['초1','초2','초3','초4','초5','초6'];
-  const mid_grades=['중1','중2','중3'];
-  const norm=g=>g?String(g).trim().replace('초등','초').replace('중등','중').replace('고등','고'):'';
-
-  // 학교별 집계 함수
-  function makeSchoolData(grades){
-    const schools=[...new Set(stayRecs.filter(r=>grades.includes(norm(r.grade))).map(r=>r.school).filter(Boolean))];
-    const rows=schools.map(school=>{
-      const sr=stayRecs.filter(r=>r.school===school&&grades.includes(norm(r.grade)));
-      const gradeCounts=grades.map(g=>sr.filter(r=>norm(r.grade)===g).length);
-      const total=sr.length;
-      return{school,gradeCounts,total};
-    }).filter(r=>r.total>0).sort((a,b)=>b.total-a.total); // 소계 높은 순
-    return rows;
-  }
-
-  // 표 생성 함수
-  function makeTable(title,grades,rows,allRecs,color,lightColor){
-    const totalAll=allRecs.filter(r=>grades.includes(norm(r.grade))).length;
-    const thS=`padding:5px 8px;font-size:11px;font-weight:800;border:1px solid #E2E8F0;text-align:center;white-space:nowrap;`;
-    const tdS=`padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:center;`;
-
-    // 학년별 합계 (비율 계산용)
-    const gradeTotals=grades.map(g=>allRecs.filter(r=>norm(r.grade)===g).length);
-
-    const tbody=rows.map((row,i)=>{
-      const pct=totalAll>0?(row.total/totalAll*100).toFixed(1):'0.0';
-      return `<tr style="${i%2===0?'':'background:#FAFAFA'}">
-        <td style="${tdS}text-align:left;padding-left:10px;font-weight:600;">${row.school}</td>
-        ${row.gradeCounts.map(n=>`<td style="${tdS}">${n||''}</td>`).join('')}
-        <td style="${tdS}color:${color};font-weight:700;">${pct}%</td>
-        <td style="${tdS}font-weight:800;color:#374151;">${row.total}</td>
-      </tr>`;
-    }).join('');
-
-    // 학년별 비율 행
-    const gradeRatioRow=gradeTotals.map(cnt=>`<td style="${tdS}color:${color};font-weight:700;">
-      ${totalAll>0?(cnt/totalAll*100).toFixed(2)+'%':'0%'}
-    </td>`).join('');
-
-    // 총합 행
-    const gradeSumRow=gradeTotals.map(cnt=>`<td style="${tdS}font-weight:800;color:#374151;">${cnt||''}</td>`).join('');
-
-    return `<div class="tbl-card" style="margin-bottom:14px;overflow-x:auto;">
-      <div class="tbl-title">④ ${title} 재원생 학교별 현황</div>
-      <table style="width:100%;border-collapse:collapse;min-width:400px;">
-        <thead>
-          <tr>
-            <th style="${thS}background:#F8FAFC;text-align:left;min-width:120px;">학교명</th>
-            ${grades.map(g=>`<th style="${thS}background:${lightColor};color:${color};">${g}</th>`).join('')}
-            <th style="${thS}background:${lightColor};color:${color};">학교별 비율</th>
-            <th style="${thS}background:#F1F5F9;">소계</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tbody||`<tr><td colspan="${grades.length+3}" style="${tdS}color:var(--mut);">데이터 없음</td></tr>`}
-          <tr style="background:${lightColor};">
-            <td style="${tdS}font-weight:800;color:${color};text-align:left;padding-left:10px;">학년별 비율</td>
-            ${gradeRatioRow}
-            <td style="${tdS}"></td>
-            <td style="${tdS}"></td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr style="background:#F1F5F9;font-weight:900;border-top:2px solid #CBD5E1;">
-            <td style="${tdS}font-weight:800;text-align:left;padding-left:10px;">총 합</td>
-            ${gradeSumRow}
-            <td style="${tdS}"></td>
-            <td style="${tdS}font-weight:900;font-size:14px;">${totalAll}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>`;
-  }
-
-  const elemRows=makeSchoolData(elem_grades);
-  const midRows=makeSchoolData(mid_grades);
-
-  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;align-items:flex-start;">
-    ${makeTable('초등학교',elem_grades,elemRows,stayRecs,'#0ABAB5','#F0FDFB')}
-    ${makeTable('중학교',mid_grades,midRows,stayRecs,'#6D28D9','#F5F3FF')}
-  </div>`;
-}
-
+// ===== 메인 렌더 =====
 async function renderWithdrawal(){
-  if(!allRecordsWd.length) await loadRecordsWd();
-  
-  // 연도 드롭다운 업데이트 (recordsWd 데이터 기준)
-  const wdYears=[...new Set(allRecordsWd.map(r=>String(r.year).replace('년','').trim()))].filter(Boolean).sort();
-  if(wdYears.length){
-    ['wd-sy','wd-ey','wd-sem-sy','wd-sem-ey'].forEach(id=>{
-      const sel=document.getElementById(id);
-      if(!sel) return;
-      const cur=sel.value;
-      sel.innerHTML='';
-      wdYears.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y+'년';o.selected=(y===cur||(!cur&&y===wdYears[wdYears.length-1]));sel.appendChild(o);});
-    });
-  }
-
-  // 사용자 권한: 본인 캠퍼스만
-  const campus=currentUser.role==='user'?currentUser.campus:(document.getElementById('wd-campus')?.value||'');
+  if(!allRecordsWd.length)await loadRecordsWd();
+  updateWdDropdowns();
+  const recs=filterWdRecs();
+  const wdRecs=recs.filter(r=>r.status==='퇴원'||r.wdDate);
   const content=document.getElementById('wd-content');
-  let recs=[];
+  if(!content)return;
+  if(!recs.length){content.innerHTML='<div class="alert alert-info">조건에 맞는 데이터가 없어요.</div>';return;}
+  const selectedCampus=document.getElementById('wd-campus')?.value||'';
+  const isSingleCampus=!!selectedCampus;
+  const campuses=[...new Set(recs.map(r=>r.campus).filter(Boolean))].sort();
 
-  if(wdPeriodType==='monthly'){
-    const sy=document.getElementById('wd-sy')?.value;
-    const sm=document.getElementById('wd-sm')?.value||'1월';
-    const ey=document.getElementById('wd-ey')?.value;
-    const em=document.getElementById('wd-em')?.value||'12월';
-    if(!sy||!ey) return;
-    const startKey=parseInt(sy)*100+parseInt(sm.replace('월',''));
-    const endKey=parseInt(ey)*100+parseInt(em.replace('월',''));
-    recs=allRecordsWd.filter(r=>{
-      if(campus&&String(r.campus).trim()!==campus) return false;
-      const mo=parseInt(String(r.month||'').replace('월',''))||0;
-      const yr=parseInt(r.year)||0;
-      const key=yr*100+mo;
-      return key>=startKey&&key<=endKey;
+  // ===== ① 퇴원생 재원기간 분포 =====
+  const tenureHtml=buildTenureSection(wdRecs,campuses,isSingleCampus,selectedCampus);
+  // ===== ② 캠퍼스별 사유 =====
+  const reasonHtml=buildReasonSection(wdRecs,campuses,isSingleCampus,selectedCampus);
+  // ===== ③ 학년별 비율 =====
+  const gradeHtml=buildGradeSection(wdRecs,campuses,isSingleCampus,selectedCampus);
+
+  content.innerHTML=tenureHtml+reasonHtml+gradeHtml;
+
+  // 차트 렌더
+  requestAnimationFrame(()=>{
+    renderWdCharts(wdRecs,campuses,isSingleCampus,selectedCampus);
+  });
+}
+
+// ===== 표 헬퍼 =====
+function thS(bg,col,extra=''){return `style="padding:5px 8px;font-size:11px;font-weight:800;border:1px solid #E2E8F0;text-align:center;white-space:nowrap;background:${bg};color:${col};${extra}"`;}
+function tdS(val,bg='',col='',bold=false,extra=''){
+  return `<td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:center;${bg?'background:'+bg+';':''}${col?'color:'+col+';':''}${bold?'font-weight:800;':''}${extra}">${val}</td>`;
+}
+
+// ===== ① 재원기간 분포 =====
+function buildTenureSection(wdRecs,campuses,isSingle,selCampus){
+  if(!wdRecs.length)return '';
+  const bands=WD_TENURE_BANDS;
+
+  if(isSingle){
+    // 단일캠퍼스: 기간별 표 (기간 단위로 열)
+    const periods=getPeriodList();
+    const rows=bands.map(band=>{
+      const vals=periods.map(p=>wdRecs.filter(r=>matchPeriod(r,p)&&getTenureBand(r.tenure)===band).length);
+      const total=vals.reduce((a,b)=>a+b,0);
+      const pct=wdRecs.length>0?(total/wdRecs.length*100).toFixed(1)+'%':'0%';
+      return `<tr><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:12px;">${band}</td>${vals.map(v=>tdS(v||'')).join('')}${tdS(total,'','',true)}${tdS(pct,'','#6D28D9',true)}</tr>`;
     });
+    const total=periods.map(p=>wdRecs.filter(r=>matchPeriod(r,p)).length);
+    return `<div class="tbl-card" style="margin-bottom:14px;overflow-x:auto;">
+      <div class="tbl-title">① 퇴원생 재원기간 분포 (${selCampus})</div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th ${thS('#F8FAFC','#374151','text-align:left;')}>재원기간</th>
+          ${periods.map(p=>`<th ${thS('#EFF6FF','#1D4ED8')}>${p}</th>`).join('')}
+          <th ${thS('#F1F5F9','#374151')}>합계</th>
+          <th ${thS('#EDE9FE','#6D28D9')}>비율</th>
+        </tr></thead>
+        <tbody>${rows.join('')}
+        <tr style="background:#F1F5F9;font-weight:800;border-top:2px solid #CBD5E1;">
+          <td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:12px;font-weight:800;">합계</td>
+          ${total.map(v=>tdS(v||'','#F1F5F9','',true)).join('')}
+          ${tdS(wdRecs.length,'#F1F5F9','',true)}${tdS('','#F1F5F9')}
+        </tr></tbody>
+      </table></div>`;
   } else {
-    const sy=document.getElementById('wd-sem-sy')?.value;
-    const ss=document.getElementById('wd-sem-ss')?.value;
-    const ey=document.getElementById('wd-sem-ey')?.value;
-    const es=document.getElementById('wd-sem-es')?.value;
-    if(!sy||!ey) return;
-    const startScore=semNumericScore(sy,ss);
-    const endScore=semNumericScore(ey,es);
-    recs=allRecordsWd.filter(r=>{
-      if(campus&&String(r.campus).trim()!==campus) return false;
-      return semNumericScore(r.year,r.semester||'봄')>=startScore&&semNumericScore(r.year,r.semester||'봄')<=endScore;
+    // 전체: 캠퍼스별 표 + 도넛 차트
+    const rows=bands.map((band,bi)=>{
+      const vals=campuses.map(cp=>wdRecs.filter(r=>r.campus===cp&&getTenureBand(r.tenure)===band).length);
+      const total=vals.reduce((a,b)=>a+b,0);
+      const pct=wdRecs.length>0?(total/wdRecs.length*100).toFixed(1)+'%':'0%';
+      return `<tr style="${bi%2===0?'':'background:#FAFAFA'}">
+        <td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:12px;">${band}</td>
+        ${vals.map(v=>tdS(v||'')).join('')}
+        ${tdS(total,'','',true)}${tdS(pct,'','#6D28D9',true)}
+      </tr>`;
     });
-  }
-
-  if(!recs.length){
-    content.innerHTML='<div class="alert alert-info">데이터가 없어요. 파일을 먼저 업로드해 주세요.</div>';
-    return;
-  }
-
-  const stayRecs=recs.filter(r=>['재원','신입','전입'].includes(r.status));
-  const wdRecs=recs.filter(r=>r.status==='퇴원');
-
-  // 재원기간 구간 분류
-  const bands=[
-    {label:'3개월 미만',min:0,max:3,color:'#FDA4AF'},
-    {label:'3~6개월',min:3,max:6,color:'#FCD34D'},
-    {label:'6~12개월',min:6,max:12,color:'#6EE7B7'},
-    {label:'12~24개월',min:12,max:24,color:'#93C5FD'},
-    {label:'24개월 이상',min:24,max:999,color:'#C4B5FD'},
-  ];
-
-  const stayBandCounts=bands.map(b=>stayRecs.filter(r=>(parseInt(r.tenure)||0)>=b.min&&(parseInt(r.tenure)||0)<b.max).length);
-  const wdBandCounts=bands.map(b=>wdRecs.filter(r=>(parseInt(r.tenure)||0)>=b.min&&(parseInt(r.tenure)||0)<b.max).length);
-
-  // 퇴원사유 분석 (전체 + 학년별)
-  const reasonMap={};
-  wdRecs.forEach(r=>{if(r.reason){reasonMap[r.reason]=(reasonMap[r.reason]||0)+1;}});
-  const reasons=Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]);
-  const allReasons=[...new Set(wdRecs.map(r=>r.reason).filter(Boolean))].sort();
-  // 학년 순서: GRADES 상수 기준 고정 (데이터 있는 학년만)
-  // grade 값 정규화 함수
-  function normalizeGrade(g){
-    if(!g) return '';
-    g=String(g).trim();
-    // "초등1" -> "초1", "중등1" -> "중1" 등 변환
-    g=g.replace('초등','초').replace('중등','중').replace('고등','고');
-    // "1학년" -> 처리 불가이므로 그대로
-    return g;
-  }
-  const wdGrades=GRADES.filter(g=>wdRecs.some(r=>normalizeGrade(r.grade)===g));
-  // 데이터가 있지만 GRADES에 없는 학년도 추가
-  const extraGrades=[...new Set(wdRecs.map(r=>normalizeGrade(r.grade)).filter(g=>g&&!GRADES.includes(g)))];
-  const allWdGrades=[...wdGrades,...extraGrades];
-
-  content.innerHTML=`
-    <div class="chart-row cols-2">
-      <div class="chart-card">
-        <div class="chart-title">① 재원생 재원기간 분포 (총 ${stayRecs.length}명)</div>
-        <div class="chart-wrap"><canvas id="ch-wd-stay"></canvas></div>
+    const total=campuses.map(cp=>wdRecs.filter(r=>r.campus===cp).length);
+    return `<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;margin-bottom:14px;align-items:flex-start;">
+      <div class="tbl-card" style="overflow-x:auto;">
+        <div class="tbl-title">① 퇴원생 재원기간 분포</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th ${thS('#F8FAFC','#374151','text-align:left;')}>재원기간</th>
+            ${campuses.map(cp=>`<th ${thS('#F9FAFB','#374151')}>${cp}</th>`).join('')}
+            <th ${thS('#F1F5F9','#374151')}>합계</th>
+            <th ${thS('#EDE9FE','#6D28D9')}>비율</th>
+          </tr></thead>
+          <tbody>${rows.join('')}
+          <tr style="background:#F1F5F9;font-weight:800;border-top:2px solid #CBD5E1;">
+            <td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;font-weight:800;text-align:left;padding-left:12px;">합계</td>
+            ${total.map(v=>tdS(v||'','#F1F5F9','',true)).join('')}
+            ${tdS(wdRecs.length,'#F1F5F9','',true)}${tdS('','#F1F5F9')}
+          </tr></tbody>
+        </table>
       </div>
-      <div class="chart-card">
-        <div class="chart-title">② 퇴원생 재원기간 분포 (총 ${wdRecs.length}명)</div>
-        <div class="chart-wrap"><canvas id="ch-wd-out"></canvas></div>
-      </div>
-    </div>
-    <div class="tbl-card">
-      <div class="tbl-title">③ 퇴원사유 분석 — 학년별 (퇴원생 ${wdRecs.length}명)</div>
-      <div style="overflow-x:auto;">
-      <table style="min-width:600px;">
-        <thead>
-          <tr>
-            <th style="background:#F8FAFC;min-width:80px;">퇴원사유</th>
-            ${allWdGrades.map(g=>`<th class="th-tif" style="min-width:55px;">${g}</th>`).join('')}
-            <th class="th-org" style="min-width:60px;">합계</th>
-            <th style="background:#FEF9C3;color:#854D0E;min-width:60px;">비율</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${allReasons.map(reason=>{
-            const gradeCounts=allWdGrades.map(g=>wdRecs.filter(r=>(normalizeGrade(r.grade)===g)&&r.reason===reason).length);
-            const total=gradeCounts.reduce((a,b)=>a+b,0);
-            return `<tr>
-              <td class="td-bold">${reason}</td>
-              ${gradeCounts.map(n=>`<td style="text-align:center;">${n>0?n+' 명':'-'}</td>`).join('')}
-              <td style="text-align:center;font-weight:800;color:var(--org);">${total}명</td>
-              <td style="text-align:center;color:#854D0E;font-weight:700;">${wdRecs.length>0?(total/wdRecs.length*100).toFixed(1):0}%</td>
-            </tr>`;
-          }).join('')}
-          ${!allReasons.length?`<tr><td colspan="${allWdGrades.length+3}" style="text-align:center;color:var(--mut);padding:14px;">퇴원사유 데이터 없음</td></tr>`:''}
-        </tbody>
-        <tfoot>
-          <tr style="background:var(--org-lt);font-weight:800;border-top:2px solid var(--org);">
-            <td style="color:var(--org);">합계</td>
-            ${allWdGrades.map(g=>{
-              const cnt=wdRecs.filter(r=>normalizeGrade(r.grade)===g).length;
-              return `<td style="text-align:center;color:var(--org);">${cnt>0?cnt+'명':'-'}</td>`;
-            }).join('')}
-            <td style="text-align:center;color:var(--org);">${wdRecs.length}명</td>
-            <td style="text-align:center;color:var(--org);">100%</td>
-          </tr>
-        </tfoot>
-      </table>
+      <div class="chart-card"><div class="chart-title" style="font-size:11px;">재원기간 분포</div>
+        <div style="height:220px;"><canvas id="ch-wd-tenure"></canvas></div>
       </div>
     </div>`;
-
-  // ④ 재원생 학교별 현황 추가
-  const schoolHtml=buildSchoolTable(stayRecs);
-  content.innerHTML+=schoolHtml;
-
-  // 차트 그리기
-  const pieOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'},datalabels:{display:true,formatter:(v,ctx)=>{const tot=ctx.dataset.data.reduce((a,b)=>a+b,0);return tot>0&&v>0?v+'명\n('+Math.round(v/tot*100)+'%)':''}, color:'#374151',font:{weight:'bold',size:10},textAlign:'center'}},cutout:'50%'};
-  destroyChart('ch-wd-stay');
-  const stayEl=document.getElementById('ch-wd-stay');
-  if(stayEl) charts['ch-wd-stay']=new Chart(stayEl.getContext('2d'),{type:'doughnut',data:{labels:bands.map((b,i)=>`${b.label} (${stayBandCounts[i]}명)`),datasets:[{data:stayBandCounts,backgroundColor:bands.map(b=>b.color),borderWidth:2,borderColor:'#fff'}]},options:pieOpts});
-  destroyChart('ch-wd-out');
-  const outEl=document.getElementById('ch-wd-out');
-  if(outEl) charts['ch-wd-out']=new Chart(outEl.getContext('2d'),{type:'doughnut',data:{labels:bands.map((b,i)=>`${b.label} (${wdBandCounts[i]}명)`),datasets:[{data:wdBandCounts,backgroundColor:bands.map(b=>b.color),borderWidth:2,borderColor:'#fff'}]},options:pieOpts});
-}
-
-
-// ====== 내신성적 ======
-let allScoreRecords = [];
-
-async function loadScoreRecords(force=false){
-  if(!force && allScoreRecords.length && cacheGet('recordsScore')) return;
-  const snap = await db.collection('recordsScore').get();
-  allScoreRecords = snap.docs.map(d=>({id:d.id,...d.data()}));
-  cacheSet('recordsScore', true);
-}
-
-async function initScoreTab(){
-  if(!allScoreRecords.length) await loadScoreRecords();
-  updateScoreDropdowns();
-  updateScoreHistoryDropdowns(); // 데이터 로드 후 드롭다운 채우기
-  const fb=document.getElementById('score-filter-bar');
-  if(fb) fb.style.display='flex';
-  const sh=document.getElementById('score-upload-history');
-  if(sh) sh.style.display='block'; // 항상 표시
-  await loadScoreUploadHistory();
-}
-
-function updateScoreDropdowns(){
-  const campuses=[...new Set(allScoreRecords.map(r=>r.campus).filter(Boolean))].sort();
-  const years=[...new Set(allScoreRecords.map(r=>String(r.year)).filter(Boolean))].sort();
-  
-  const fixed=['남동탄','서수원','수원','운정1','운정2','장안'];
-  const allCampuses=[...new Set([...fixed,...campuses])];
-  
-  const cSel=document.getElementById('sc-campus');
-  if(cSel){
-    cSel.innerHTML='<option value="">전체</option>';
-    allCampuses.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;cSel.appendChild(o);});
-  }
-  const ySel=document.getElementById('sc-year');
-  if(ySel){
-    ySel.innerHTML='<option value="">전체</option>';
-    years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y+'년';ySel.appendChild(o);});
   }
 }
 
-async function handleScoreUpload(event){
-  const file=event.target.files[0];
-  if(!file) return;
-  const statusEl=document.getElementById('score-upload-status');
-  statusEl.textContent='읽는 중...';
-  const reader=new FileReader();
-  reader.onload=async function(e){
-    try{
-      const data=new Uint8Array(e.target.result);
-      const wb=XLSX.read(data,{type:'array'});
-      const sheet=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
-      let headerRow=-1;
-      for(let i=0;i<rows.length;i++){
-        if(rows[i].some(x=>String(x).includes('분원명')||String(x).includes('학년'))){headerRow=i;break;}
-      }
-      if(headerRow===-1){statusEl.textContent='❌ 형식 인식 불가';return;}
-      const headers=rows[headerRow].map(h=>String(h).trim());
-      const ci=h=>headers.findIndex(x=>x===h||x.includes(h));
-      const iCampus=ci('분원명'),iSid=ci('S-ID'),iName=ci('학생이름'),
-            iSchool=ci('학교'),iGrade=ci('학년'),iLevel=ci('레벨'),
-            iYear=ci('년도'),iSem=ci('학기'),iType=ci('구분'),
-            iBook=ci('교과서'),iScore=ci('점수'),iTeacher=ci('담임');
-      const dataRows=rows.slice(headerRow+1).filter(r=>r[iName]&&String(r[iName]).trim());
-      if(!dataRows.length){statusEl.textContent='❌ 데이터 없음';return;}
+// ===== ② 캠퍼스별 사유 =====
+function buildReasonSection(wdRecs,campuses,isSingle,selCampus){
+  if(!wdRecs.length)return '';
+  const reasons=[...new Set(wdRecs.map(r=>r.reason).filter(Boolean))].sort();
 
-      statusEl.textContent='⏳ 기존 데이터 비교 중...';
-
-      // 업로드한 파일에서 분원+년도+학기+구분 조합 파악
-      const safeStr=(row,idx)=>idx>=0?String(row[idx]||'').trim():'';
-      const uploadCampus=safeStr(dataRows[0],iCampus);
-      const uploadYear=safeStr(dataRows[0],iYear).replace('년','').trim();
-      const uploadSem=safeStr(dataRows[0],iSem);
-      const uploadType=safeStr(dataRows[0],iType);
-
-      // 같은 분원+년도+학기+구분의 기존 데이터만 삭제 (다른 분원 데이터 보존!)
-      if(uploadCampus&&uploadYear&&uploadSem&&uploadType){
-        statusEl.textContent=`⏳ ${uploadCampus} ${uploadYear}년 ${uploadSem} ${uploadType} 기존 데이터 교체 중...`;
-        const existing=await db.collection('recordsScore')
-          .where('campus','==',uploadCampus)
-          .where('year','==',uploadYear)
-          .where('sem','==',uploadSem)
-          .where('type','==',uploadType).get();
-        if(!existing.empty){
-          for(let i=0;i<existing.docs.length;i+=400){
-            const batch=db.batch();
-            existing.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));
-            await batch.commit();
-          }
-        }
-      }
-
-      statusEl.textContent=`⏳ ${dataRows.length}건 저장 중...`;
-      const uploadedAt=new Date().toISOString();
-      let saved=0;
-      for(let i=0;i<dataRows.length;i+=400){
-        const batch=db.batch();
-        dataRows.slice(i,i+400).forEach(row=>{
-          const ss=idx=>idx>=0?String(row[idx]||'').trim():'';
-          batch.set(db.collection('recordsScore').doc(),{
-            campus:ss(iCampus),sid:ss(iSid),name:ss(iName),
-            school:ss(iSchool),grade:ss(iGrade),level:ss(iLevel),
-            year:ss(iYear).replace('년','').trim(),
-            sem:ss(iSem),type:ss(iType),book:ss(iBook),
-            score:parseFloat(row[iScore])||0,teacher:ss(iTeacher),
-            uploadedAt
-          });
-          saved++;
-        });
-        await batch.commit();
-        statusEl.textContent=`⏳ ${Math.min(i+400,dataRows.length)}/${dataRows.length}건 저장 중...`;
-      }
-      cacheInvalidate('recordsScore');
-      await loadScoreRecords(true);
-      updateScoreDropdowns();
-      updateScoreHistoryDropdowns();
-      document.getElementById('score-filter-bar').style.display='flex';
-      const shEl=document.getElementById('score-upload-history');
-      if(shEl) shEl.style.display='block';
-      await loadScoreUploadHistory();
-      // 업로드 로그 저장
-      const scoreLogLabel=`${file.name} (${uploadYear}${uploadSem}_${uploadCampus})`;
-      await db.collection('uploadLogs').add({
-        dataType:'score', fileName:file.name, displayName:scoreLogLabel,
-        campus:uploadCampus, year:uploadYear, sem:uploadSem, type:uploadType,
-        count:saved, uploadedAt, uploadedBy:currentUser?.email||'', uploadedByName:currentUser?.name||''
-      });
-      statusEl.innerHTML=`<span style="color:#15803D">✅ ${saved}건 저장 완료! (${uploadCampus} ${uploadYear}년 ${uploadSem} ${uploadType})</span>`;
-    }catch(err){statusEl.textContent='❌ 오류: '+err.message;console.error(err);}
-  };
-  reader.readAsArrayBuffer(file);
-  event.target.value='';
-}
-
-// ===== 업로드 이력 조회/수정 =====
-async function loadScoreUploadHistory(){
-  const logEl=document.getElementById('score-upload-log-list');
-  if(!logEl){
-    const sh=document.getElementById('score-upload-history');
-    if(sh) sh.style.display='block';
-    return;
-  }
-
-  // uploadedAt 기준으로 파일 단위 그룹핑
-  const fileGroups={};
-  allScoreRecords.forEach(r=>{
-    const key=r.uploadedAt||'legacy';
-    if(!fileGroups[key]){
-      fileGroups[key]={
-        uploadedAt:r.uploadedAt||'',
-        uploadedBy:r.uploadedBy||'',
-        uploadedByName:r.uploadedByName||'',
-        campuses:new Set(), count:0,
-        years:new Set(), sems:new Set(), types:new Set()
-      };
-    }
-    fileGroups[key].campuses.add(r.campus||'');
-    fileGroups[key].years.add(r.year||'');
-    fileGroups[key].sems.add(r.sem||'');
-    fileGroups[key].types.add(r.type||'');
-    fileGroups[key].count++;
-  });
-
-  let files=Object.entries(fileGroups).map(([key,f])=>({
-    key,
-    uploadedAt:f.uploadedAt,
-    uploadedBy:f.uploadedBy,
-    uploadedByName:f.uploadedByName,
-    campuses:[...f.campuses].filter(Boolean).sort().join(', '),
-    years:[...f.years].filter(Boolean).sort().join(', '),
-    sems:[...f.sems].filter(Boolean).sort().join('·'),
-    types:[...f.types].filter(Boolean).sort().join('·'),
-    count:f.count
-  }));
-
-  // 권한 필터: 슈퍼관리자는 전체, 나머지는 본인 것만
-  if(!isSuperAdmin()) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
-  files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
-
-  if(!files.length){
-    logEl.innerHTML='<div style="padding:12px;color:var(--mut);font-size:13px;">업로드 이력이 없어요.</div>';
-    return;
-  }
-
-  const tdS='padding:7px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
-  logEl.innerHTML=`<table style="width:100%;border-collapse:collapse;">
-    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
-      <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
-      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">포함 캠퍼스</th>
-      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">년도</th>
-      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">학기·구분</th>
-      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">총 건수</th>
-      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">삭제</th>
-    </tr></thead>
-    <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
-      <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'(이전 업로드)'}</td>
-      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedByName||f.uploadedBy||'-'}</td>`:''}
-      <td style="${tdS}text-align:center;color:#1D4ED8;font-weight:600;">${f.campuses||'-'}</td>
-      <td style="${tdS}text-align:center;">${f.years}년</td>
-      <td style="${tdS}text-align:center;">${f.sems} ${f.types}</td>
-      <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
-      <td style="${tdS}text-align:center;">
-        <button onclick="deleteScoreFile('${f.key}')" style="padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;font-weight:700;">🗑️ 삭제</button>
-      </td>
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
-
-async function deleteScoreFile(uploadedAt){
-  const fileRecs=allScoreRecords.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
-  const campuses=[...new Set(fileRecs.map(r=>r.campus))].join(', ');
-  if(!confirm(`[${campuses}] 업로드 파일 (${fileRecs.length}건)을 전체 삭제하시겠습니까?`)) return;
-  try{
-    const ids=fileRecs.map(r=>r.id);
-    for(let i=0;i<ids.length;i+=400){
-      const batch=db.batch();
-      ids.slice(i,i+400).forEach(id=>batch.delete(db.collection('recordsScore').doc(id)));
-      await batch.commit();
-    }
-    allScoreRecords=allScoreRecords.filter(r=>(r.uploadedAt||'legacy')!==uploadedAt);
-    updateScoreDropdowns();
-    updateScoreHistoryDropdowns();
-    await loadScoreUploadHistory();
-  }catch(e){alert('삭제 오류: '+e.message);}
-}
-
-async function deleteScoreUploadLog(logId, campus, year, sem, type){
-  if(!confirm(`[${campus} ${year}년 ${sem} ${type}] 성적 데이터를 전체 삭제하시겠습니까?`)) return;
-  try{
-    const snap=await db.collection('recordsScore')
-      .where('campus','==',campus).where('year','==',year)
-      .where('sem','==',sem).where('type','==',type).get();
-    for(let i=0;i<snap.docs.length;i+=400){
-      const batch=db.batch();snap.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));await batch.commit();
-    }
-    await db.collection('uploadLogs').doc(logId).delete();
-    await loadScoreRecords();
-    updateScoreDropdowns();
-    updateScoreHistoryDropdowns();
-    await loadScoreUploadHistory();
-  }catch(e){alert('삭제 오류: '+e.message);}
-}
-
-function updateScoreHistoryDropdowns(){
-  if(!allScoreRecords.length) return;
-  const campuses=[...new Set(allScoreRecords.map(r=>r.campus).filter(Boolean))].sort();
-  const years=[...new Set(allScoreRecords.map(r=>String(r.year).replace('년','').trim()).filter(Boolean))].sort();
-  const shc=document.getElementById('sh-campus');
-  const shy=document.getElementById('sh-year');
-  if(shc){
-    const cur=shc.value;
-    shc.innerHTML='<option value="">전체</option>'+campuses.map(cp=>`<option value="${cp}"${cp===cur?' selected':''}>${cp}</option>`).join('');
-  }
-  if(shy){
-    const cur=shy.value;
-    shy.innerHTML='<option value="">전체</option>'+years.map(y=>`<option value="${y}"${y===cur?' selected':''}>${y}년</option>`).join('');
+  if(isSingle){
+    const periods=getPeriodList();
+    const rows=reasons.map(reason=>{
+      const vals=periods.map(p=>wdRecs.filter(r=>matchPeriod(r,p)&&r.reason===reason).length);
+      const total=vals.reduce((a,b)=>a+b,0);
+      const pct=wdRecs.length>0?(total/wdRecs.length*100).toFixed(1)+'%':'0%';
+      return `<tr><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:12px;">${reason}</td>${vals.map(v=>tdS(v||'')).join('')}${tdS(total,'','',true)}${tdS(pct,'','var(--org)',true)}</tr>`;
+    });
+    const total=periods.map(p=>wdRecs.filter(r=>matchPeriod(r,p)).length);
+    return `<div class="tbl-card" style="margin-bottom:14px;overflow-x:auto;">
+      <div class="tbl-title">② 캠퍼스별 사유 (${selCampus})</div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th ${thS('#F8FAFC','#374151','text-align:left;')}>퇴원 사유</th>
+          ${periods.map(p=>`<th ${thS('#FFF7ED','#C2410C')}>${p}</th>`).join('')}
+          <th ${thS('#F1F5F9','#374151')}>합계</th>
+          <th ${thS('#FEF3C7','var(--org)')}>비율</th>
+        </tr></thead>
+        <tbody>${rows.join('')}
+        <tr style="background:#F1F5F9;font-weight:800;border-top:2px solid #CBD5E1;">
+          <td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;font-weight:800;text-align:left;padding-left:12px;">캠퍼스 합</td>
+          ${total.map(v=>tdS(v||'','#F1F5F9','',true)).join('')}
+          ${tdS(wdRecs.length,'#F1F5F9','',true)}${tdS('','#F1F5F9')}
+        </tr></tbody>
+      </table></div>`;
+  } else {
+    const rows=reasons.map((reason,ri)=>{
+      const vals=campuses.map(cp=>wdRecs.filter(r=>r.campus===cp&&r.reason===reason).length);
+      const total=vals.reduce((a,b)=>a+b,0);
+      const pct=wdRecs.length>0?(total/wdRecs.length*100).toFixed(1)+'%':'0%';
+      return `<tr style="${ri%2===0?'':'background:#FAFAFA'}">
+        <td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:12px;">${reason}</td>
+        ${vals.map(v=>tdS(v||'')).join('')}
+        ${tdS(total,'','',true)}${tdS(pct,'','var(--org)',true)}
+      </tr>`;
+    });
+    const total=campuses.map(cp=>wdRecs.filter(r=>r.campus===cp).length);
+    return `<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;margin-bottom:14px;align-items:flex-start;">
+      <div class="tbl-card" style="overflow-x:auto;">
+        <div class="tbl-title">② 캠퍼스별 사유</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th ${thS('#F8FAFC','#374151','text-align:left;')}>퇴원 사유</th>
+            ${campuses.map(cp=>`<th ${thS('#FFF7ED','#C2410C')}>${cp}</th>`).join('')}
+            <th ${thS('#F1F5F9','#374151')}>사유별 합</th>
+            <th ${thS('#FEF3C7','var(--org)')}>사유별 비율</th>
+          </tr></thead>
+          <tbody>${rows.join('')}
+          <tr style="background:#F1F5F9;font-weight:800;border-top:2px solid #CBD5E1;">
+            <td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;font-weight:800;text-align:left;padding-left:12px;">캠퍼스 합</td>
+            ${total.map(v=>tdS(v||'','#F1F5F9','',true)).join('')}
+            ${tdS(wdRecs.length,'#F1F5F9','',true)}${tdS('','#F1F5F9')}
+          </tr></tbody>
+        </table>
+      </div>
+      <div class="chart-card"><div class="chart-title" style="font-size:11px;">퇴원 사유 분포</div>
+        <div style="height:220px;"><canvas id="ch-wd-reason"></canvas></div>
+      </div>
+    </div>`;
   }
 }
 
-async function loadScoreHistory(){
-  const el=document.getElementById('score-history-content');
-  if(!el) return; // 요소 없으면 종료
-  const campus=document.getElementById('sh-campus')?.value||'';
-  const year=document.getElementById('sh-year')?.value||'';
-  const sem=document.getElementById('sh-sem')?.value||'';
-  const type=document.getElementById('sh-type')?.value||'';
-  el.innerHTML='<div class="loading">로딩 중...</div>';
+// ===== ③ 학년별 비율 =====
+function buildGradeSection(wdRecs,campuses,isSingle,selCampus){
+  if(!wdRecs.length)return '';
+  const chessGrades=WD_CHESS;
+  const aceGrades=WD_ACE;
+  const allGrades=[...chessGrades,...aceGrades];
 
-  let recs=allScoreRecords.filter(r=>{
-    if(campus&&r.campus!==campus) return false;
-    if(year&&String(r.year)!==year) return false;
-    if(sem&&r.sem!==sem) return false;
-    if(type&&r.type!==type) return false;
-    return true;
-  });
-
-  // 최신 업로드 순 정렬
-  recs=[...recs].sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
-
-  if(!recs.length){el.innerHTML='<div style="padding:20px;color:var(--mut);font-size:13px;">데이터가 없어요.</div>';return;}
-
-  el.innerHTML=`
-    <div style="font-size:12px;color:var(--mut);margin-bottom:8px;">총 ${recs.length}명 · 최신 업로드 순</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;">
-      <thead>
-        <tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
-          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);text-align:left;">분원</th>
-          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">년도</th>
-          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">학기</th>
-          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">구분</th>
-          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">이름</th>
-          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">학년</th>
-          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">교과서</th>
-          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">담임</th>
-          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">점수</th>
-          <th style="padding:6px 8px;border-bottom:2px solid var(--bdr);">수정/삭제</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${recs.map(r=>`<tr id="sh-row-${r.id}">
-          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;">${r.campus||''}</td>
-          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;text-align:center;">${r.year||''}</td>
-          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;text-align:center;">${r.sem||''}</td>
-          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;text-align:center;">${r.type||''}</td>
-          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;font-weight:700;">${r.name||''}</td>
-          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;text-align:center;">${r.grade||''}</td>
-          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;">${r.book||''}</td>
-          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;">${r.teacher||''}</td>
-          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;text-align:center;font-weight:800;color:var(--org);">${r.score||0}점</td>
-          <td style="padding:5px 8px;border-bottom:1px solid #F1F5F9;">
-            <div style="display:flex;gap:4px;">
-              <button onclick="openScoreEditModal('${r.id}')" style="padding:3px 8px;border:1.5px solid var(--tif);border-radius:4px;background:#fff;color:var(--tif-dk);font-size:11px;cursor:pointer;">수정</button>
-              <button onclick="deleteScoreRecord('${r.id}')" style="padding:3px 8px;border:1.5px solid #EF4444;border-radius:4px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;">삭제</button>
-            </div>
-          </td>
-        </tr>`).join('')}
-      </tbody>
-    </table>`;
+  if(isSingle){
+    const periods=getPeriodList();
+    let rows='';
+    chessGrades.forEach(g=>{
+      const vals=periods.map(p=>wdRecs.filter(r=>matchPeriod(r,p)&&r.grade===g).length);
+      const total=vals.reduce((a,b)=>a+b,0);
+      rows+=`<tr><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:16px;">${g}</td>${vals.map(v=>tdS(v||'')).join('')}${tdS(total,'','#6D28D9',true)}</tr>`;
+    });
+    const chessTotals=periods.map(p=>wdRecs.filter(r=>matchPeriod(r,p)&&WD_CHESS.includes(r.grade)).length);
+    const chessTotal=chessTotals.reduce((a,b)=>a+b,0);
+    rows+=`<tr style="background:#EDE9FE;font-weight:700;border-top:1.5px solid #A78BFA;"><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:10px;font-weight:800;color:#6D28D9;">CHESS 합</td>${chessTotals.map(v=>tdS(v||'','#EDE9FE','#6D28D9',true)).join('')}${tdS(chessTotal,'#EDE9FE','#6D28D9',true)}</tr>`;
+    aceGrades.forEach(g=>{
+      const vals=periods.map(p=>wdRecs.filter(r=>matchPeriod(r,p)&&r.grade===g).length);
+      const total=vals.reduce((a,b)=>a+b,0);
+      rows+=`<tr><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:16px;">${g}</td>${vals.map(v=>tdS(v||'')).join('')}${tdS(total,'','#C2410C',true)}</tr>`;
+    });
+    const aceTotals=periods.map(p=>wdRecs.filter(r=>matchPeriod(r,p)&&WD_ACE.includes(r.grade)).length);
+    const aceTotal=aceTotals.reduce((a,b)=>a+b,0);
+    rows+=`<tr style="background:#FFF7ED;font-weight:700;border-top:1.5px solid #FCA5A5;"><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:10px;font-weight:800;color:#C2410C;">ACE 합</td>${aceTotals.map(v=>tdS(v||'','#FFF7ED','#C2410C',true)).join('')}${tdS(aceTotal,'#FFF7ED','#C2410C',true)}</tr>`;
+    const grandTotals=periods.map(p=>wdRecs.filter(r=>matchPeriod(r,p)&&allGrades.includes(r.grade)).length);
+    const grandTotal=grandTotals.reduce((a,b)=>a+b,0);
+    rows+=`<tr style="background:#F1F5F9;font-weight:800;border-top:2px solid #CBD5E1;"><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;font-weight:800;text-align:left;padding-left:10px;">학년 총합</td>${grandTotals.map(v=>tdS(v||'','#F1F5F9','',true)).join('')}${tdS(grandTotal,'#F1F5F9','',true)}</tr>`;
+    return `<div class="tbl-card" style="margin-bottom:14px;overflow-x:auto;">
+      <div class="tbl-title">③ 학년별 비율 (${selCampus})</div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th ${thS('#F8FAFC','#374151','text-align:left;')}>학년</th>
+          ${periods.map(p=>`<th ${thS('#F0FDF4','#15803D')}>${p}</th>`).join('')}
+          <th ${thS('#F1F5F9','#374151')}>학년별 합</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+  } else {
+    let rows='';
+    chessGrades.forEach((g,gi)=>{
+      const vals=campuses.map(cp=>wdRecs.filter(r=>r.campus===cp&&r.grade===g).length);
+      const total=vals.reduce((a,b)=>a+b,0);
+      const pct=wdRecs.length>0?(total/wdRecs.length*100).toFixed(1)+'%':'0%';
+      rows+=`<tr style="${gi%2===0?'':'background:#FAFAFA'}"><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:16px;">${g}</td>${vals.map(v=>tdS(v||'')).join('')}${tdS(total,'','#6D28D9',true)}${tdS(pct,'','#6D28D9',false)}</tr>`;
+    });
+    const chessTotals=campuses.map(cp=>wdRecs.filter(r=>r.campus===cp&&WD_CHESS.includes(r.grade)).length);
+    const chessTotal=chessTotals.reduce((a,b)=>a+b,0);
+    const chessPct=wdRecs.length>0?(chessTotal/wdRecs.length*100).toFixed(1)+'%':'0%';
+    rows+=`<tr style="background:#EDE9FE;border-top:1.5px solid #A78BFA;"><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;font-weight:800;color:#6D28D9;text-align:left;padding-left:10px;">CHESS 합</td>${chessTotals.map(v=>tdS(v||'','#EDE9FE','#6D28D9',true)).join('')}${tdS(chessTotal,'#EDE9FE','#6D28D9',true)}${tdS(chessPct,'#EDE9FE','#6D28D9',true)}</tr>`;
+    aceGrades.forEach((g,gi)=>{
+      const vals=campuses.map(cp=>wdRecs.filter(r=>r.campus===cp&&r.grade===g).length);
+      const total=vals.reduce((a,b)=>a+b,0);
+      const pct=wdRecs.length>0?(total/wdRecs.length*100).toFixed(1)+'%':'0%';
+      rows+=`<tr style="${gi%2===0?'':'background:#FAFAFA'}"><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;text-align:left;padding-left:16px;">${g}</td>${vals.map(v=>tdS(v||'')).join('')}${tdS(total,'','#C2410C',true)}${tdS(pct,'','#C2410C',false)}</tr>`;
+    });
+    const aceTotals=campuses.map(cp=>wdRecs.filter(r=>r.campus===cp&&WD_ACE.includes(r.grade)).length);
+    const aceTotal=aceTotals.reduce((a,b)=>a+b,0);
+    const acePct=wdRecs.length>0?(aceTotal/wdRecs.length*100).toFixed(1)+'%':'0%';
+    rows+=`<tr style="background:#FFF7ED;border-top:1.5px solid #FCA5A5;"><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;font-weight:800;color:#C2410C;text-align:left;padding-left:10px;">ACE 합</td>${aceTotals.map(v=>tdS(v||'','#FFF7ED','#C2410C',true)).join('')}${tdS(aceTotal,'#FFF7ED','#C2410C',true)}${tdS(acePct,'#FFF7ED','#C2410C',true)}</tr>`;
+    const grandTotals=campuses.map(cp=>wdRecs.filter(r=>r.campus===cp&&allGrades.includes(r.grade)).length);
+    const grandTotal=grandTotals.reduce((a,b)=>a+b,0);
+    rows+=`<tr style="background:#F1F5F9;border-top:2px solid #CBD5E1;"><td style="padding:5px 8px;font-size:11px;border:1px solid #EAECF0;font-weight:800;text-align:left;padding-left:10px;">학년 총합</td>${grandTotals.map(v=>tdS(v||'','#F1F5F9','',true)).join('')}${tdS(grandTotal,'#F1F5F9','',true)}${tdS('','#F1F5F9')}</tr>`;
+    return `<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;margin-bottom:14px;align-items:flex-start;">
+      <div class="tbl-card" style="overflow-x:auto;">
+        <div class="tbl-title">③ 학년별 비율</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th ${thS('#F8FAFC','#374151','text-align:left;')}>학년</th>
+            ${campuses.map(cp=>`<th ${thS('#F9FAFB','#374151')}>${cp}</th>`).join('')}
+            <th ${thS('#F1F5F9','#374151')}>학년별 합</th>
+            <th ${thS('#F0FDF4','#15803D')}>학년별 비율</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="chart-card"><div class="chart-title" style="font-size:11px;">학년별 분포</div>
+        <div style="height:220px;"><canvas id="ch-wd-grade"></canvas></div>
+      </div>
+    </div>`;
+  }
 }
 
-function openScoreEditModal(id){
-  const r=allScoreRecords.find(x=>x.id===id);
-  if(!r) return;
-  document.getElementById('sc-edit-id').value=id;
-  document.getElementById('sc-edit-name').value=r.name||'';
-  document.getElementById('sc-edit-grade').value=r.grade||'';
-  document.getElementById('sc-edit-book').value=r.book||'';
-  document.getElementById('sc-edit-teacher').value=r.teacher||'';
-  document.getElementById('sc-edit-score').value=r.score||0;
-  document.getElementById('sc-edit-modal').style.display='flex';
-  document.getElementById('sc-edit-alert').innerHTML='';
+// ===== 기간 목록 (단일 캠퍼스 표 열 헤더용) =====
+function getPeriodList(){
+  const recs=filterWdRecs();
+  if(wdPeriodType==='month'){
+    return [...new Set(recs.map(r=>{
+      const y=r.year||'';const m=r.month||'';return y&&m?y+'년 '+m:'';
+    }).filter(Boolean))].sort();
+  } else {
+    return [...new Set(recs.map(r=>{
+      const y=r.year||'';const s=r.semester||'';return y&&s?y+'년 '+s:'';
+    }).filter(Boolean))].sort((a,b)=>{
+      const [ya,sa]=a.split('년 ');const [yb,sb]=b.split('년 ');
+      return parseInt(ya)-parseInt(yb)||SEMESTERS_ORDER.indexOf(sa.trim())-SEMESTERS_ORDER.indexOf(sb.trim());
+    });
+  }
 }
 
-function closeScoreEditModal(){
-  document.getElementById('sc-edit-modal').style.display='none';
+function matchPeriod(r,period){
+  if(!period)return true;
+  const [yearPart,rest]=(period||'').split('년 ');
+  const yr=yearPart?.trim();
+  const pr=rest?.trim();
+  if(wdPeriodType==='month') return String(r.year)===yr&&r.month===pr;
+  else return String(r.year)===yr&&r.semester===pr;
 }
 
-async function saveScoreEdit(){
-  const id=document.getElementById('sc-edit-id').value;
-  const alertEl=document.getElementById('sc-edit-alert');
-  const data={
-    name:document.getElementById('sc-edit-name').value.trim(),
-    grade:document.getElementById('sc-edit-grade').value.trim(),
-    book:document.getElementById('sc-edit-book').value.trim(),
-    teacher:document.getElementById('sc-edit-teacher').value.trim(),
-    score:parseFloat(document.getElementById('sc-edit-score').value)||0,
-  };
-  try{
-    await db.collection('recordsScore').doc(id).update(data);
-    const idx=allScoreRecords.findIndex(x=>x.id===id);
-    if(idx>=0) allScoreRecords[idx]={...allScoreRecords[idx],...data};
-    alertEl.innerHTML='<div class="alert alert-ok">✅ 수정 완료!</div>';
-    setTimeout(()=>{closeScoreEditModal();loadScoreHistory();},600);
-  }catch(e){alertEl.innerHTML=`<div class="alert alert-err">❌ ${e.message}</div>`;}
+// ===== 차트 렌더 =====
+function renderWdCharts(wdRecs,campuses,isSingle,selCampus){
+  if(isSingle) return; // 단일캠퍼스는 차트 없음
+
+  // ① 재원기간 도넛
+  destroyChart('ch-wd-tenure');
+  const tenureEl=document.getElementById('ch-wd-tenure');
+  if(tenureEl){
+    const tData=WD_TENURE_BANDS.map(b=>wdRecs.filter(r=>getTenureBand(r.tenure)===b).length);
+    charts['ch-wd-tenure']=new Chart(tenureEl.getContext('2d'),{type:'doughnut',
+      data:{labels:WD_TENURE_BANDS,datasets:[{data:tData,backgroundColor:WD_TENURE_COLORS,borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}},datalabels:{display:true,formatter:(v,ctx)=>{const tot=ctx.dataset.data.reduce((a,b)=>a+b,0);return tot>0&&v>0?Math.round(v/tot*100)+'%':'';},color:'#fff',font:{weight:'bold',size:10}}},cutout:'45%'}});
+  }
+
+  // ② 퇴원 사유 도넛
+  destroyChart('ch-wd-reason');
+  const reasonEl=document.getElementById('ch-wd-reason');
+  if(reasonEl){
+    const reasons=[...new Set(wdRecs.map(r=>r.reason).filter(Boolean))];
+    const rData=reasons.map(r=>wdRecs.filter(x=>x.reason===r).length);
+    const rColors=['#F87171','#FB923C','#FBBF24','#A3E635','#34D399','#22D3EE','#60A5FA','#A78BFA','#F472B6','#94A3B8'];
+    charts['ch-wd-reason']=new Chart(reasonEl.getContext('2d'),{type:'doughnut',
+      data:{labels:reasons,datasets:[{data:rData,backgroundColor:rColors.slice(0,reasons.length),borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}},datalabels:{display:true,formatter:(v,ctx)=>{const tot=ctx.dataset.data.reduce((a,b)=>a+b,0);return tot>0&&v>0?Math.round(v/tot*100)+'%':'';},color:'#fff',font:{weight:'bold',size:10}}},cutout:'45%'}});
+  }
+
+  // ③ 학년별 막대
+  destroyChart('ch-wd-grade');
+  const gradeEl=document.getElementById('ch-wd-grade');
+  if(gradeEl){
+    const allG=[...WD_CHESS,...WD_ACE];
+    const gData=allG.map(g=>wdRecs.filter(r=>r.grade===g).length);
+    const gColors=[...Array(5).fill('#C4B5FD'),...Array(4).fill('#FCA5A5')];
+    charts['ch-wd-grade']=new Chart(gradeEl.getContext('2d'),{type:'bar',
+      data:{labels:allG,datasets:[{data:gData,backgroundColor:gColors,borderWidth:1,borderRadius:4,maxBarThickness:35}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'top',font:{size:10,weight:'bold'},formatter:v=>v||''}},scales:{y:{beginAtZero:true}}}});
+  }
 }
 
-async function deleteScoreRecord(id){
-  if(!confirm('이 항목을 삭제하시겠습니까?')) return;
-  try{
-    await db.collection('recordsScore').doc(id).delete();
-    allScoreRecords=allScoreRecords.filter(x=>x.id!==id);
-    const row=document.getElementById('sh-row-'+id);
-    if(row) row.remove();
-  }catch(e){alert('삭제 오류: '+e.message);}
-}
-
-// 점수 구간 계산
+// ====== 내신 성적 ======// 점수 구간 계산
 function calcBands(recs){
   const scores=recs.map(r=>parseFloat(r.score)||0);
   const total=scores.length;
@@ -4385,7 +4117,7 @@ let admView='all';
 const ADM_CAMPUSES=['남동탄','서수원','수원','운정1','운정2','장안'];
 const CHESS_GRADES=['초등1','초등2','초등3','초등4','초등5'];
 const ACE_GRADES=['초등6','중등1','중등2','중등3'];
-const ALL_GRADES=[...CHESS_GRADES,...ACE_GRADES];
+const ALL_GRADES=[...WD_CHESS,...WD_ACE];
 const QTR_ORDER={겨울:1,봄:2,여름:3,가을:4};
 
 // 날짜 로컬 변환 (timezone 문제 완전 해결)
