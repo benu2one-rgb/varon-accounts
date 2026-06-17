@@ -1028,17 +1028,6 @@ auth.onAuthStateChanged(async user=>{
 
 function showLogin(){document.getElementById('loginScreen').style.display='flex';document.getElementById('mainApp').style.display='none';}
 function showApp(){
-  // Firebase 연결 상태 표시
-  setTimeout(async()=>{
-    const fs=document.getElementById('firebase-status');
-    try{
-      await db.collection('_health').limit(1).get();
-      if(fs) fs.textContent='';
-    }catch(e){
-      if(fs) fs.innerHTML='<span style="color:#EF4444">⚠️ DB 연결 오류</span>';
-      console.error('Firebase 연결 오류:',e.code,e.message);
-    }
-  },2000);
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='flex';
   const roleLabel=currentUser.role==='admin'?'관리자':currentUser.role==='viewer'?'뷰어':currentUser.campus||'사용자';
@@ -1879,7 +1868,7 @@ async function deleteInputFile(uploadedAt){
 }
 
 // ====== 엑셀 업로드 ======
-function handleExcelUpload(event){
+async function handleExcelUpload(event){
   const file = event.target.files[0];
   if(!file) return;
   const statusEl=document.getElementById('excel-status');
