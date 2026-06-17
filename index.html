@@ -1012,7 +1012,7 @@ function showApp(){
   if(currentUser.role==='viewer'){
     document.getElementById('nav-input').classList.add('hidden');
   }
-  if(currentUser.role==='user'){
+  if(!canViewAll()){
     // 일반 사용자: 전 캠퍼스 비교, 관리자 탭 모두 숨김
     document.getElementById('nav-compare').classList.add('hidden');
     document.getElementById('nav-admin').classList.add('hidden');
@@ -1074,7 +1074,7 @@ function applyAllCampuses(allCampuses){
   fillCampusSelect('inp-campus',allCampuses,currentUser.role==='user'?currentUser.campus:null);
   fillCampusSelect('nu-campus',allCampuses,null);
   fillCampusSelect('cl-campus',allCampuses,currentUser.role==='user'?currentUser.campus:null);
-  if(currentUser.role==='user'){
+  if(!canViewAll()){
     const cs=document.getElementById('cs-campus');
     const inp=document.getElementById('inp-campus');
     if(cs) cs.disabled=true;
@@ -1129,7 +1129,7 @@ function initDropdowns(){
     fillCampusSelect('nu-campus',allCampuses,null);
     fillCampusSelect('cs-campus',allCampuses,currentUser.role!=='admin'?currentUser.campus:null);
     fillCampusSelect('inp-campus',allCampuses,currentUser.role!=='admin'?currentUser.campus:null);
-    if(currentUser.role==='user'){
+    if(!canViewAll()){
       document.getElementById('cs-campus').disabled=true;
       document.getElementById('inp-campus').disabled=true;
       // 퇴원생 분석 캠퍼스도 잠금
@@ -1168,7 +1168,7 @@ function initDropdowns(){
   // wd-campus 권한 처리
   const wdCampusSel=document.getElementById('wd-campus');
   if(wdCampusSel){
-    if(currentUser.role==='user'){
+    if(!canViewAll()){
       // 사용자: 본인 캠퍼스만
       wdCampusSel.innerHTML=`<option value="${currentUser.campus}">${currentUser.campus}</option>`;
       wdCampusSel.disabled=true;
@@ -1188,7 +1188,7 @@ function initDropdowns(){
   }
 
   // 캠퍼스 잠금: 사용자만 잠금 (뷰어는 전체 볼 수 있음)
-  if(currentUser.role==='user'){
+  if(!canViewAll()){
     document.getElementById('cs-campus').disabled=true;
     document.getElementById('inp-campus').disabled=true;
   }
@@ -1211,7 +1211,7 @@ function updateInpMonths(){
 
 // ====== TAB ROUTING ======
 function showTab(tab){
-  if(tab==='compare'&&currentUser?.role==='user') return;
+  if(tab==='compare'&&!canViewAll()) return;
   if(tab==='admin'&&currentUser?.role!=='admin') return;
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -1450,7 +1450,7 @@ function semNumericScore(year,sem){
 
 function renderCampus(){
   // 사용자 권한: 본인 캠퍼스만
-  const campus=currentUser.role==='user'?currentUser.campus:(document.getElementById('cs-campus')?.value||'');
+  const campus=!canViewAll()?currentUser.campus:(document.getElementById('cs-campus')?.value||'');
   if(!campus) return;
   let recs=[];
 
@@ -4162,6 +4162,12 @@ const SUPER_ADMIN_EMAIL='admin1@varon.com';
 
 function isSuperAdmin(){
   return currentUser?.email?.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase();
+}
+
+// 전체 캠퍼스 조회 가능 여부: 슈퍼관리자 / 관리자 / 뷰어
+function canViewAll(){
+  if(!currentUser) return false;
+  return isSuperAdmin()||currentUser.role==='admin'||currentUser.role==='viewer';
 }
 
 // 신입전형 수정/삭제 권한: 슈퍼관리자 or 본인이 업로드한 데이터
