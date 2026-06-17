@@ -1028,6 +1028,17 @@ auth.onAuthStateChanged(async user=>{
 
 function showLogin(){document.getElementById('loginScreen').style.display='flex';document.getElementById('mainApp').style.display='none';}
 function showApp(){
+  // Firebase 연결 상태 표시
+  setTimeout(async()=>{
+    const fs=document.getElementById('firebase-status');
+    try{
+      await db.collection('_health').limit(1).get();
+      if(fs) fs.textContent='';
+    }catch(e){
+      if(fs) fs.innerHTML='<span style="color:#EF4444">⚠️ DB 연결 오류</span>';
+      console.error('Firebase 연결 오류:',e.code,e.message);
+    }
+  },2000);
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='flex';
   const roleLabel=currentUser.role==='admin'?'관리자':currentUser.role==='viewer'?'뷰어':currentUser.campus||'사용자';
@@ -1057,9 +1068,11 @@ async function doLogout(){await auth.signOut();}
 // ====== DATA ======
 async function loadRecords(force=false){
   if(!force && allRecords.length && cacheGet('records')) return;
-  const snap=await db.collection('records').get();
-  allRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
-  cacheSet('records', true);
+  try{
+    const snap=await db.collection('records').get();
+    allRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
+    cacheSet('records', true);
+  }catch(e){console.error('records 로드 오류:',e);allRecords=[];}
 }
 
 function getYears(){return [...new Set(allRecords.map(r=>String(r.year).replace("년","").trim()))].filter(Boolean).sort();}
@@ -2788,9 +2801,11 @@ function normDiv(d){
 
 async function loadRecordsWd(force=false){
   if(!force&&allRecordsWd.length&&cacheGet('recordsWd')) return;
-  const snap=await db.collection('recordsWd').get();
-  allRecordsWd=snap.docs.map(d=>({id:d.id,...d.data()}));
-  cacheSet('recordsWd',true);
+  try{
+    const snap=await db.collection('recordsWd').get();
+    allRecordsWd=snap.docs.map(d=>({id:d.id,...d.data()}));
+    cacheSet('recordsWd',true);
+  }catch(e){console.error('recordsWd 로드 오류:',e);allRecordsWd=[];}
 }
 
 function setWdPeriod(type){
@@ -3384,9 +3399,11 @@ let allScoreRecords=[];
 
 async function loadScoreRecords(force=false){
   if(!force&&allScoreRecords.length&&cacheGet('recordsScore')) return;
-  const snap=await db.collection('recordsScore').get();
-  allScoreRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
-  cacheSet('recordsScore',true);
+  try{
+    const snap=await db.collection('recordsScore').get();
+    allScoreRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
+    cacheSet('recordsScore',true);
+  }catch(e){console.error('recordsScore 로드 오류:',e);allScoreRecords=[];}
 }
 
 async function initScoreTab(){
@@ -3980,9 +3997,11 @@ function normMockGrade(g){
 
 async function loadMockRecords(force=false){
   if(!force && allMockRecords.length && cacheGet('recordsMock')) return;
-  const snap=await db.collection('recordsMock').get();
-  allMockRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
-  cacheSet('recordsMock', true);
+  try{
+    const snap=await db.collection('recordsMock').get();
+    allMockRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
+    cacheSet('recordsMock', true);
+  }catch(e){console.error('recordsMock 로드 오류:',e);allMockRecords=[];}
 }
 
 async function initMockTab(){
@@ -4486,15 +4505,16 @@ function qScore(year,quarter){
 // ===== 데이터 로드 =====
 async function loadAdmRecs(force=false){
   if(!force&&allAdmRecs.length&&cacheGet('recordsAdm')) return;
-  const snap=await db.collection('recordsAdm').get();
-  allAdmRecs=snap.docs.map(d=>{
-    const v={id:d.id,...d.data()};
-    if(v.testDate&&typeof v.testDate==='object'&&v.testDate.toDate) v.testDate=toLocalDate(v.testDate.toDate());
-    if(v.enrollDate&&typeof v.enrollDate==='object'&&v.enrollDate.toDate) v.enrollDate=toLocalDate(v.enrollDate.toDate());
-    return v;
-  });
-  cacheSet('recordsAdm',true);
-}
+  try{
+    const snap=await db.collection('recordsAdm').get();
+    allAdmRecs=snap.docs.map(d=>{
+      const v={id:d.id,...d.data()};
+      if(v.testDate&&typeof v.testDate==='object'&&v.testDate.toDate) v.testDate=toLocalDate(v.testDate.toDate());
+      if(v.enrollDate&&typeof v.enrollDate==='object'&&v.enrollDate.toDate) v.enrollDate=toLocalDate(v.enrollDate.toDate());
+      return v;
+    });
+    cacheSet('recordsAdm',true);
+  }catch(e){console.error('recordsAdm 로드 오류:',e);allAdmRecs=[];}
 
 async function initAdmissionTab(){
   if(!allAdmRecs.length) await loadAdmRecs();
@@ -5179,9 +5199,11 @@ const SEM_ORDER=['겨울','봄','여름','가을'];
 
 async function loadTeacherRecs(force=false){
   if(!force&&allTeacherRecs.length&&cacheGet('recordsTeacher')) return;
-  const snap=await db.collection('recordsTeacher').get();
-  allTeacherRecs=snap.docs.map(d=>({id:d.id,...d.data()}));
-  cacheSet('recordsTeacher',true);
+  try{
+    const snap=await db.collection('recordsTeacher').get();
+    allTeacherRecs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    cacheSet('recordsTeacher',true);
+  }catch(e){console.error('recordsTeacher 로드 오류:',e);allTeacherRecs=[];}
 }
 
 async function initTeacherTab(){
@@ -5742,7 +5764,8 @@ async function seedNandongtan(){
     alertEl.innerHTML=`<div class="alert alert-ok">✅ 남동탄 데이터 ${SEED_DATA.length}건 로드 완료!</div>`;
   }catch(e){
     alertEl.innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;
-  }
+}
+}
 }
 }
 </script>
