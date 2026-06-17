@@ -3509,14 +3509,15 @@ async function loadScoreUploadHistory(){
     types:[...f.types].filter(Boolean).sort().join('·'),
     count:f.count
   }));
-  if(!isSuperAdmin()) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
+  const _scoreIsAdmin=currentUser?.email?.toLowerCase()===SUPER_ADMIN_EMAIL?.toLowerCase();
+  if(!_scoreIsAdmin) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
   files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
   if(!files.length){logEl.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';return;}
   const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   logEl.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
+      ${_scoreIsAdmin?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">년도/학기/구분</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">건수</th>
