@@ -967,6 +967,30 @@ function monthLabel(year,semester,month){
 // ====== STATE ======
 let currentUser=null, allRecords=[], csPeriodType='monthly';
 
+const SUPER_ADMIN_EMAIL='admin1@varon.com';
+
+function isSuperAdmin(){
+  return currentUser?.email?.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase();
+}
+
+// 전체 캠퍼스 조회 가능 여부: 슈퍼관리자 / 관리자 / 뷰어
+function canViewAll(){
+  if(!currentUser) return false;
+  return isSuperAdmin()||currentUser.role==='admin'||currentUser.role==='viewer';
+}
+
+// 신입전형 수정/삭제 권한: 슈퍼관리자 or 본인이 업로드한 데이터
+function canEditAdm(r){
+  if(isSuperAdmin()) return true;
+  if(!r) return false;
+  // 개별 입력한 경우 uploadedBy 기준
+  if(r.uploadedBy&&r.uploadedBy===currentUser?.email) return true;
+  // uploadedBy 없는 이전 데이터: 캠퍼스 기준 fallback
+  if(!r.uploadedBy&&r.campus===currentUser?.campus) return true;
+  return false;
+}
+
+
 // ====== 캐시 시스템 (Firebase 읽기 최소화) ======
 const CACHE_TTL = 5 * 60 * 1000; // 5분
 const _cache = {};
@@ -3509,15 +3533,14 @@ async function loadScoreUploadHistory(){
     types:[...f.types].filter(Boolean).sort().join('·'),
     count:f.count
   }));
-  const _scoreIsAdmin=currentUser?.email?.toLowerCase()===SUPER_ADMIN_EMAIL?.toLowerCase();
-  if(!_scoreIsAdmin) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
+  if(!isSuperAdmin()) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
   files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
   if(!files.length){logEl.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';return;}
   const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   logEl.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${_scoreIsAdmin?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
+      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">년도/학기/구분</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">건수</th>
@@ -4339,29 +4362,6 @@ async function renderMock(){
 
 // ====== 업로드 이력 관리 ======
 // ADMIN1 이메일 (슈퍼관리자)
-const SUPER_ADMIN_EMAIL='admin1@varon.com';
-
-function isSuperAdmin(){
-  return currentUser?.email?.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase();
-}
-
-// 전체 캠퍼스 조회 가능 여부: 슈퍼관리자 / 관리자 / 뷰어
-function canViewAll(){
-  if(!currentUser) return false;
-  return isSuperAdmin()||currentUser.role==='admin'||currentUser.role==='viewer';
-}
-
-// 신입전형 수정/삭제 권한: 슈퍼관리자 or 본인이 업로드한 데이터
-function canEditAdm(r){
-  if(isSuperAdmin()) return true;
-  if(!r) return false;
-  // 개별 입력한 경우 uploadedBy 기준
-  if(r.uploadedBy&&r.uploadedBy===currentUser?.email) return true;
-  // uploadedBy 없는 이전 데이터: 캠퍼스 기준 fallback
-  if(!r.uploadedBy&&r.campus===currentUser?.campus) return true;
-  return false;
-}
-
 // 모의고사 이력 로드 및 표시
 async function loadMockHistory(){
   const el=document.getElementById('mock-history-content');
