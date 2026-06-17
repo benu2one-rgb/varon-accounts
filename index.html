@@ -547,7 +547,7 @@ tr:hover td{background:#FFFBF5;}
       <div style="background:#F0FDF4;border:1.5px dashed #16A34A;border-radius:var(--rad);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
         <div>
           <div style="font-size:13px;font-weight:800;color:#15803D;margin-bottom:4px;">📂 성적 파일 업로드</div>
-          <div style="font-size:11px;color:var(--mut);">성적입력양식 엑셀 파일 업로드 시 기존 데이터를 덮어씁니다</div>
+          <div style="font-size:11px;color:var(--mut);">같은 캠퍼스·년도·학기·구분 데이터는 교체되고, 나머지는 누계됩니다</div>
         </div>
         <label style="padding:8px 18px;background:#16A34A;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
           📤 파일 선택
@@ -3355,26 +3355,206 @@ function renderWdCharts(wdRecs,campuses,isSingle,selCampus){
   }
 }
 
-// ====== 내신 성적 ======// ====== 내신 성적 ======// 점수 구간 계산
-function calcBands(recs){
-  const scores=recs.map(r=>parseFloat(r.score)||0);
-  const total=scores.length;
-  const avg=total?(scores.reduce((a,b)=>a+b,0)/total).toFixed(1):'-';
-  const bands=[
-    {label:'100점',   fn:s=>s===100},
-    {label:'90점 이상', fn:s=>s>=90&&s<100},
-    {label:'80점 이상', fn:s=>s>=80&&s<90},
-    {label:'70점 이상', fn:s=>s>=70&&s<80},
-    {label:'70점 미만', fn:s=>s<70},
-  ];
-  const bandData=bands.map(b=>({
-    label:b.label,
-    count:scores.filter(b.fn).length,
-    pct:total?(scores.filter(b.fn).length/total*100).toFixed(1):0
-  }));
-  return{avg,total,bandData};
+// ====== 내신 성적 ======
+let allScoreRecords=[];
+
+async function loadScoreRecords(force=false){
+  if(!force&&allScoreRecords.length&&cacheGet('recordsScore')) return;
+  const snap=await db.collection('recordsScore').get();
+  allScoreRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
+  cacheSet('recordsScore',true);
 }
 
+async function initScoreTab(){
+  if(!allScoreRecords.length) await loadScoreRecords();
+  updateScoreDropdowns();
+  updateScoreHistoryDropdowns();
+  const fb=document.getElementById('score-filter-bar');
+  if(fb) fb.style.display='flex';
+  const sh=document.getElementById('score-upload-history');
+  if(sh) sh.style.display='block';
+  await loadScoreUploadHistory();
+}
+
+function updateScoreDropdowns(){
+  const campuses=[...new Set(allScoreRecords.map(r=>r.campus).filter(Boolean))].sort();
+  const years=[...new Set(allScoreRecords.map(r=>String(r.year||'').replace('년','')).filter(Boolean))].sort();
+  const scCampusSel=document.getElementById('sc-campus');
+  if(scCampusSel){
+    const cur=scCampusSel.value;
+    scCampusSel.innerHTML='<option value="">전체</option>'+campuses.map(cp=>`<option value="${cp}"${cp===cur?' selected':''}>${cp}</option>`).join('');
+  }
+  const scYearSel=document.getElementById('sc-year');
+  if(scYearSel){
+    const cur=scYearSel.value;
+    scYearSel.innerHTML='<option value="">전체</option>'+years.map(y=>`<option value="${y}"${y===cur?' selected':''}>${y}년</option>`).join('');
+  }
+}
+
+// ===== 내신성적 파일 업로드 (누계 방식) =====
+async function handleScoreUpload(event){
+  const file=event.target.files[0];if(!file) return;
+  const statusEl=document.getElementById('score-upload-status');
+  statusEl.textContent='읽는 중...';
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const sheet=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+      let headerRow=-1;
+      for(let i=0;i<rows.length;i++){
+        if(rows[i].some(x=>String(x).includes('분원명')||String(x).includes('학생이름'))){headerRow=i;break;}
+      }
+      if(headerRow===-1){statusEl.textContent='❌ 형식 인식 불가';return;}
+      const headers=rows[headerRow].map(h=>String(h).trim());
+      const ci=h=>headers.findIndex(x=>x===h||x.includes(h));
+      const iCampus=ci('분원명'),iSid=ci('S-ID'),iName=ci('학생이름'),
+            iSchool=ci('학교'),iGrade=ci('학년'),iLevel=ci('레벨'),
+            iYear=ci('년도'),iSem=ci('학기'),iType=ci('구분'),
+            iBook=ci('교과서'),iScore=ci('점수'),iTeacher=ci('담임');
+      const dataRows=rows.slice(headerRow+1).filter(r=>r[iName]&&String(r[iName]).trim());
+      if(!dataRows.length){statusEl.textContent='❌ 데이터 없음';return;}
+
+      // 같은 캠퍼스+년도+학기+구분 기존 데이터만 교체 (다른 캠퍼스 보존)
+      const uploadCampus=iCampus>=0?String(dataRows[0][iCampus]||'').trim():'';
+      const uploadYear=iYear>=0?String(dataRows[0][iYear]||'').replace('년','').trim():'';
+      const uploadSem=iSem>=0?String(dataRows[0][iSem]||'').trim():'';
+      const uploadType=iType>=0?String(dataRows[0][iType]||'').trim():'';
+
+      if(uploadCampus&&uploadYear&&uploadSem&&uploadType){
+        statusEl.textContent=`⏳ 기존 데이터 교체 중...`;
+        const existing=await db.collection('recordsScore')
+          .where('campus','==',uploadCampus)
+          .where('year','==',uploadYear)
+          .where('sem','==',uploadSem)
+          .where('type','==',uploadType).get();
+        if(!existing.empty){
+          for(let i=0;i<existing.docs.length;i+=400){
+            const batch=db.batch();existing.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));await batch.commit();
+          }
+        }
+      }
+
+      statusEl.textContent=`⏳ ${dataRows.length}건 저장 중...`;
+      const uploadedAt=new Date().toISOString();
+      const uploadedBy=currentUser?.email||'';
+      let saved=0;
+      for(let i=0;i<dataRows.length;i+=400){
+        const batch=db.batch();
+        dataRows.slice(i,i+400).forEach(row=>{
+          const safeStr=idx=>idx>=0?String(row[idx]||'').trim():'';
+          batch.set(db.collection('recordsScore').doc(),{
+            campus:safeStr(iCampus),sid:safeStr(iSid),name:safeStr(iName),
+            school:safeStr(iSchool),grade:safeStr(iGrade),level:safeStr(iLevel),
+            year:safeStr(iYear).replace('년','').trim(),
+            sem:safeStr(iSem),type:safeStr(iType),book:safeStr(iBook),
+            score:parseFloat(row[iScore])||0,teacher:safeStr(iTeacher),
+            uploadedAt,uploadedBy
+          });saved++;
+        });
+        await batch.commit();
+        statusEl.textContent=`⏳ ${Math.min(i+400,dataRows.length)}/${dataRows.length}건 저장 중...`;
+      }
+
+      // 로그 저장
+      const scoreLogLabel=`${file.name} (${uploadYear}${uploadSem}_${uploadCampus})`;
+      try{await db.collection('uploadLogs').add({
+        dataType:'score',fileName:file.name,displayName:scoreLogLabel,
+        campus:uploadCampus,year:uploadYear,sem:uploadSem,type:uploadType,
+        count:saved,uploadedAt,uploadedBy,uploadedByName:currentUser?.name||''
+      });}catch(e){}
+
+      cacheInvalidate('recordsScore');
+      await loadScoreRecords(true);
+      updateScoreDropdowns();
+      updateScoreHistoryDropdowns();
+      document.getElementById('score-filter-bar').style.display='flex';
+      const shEl=document.getElementById('score-upload-history');
+      if(shEl) shEl.style.display='block';
+      await loadScoreUploadHistory();
+      statusEl.innerHTML=`<span style="color:#15803D">✅ ${saved}건 저장 완료! (${uploadCampus} ${uploadYear}년 ${uploadSem} ${uploadType})</span>`;
+    }catch(err){statusEl.textContent='❌ 오류: '+err.message;console.error(err);}
+  };
+  reader.readAsArrayBuffer(file);
+  event.target.value='';
+}
+
+// ===== 내신 업로드 이력 =====
+function updateScoreHistoryDropdowns(){
+  if(!allScoreRecords.length) return;
+  const campuses=[...new Set(allScoreRecords.map(r=>r.campus).filter(Boolean))].sort();
+  const years=[...new Set(allScoreRecords.map(r=>String(r.year||'').replace('년','')).filter(Boolean))].sort();
+  const shc=document.getElementById('sh-campus');
+  const shy=document.getElementById('sh-year');
+  if(shc){const cur=shc.value;shc.innerHTML='<option value="">전체</option>'+campuses.map(cp=>`<option value="${cp}"${cp===cur?' selected':''}>${cp}</option>`).join('');}
+  if(shy){const cur=shy.value;shy.innerHTML='<option value="">전체</option>'+years.map(y=>`<option value="${y}"${y===cur?' selected':''}>${y}년</option>`).join('');}
+}
+
+async function loadScoreUploadHistory(){
+  const logEl=document.getElementById('score-upload-log-list');if(!logEl) return;
+  // uploadedAt 기준 파일 단위 그룹핑
+  const fileGroups={};
+  allScoreRecords.forEach(r=>{
+    const key=r.uploadedAt||'legacy';
+    if(!fileGroups[key]){fileGroups[key]={uploadedAt:r.uploadedAt||'',uploadedBy:r.uploadedBy||'',campuses:new Set(),count:0,years:new Set(),sems:new Set(),types:new Set()};}
+    fileGroups[key].campuses.add(r.campus||'');fileGroups[key].years.add(r.year||'');fileGroups[key].sems.add(r.sem||'');fileGroups[key].types.add(r.type||'');fileGroups[key].count++;
+  });
+  let files=Object.entries(fileGroups).map(([key,f])=>({
+    key,uploadedAt:f.uploadedAt,uploadedBy:f.uploadedBy,
+    campuses:[...f.campuses].filter(Boolean).sort().join(', '),
+    years:[...f.years].filter(Boolean).sort().join('·'),
+    sems:[...f.sems].filter(Boolean).sort().join('·'),
+    types:[...f.types].filter(Boolean).sort().join('·'),
+    count:f.count
+  }));
+  if(!isSuperAdmin()) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
+  files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
+  if(!files.length){logEl.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';return;}
+  const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
+  logEl.innerHTML=`<table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
+      <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
+      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
+      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
+      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">년도/학기/구분</th>
+      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">건수</th>
+      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">삭제</th>
+    </tr></thead>
+    <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
+      <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'이전 업로드'}</td>
+      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
+      <td style="${tdS}text-align:center;color:#15803D;font-weight:600;">${f.campuses}</td>
+      <td style="${tdS}text-align:center;">${f.years}년 ${f.sems} ${f.types}</td>
+      <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
+      <td style="${tdS}text-align:center;"><button onclick="deleteScoreFile('${f.key}')" style="padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;font-weight:700;">🗑️ 삭제</button></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+async function deleteScoreFile(uploadedAt){
+  const fileRecs=allScoreRecords.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
+  if(!confirm(`[${[...new Set(fileRecs.map(r=>r.campus))].join(', ')}] 파일 ${fileRecs.length}건을 삭제하시겠습니까?`))return;
+  try{
+    for(let i=0;i<fileRecs.length;i+=400){const batch=db.batch();fileRecs.slice(i,i+400).forEach(r=>batch.delete(db.collection('recordsScore').doc(r.id)));await batch.commit();}
+    allScoreRecords=allScoreRecords.filter(r=>(r.uploadedAt||'legacy')!==uploadedAt);
+    cacheInvalidate('recordsScore');updateScoreDropdowns();updateScoreHistoryDropdowns();await loadScoreUploadHistory();
+  }catch(e){alert('삭제 오류: '+e.message);}
+}
+
+async function deleteScoreUploadLog(logId,campus,year,sem,type){
+  if(!confirm(`[${campus} ${year}년 ${sem} ${type}] 성적 데이터를 전체 삭제하시겠습니까?`))return;
+  try{
+    const snap=await db.collection('recordsScore').where('campus','==',campus).where('year','==',year).where('sem','==',sem).where('type','==',type).get();
+    for(let i=0;i<snap.docs.length;i+=400){const batch=db.batch();snap.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));await batch.commit();}
+    try{if(logId)await db.collection('uploadLogs').doc(logId).delete();}catch(e){}
+    cacheInvalidate('recordsScore');await loadScoreRecords(true);updateScoreDropdowns();updateScoreHistoryDropdowns();await loadScoreUploadHistory();
+  }catch(e){alert('삭제 오류: '+e.message);}
+}
+
+// 점수 구간 계산
+function calcBands(recs){
 // 분원별 크로스 표 + 도넛 차트
 function makeCampusTable(recs){
   const BAND_COLORS=['#4ADE80','#A3E635','#FDE047','#FB923C','#F87171'];
@@ -5324,9 +5504,6 @@ async function renderTeacher(){
   content.innerHTML=html;
 }
 
-// ====== SEED DATA ======// ====== 강사별 ======
-// ====== SEED DATA ======// ====== 강사별 ======
-// ====== SEED DATA ======
 // ====== 모의고사 ======
 // ====== 업로드 이력 관리 ======
 // ADMIN1 이메일 (슈퍼관리자)
@@ -5565,6 +5742,7 @@ async function seedNandongtan(){
   }catch(e){
     alertEl.innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;
   }
+}
 }
 </script>
 </body>
