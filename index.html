@@ -3654,6 +3654,24 @@ async function deleteScoreUploadLog(logId,campus,year,sem,type){
 
 // 점수 구간 계산
 function calcBands(recs){
+  const scores=recs.map(r=>parseFloat(r.score)||0);
+  const total=scores.length;
+  const avg=total?(scores.reduce((a,b)=>a+b,0)/total).toFixed(1):'0';
+  const bands=[
+    {label:'100점',    fn:s=>s===100},
+    {label:'90점 이상', fn:s=>s>=90&&s<100},
+    {label:'80점 이상', fn:s=>s>=80&&s<90},
+    {label:'70점 이상', fn:s=>s>=70&&s<80},
+    {label:'70점 미만', fn:s=>s<70},
+  ];
+  const bandData=bands.map(b=>{
+    const count=scores.filter(b.fn).length;
+    const pct=total>0?(count/total*100).toFixed(1):'0.0';
+    return {label:b.label,count,pct};
+  });
+  return {avg,total,bandData};
+}
+
 // 분원별 크로스 표 + 도넛 차트
 function makeCampusTable(recs){
   const BAND_COLORS=['#4ADE80','#A3E635','#FDE047','#FB923C','#F87171'];
@@ -4495,6 +4513,7 @@ async function loadAdmRecs(force=false){
     });
     cacheSet('recordsAdm',true);
   }catch(e){console.error('recordsAdm 로드 오류:',e);allAdmRecs=[];}
+}
 
 async function initAdmissionTab(){
   if(!allAdmRecs.length) await loadAdmRecs();
@@ -5676,8 +5695,6 @@ async function seedNandongtan(){
     alertEl.innerHTML=`<div class="alert alert-ok">✅ 남동탄 데이터 ${SEED_DATA.length}건 로드 완료!</div>`;
   }catch(e){
     alertEl.innerHTML=`<div class="alert alert-err">❌ 오류: ${e.message}</div>`;
-}
-}
 }
 }
 </script>
