@@ -386,7 +386,7 @@ tr:hover td{background:#FFFBF5;}
           <div style="font-size:13px;font-weight:800;color:var(--tif-dk);margin-bottom:4px;">📂 엑셀 파일로 업로드</div>
           <div style="font-size:11px;color:var(--mut);">기존 마감양식 엑셀 파일의 전체 데이터를 Firebase에 바로 저장합니다</div>
         </div>
-        <label style="padding:8px 18px;background:var(--tif);color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
+        <label class="upload-only" style="padding:8px 18px;background:var(--tif);color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
           📤 엑셀 선택
           <input type="file" accept=".xlsx,.xls" id="excel-upload" style="display:none;" onchange="handleExcelUpload(event)">
         </label>
@@ -434,7 +434,7 @@ tr:hover td{background:#FFFBF5;}
           <div style="font-size:13px;font-weight:800;color:#15803D;margin-bottom:4px;">📂 강사별마감 파일 업로드</div>
           <div style="font-size:11px;color:var(--mut);">파일별로 누계됩니다. 덮어쓰지 않습니다. 파일명에 년도·월·캠퍼스명을 구분해 주세요.</div>
         </div>
-        <label style="padding:8px 18px;background:#16A34A;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
+        <label class="upload-only" style="padding:8px 18px;background:#16A34A;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
           📤 파일 선택
           <input type="file" accept=".xlsx,.xls" id="teacher-upload" style="display:none;" onchange="handleTeacherUpload(event)">
         </label>
@@ -496,7 +496,7 @@ tr:hover td{background:#FFFBF5;}
           <div style="font-size:13px;font-weight:800;color:#1D4ED8;margin-bottom:4px;">📂 마감양식 업로드</div>
           <div style="font-size:11px;color:var(--mut);">같은 캠퍼스·년도·월 데이터는 덮어씁니다.</div>
         </div>
-        <label style="padding:8px 18px;background:#2563EB;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
+        <label class="upload-only" style="padding:8px 18px;background:#2563EB;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
           📤 파일 선택
           <input type="file" accept=".xlsx,.xls" id="wd-upload" style="display:none;" onchange="handleWdUpload(event)">
         </label>
@@ -549,7 +549,7 @@ tr:hover td{background:#FFFBF5;}
           <div style="font-size:13px;font-weight:800;color:#15803D;margin-bottom:4px;">📂 성적 파일 업로드</div>
           <div style="font-size:11px;color:var(--mut);">같은 캠퍼스·년도·학기·구분 데이터는 교체되고, 나머지는 누계됩니다</div>
         </div>
-        <label style="padding:8px 18px;background:#16A34A;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
+        <label class="upload-only" style="padding:8px 18px;background:#16A34A;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
           📤 파일 선택
           <input type="file" accept=".xlsx,.xls" id="score-upload" style="display:none;" onchange="handleScoreUpload(event)">
         </label>
@@ -621,7 +621,7 @@ tr:hover td{background:#FFFBF5;}
           <div style="font-size:13px;font-weight:800;color:#6D28D9;margin-bottom:4px;">📂 모의고사 성적 파일 업로드</div>
           <div style="font-size:11px;color:var(--mut);">파일명이 같으면 기존 데이터를 덮어씁니다. 년도와 월로 파일을 구분해주세요.</div>
         </div>
-        <label style="padding:8px 18px;background:#7C3AED;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
+        <label class="upload-only" style="padding:8px 18px;background:#7C3AED;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
           📤 파일 선택
           <input type="file" accept=".xlsx,.xls" id="mock-upload" style="display:none;" onchange="handleMockUpload(event)">
         </label>
@@ -813,7 +813,9 @@ tr:hover td{background:#FFFBF5;}
             <div class="fg" style="margin-bottom:10px;"><div class="fl">이메일</div><input type="email" id="nu-email" class="form-input" placeholder="이메일 입력"></div>
             <div class="fg" style="margin-bottom:10px;"><div class="fl">비밀번호</div><input type="password" id="nu-pw" class="form-input" placeholder="초기 비밀번호 설정"></div>
             <div class="fg" style="margin-bottom:10px;"><div class="fl">역할</div><select id="nu-role" class="form-input"><option value="user">일반 사용자</option><option value="viewer">뷰어 (전체조회만)</option><option value="admin">관리자</option></select></div>
-            <div class="fg" style="margin-bottom:14px;"><div class="fl">담당 캠퍼스</div><select id="nu-campus" class="form-input"></select></div>
+            <div class="fg" style="margin-bottom:14px;"><div class="fl">담당 캠퍼스 <span style="font-weight:400;color:var(--mut);">(역할이 관리자/사용자일 때만 적용 · 복수선택 가능)</span></div>
+              <div id="nu-campus-box" style="border:1.5px solid var(--bdr);border-radius:8px;padding:10px;max-height:160px;overflow-y:auto;background:#F8FAFC;"></div>
+            </div>
             <div class="fg" style="margin-bottom:10px;"><div class="fl">관리자 비밀번호 (재확인)</div><input type="password" id="nu-admin-pw" class="form-input" placeholder="현재 관리자 비밀번호"></div>
             <button class="btn-save" onclick="addUser()">사용자 생성</button>
           </div>
@@ -895,8 +897,8 @@ tr:hover td{background:#FFFBF5;}
         <option value="admin">관리자</option>
       </select>
     </div>
-    <div class="fg" style="margin-bottom:20px;"><div class="fl">담당 캠퍼스</div>
-      <select id="edit-campus" class="form-input"></select>
+    <div class="fg" style="margin-bottom:20px;"><div class="fl">담당 캠퍼스 <span style="font-weight:400;color:var(--mut);font-size:11px;">(복수선택 가능)</span></div>
+      <div id="edit-campus-box" style="border:1.5px solid var(--bdr);border-radius:8px;padding:10px;max-height:160px;overflow-y:auto;background:#F8FAFC;"></div>
     </div>
     <div id="edit-user-alert" style="margin-bottom:12px;"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;">
@@ -969,25 +971,108 @@ let currentUser=null, allRecords=[], csPeriodType='monthly';
 
 const SUPER_ADMIN_EMAIL='admin1@varon.com';
 
+// ====== 통합 권한 시스템 (전체 탭 공통 적용) ======
+// 역할: superadmin(이메일고정) / admin(담당캠퍼스 선택, '전체'가능) / user(담당캠퍼스 복수선택) / viewer(조회전용)
+
 function isSuperAdmin(){
   return currentUser?.email?.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase();
 }
 
-// 전체 캠퍼스 조회 가능 여부: 슈퍼관리자 / 관리자 / 뷰어
-function canViewAll(){
-  if(!currentUser) return false;
-  return isSuperAdmin()||currentUser.role==='admin'||currentUser.role==='viewer';
+// 사용자가 보유한 담당 캠퍼스 배열 반환. ['전체'] 면 모든 캠퍼스 권한.
+// 구버전 데이터(campus 단일 string) 호환 fallback 포함.
+function getUserCampuses(){
+  if(!currentUser) return [];
+  if(isSuperAdmin()) return ['전체'];
+  if(Array.isArray(currentUser.campuses)&&currentUser.campuses.length) return currentUser.campuses;
+  if(currentUser.campus) return [currentUser.campus]; // 구버전 호환
+  return [];
 }
 
-// 신입전형 수정/삭제 권한: 슈퍼관리자 or 본인이 업로드한 데이터
-function canEditAdm(r){
+// 모든 캠퍼스에 대한 수정/삭제 권한이 있는지 (전체 선택한 admin 또는 슈퍼관리자)
+function hasFullAccess(){
   if(isSuperAdmin()) return true;
+  return getUserCampuses().includes('전체');
+}
+
+// 조회는 역할 무관 항상 전체 캠퍼스 가능 (뷰어 포함 모든 역할)
+function canViewAll(){
+  return !!currentUser;
+}
+
+// 파일 업로드/개별입력 가능 여부 (뷰어만 불가)
+function canUpload(){
+  if(!currentUser) return false;
+  return currentUser.role!=='viewer';
+}
+
+// 업로드 전용 UI 요소 전체에 권한 일괄 적용 (모든 탭 공통)
+function applyUploadVisibility(){
+  const show=canUpload();
+  document.querySelectorAll('.upload-only').forEach(el=>{
+    el.style.display=show?'':'none';
+  });
+}
+
+// 특정 캠퍼스의 데이터를 수정/삭제할 수 있는지 (모든 탭 공통 사용)
+function canEditCampus(campus){
+  if(!currentUser) return false;
+  if(currentUser.role==='viewer') return false;
+  if(hasFullAccess()) return true;
+  return getUserCampuses().includes(campus);
+}
+
+// 레코드 객체 기준 수정/삭제 가능 여부 (campus 필드 사용)
+function canEditRecord(r){
   if(!r) return false;
-  // 개별 입력한 경우 uploadedBy 기준
-  if(r.uploadedBy&&r.uploadedBy===currentUser?.email) return true;
-  // uploadedBy 없는 이전 데이터: 캠퍼스 기준 fallback
-  if(!r.uploadedBy&&r.campus===currentUser?.campus) return true;
-  return false;
+  return canEditCampus(r.campus);
+}
+
+// 신입전형 등 uploadedBy 기준이 필요한 곳도 결국 campus 규칙으로 통일
+function canEditAdm(r){
+  return canEditRecord(r);
+}
+
+// ====== 캠퍼스 체크박스 UI 헬퍼 (관리자 - 사용자 추가/수정 공용) ======
+async function getAllCampusNames(){
+  const fixed=['남동탄','서수원','수원','운정1','운정2','장안'];
+  try{
+    const snap=await db.collection('campuses').get();
+    const fs=snap.docs.map(d=>d.data().name).filter(Boolean);
+    return [...new Set([...fixed,...fs])].sort();
+  }catch(e){ return fixed; }
+}
+
+function renderCampusCheckboxes(containerId, allCampuses, selectedCampuses, roleSelectId){
+  const box=document.getElementById(containerId);
+  if(!box) return;
+  const role=document.getElementById(roleSelectId)?.value;
+  const showFullOption = role!=='viewer';
+  const sel=new Set(selectedCampuses||[]);
+  let html='';
+  if(showFullOption){
+    html+=`<label style="display:flex;align-items:center;gap:6px;padding:4px 0;font-weight:800;color:var(--org);border-bottom:1px solid var(--bdr);margin-bottom:4px;">
+      <input type="checkbox" value="전체" ${sel.has('전체')?'checked':''} onchange="onCampusFullToggle('${containerId}',this)"> 전체 (모든 캠퍼스)
+    </label>`;
+  }
+  allCampuses.forEach(cp=>{
+    html+=`<label style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:13px;">
+      <input type="checkbox" value="${cp}" ${sel.has(cp)?'checked':''} ${sel.has('전체')?'disabled':''} class="campus-cb-${containerId}"> ${cp}
+    </label>`;
+  });
+  box.innerHTML=html||'<div style="color:var(--mut);font-size:12px;">등록된 캠퍼스가 없습니다.</div>';
+}
+
+function onCampusFullToggle(containerId,el){
+  const box=document.getElementById(containerId);
+  const others=box.querySelectorAll(`.campus-cb-${containerId}`);
+  others.forEach(cb=>{cb.disabled=el.checked; if(el.checked) cb.checked=false;});
+}
+
+function getSelectedCampuses(containerId){
+  const box=document.getElementById(containerId);
+  if(!box) return [];
+  const checked=[...box.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value);
+  return checked;
 }
 
 
@@ -1030,20 +1115,17 @@ function showLogin(){document.getElementById('loginScreen').style.display='flex'
 function showApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='flex';
-  const roleLabel=currentUser.role==='admin'?'관리자':currentUser.role==='viewer'?'뷰어':currentUser.campus||'사용자';
+  const campusList=getUserCampuses();
+  const campusLabel=hasFullAccess()?'전체':(campusList.length?campusList.join(', '):'');
+  const roleLabel=currentUser.role==='admin'?`관리자 · ${campusLabel}`:currentUser.role==='viewer'?'뷰어 (전체조회)':campusLabel||'사용자';
   document.getElementById('headerUserInfo').textContent=`${currentUser.name||''} (${roleLabel})`;
-  // 뷰어는 데이터 입력 탭 숨기기
-  if(currentUser.role==='viewer'){
-    document.getElementById('nav-input').classList.add('hidden');
-  }
-  if(!canViewAll()){
-    // 일반 사용자: 전 캠퍼스 비교, 관리자 탭 모두 숨김
-    document.getElementById('nav-compare').classList.add('hidden');
-    document.getElementById('nav-admin').classList.add('hidden');
-  } else if(currentUser.role==='viewer'){
-    // 뷰어: 관리자 탭만 숨김 (전 캠퍼스 비교는 볼 수 있음)
+  // 뷰어는 데이터 입력 탭에서 업로드/입력 기능만 숨김 (탭 자체는 조회용으로 모두 노출)
+  // 모든 역할이 전 캠퍼스 비교 등 전체 탭 조회 가능 (canViewAll 통일)
+  if(currentUser.role!=='admin'){
+    // 관리자가 아니면 관리자 탭 숨김 (슈퍼관리자 포함 admin 역할만 접근)
     document.getElementById('nav-admin').classList.add('hidden');
   }
+  applyUploadVisibility();
 }
 
 async function doLogin(){
@@ -1096,29 +1178,22 @@ function calcStats(recs){
 
 // ====== DROPDOWNS INIT ======
 function applyAllCampuses(allCampuses){
-  fillCampusSelect('cs-campus',allCampuses,currentUser.role==='user'?currentUser.campus:null);
-  fillCampusSelect('inp-campus',allCampuses,currentUser.role==='user'?currentUser.campus:null);
-  fillCampusSelect('nu-campus',allCampuses,null);
-  fillCampusSelect('cl-campus',allCampuses,currentUser.role==='user'?currentUser.campus:null);
-  if(!canViewAll()){
-    const cs=document.getElementById('cs-campus');
-    const inp=document.getElementById('inp-campus');
-    if(cs) cs.disabled=true;
-    if(inp) inp.disabled=true;
-    const wdSel=document.getElementById('wd-campus');
-    if(wdSel){wdSel.innerHTML=`<option value="${currentUser.campus}">${currentUser.campus}</option>`;wdSel.disabled=true;}
-  } else {
-    const fixed=['남동탄','서수원','수원','운정1','운정2','장안'];
-    const wdSel=document.getElementById('wd-campus');
-    if(wdSel){
-      wdSel.innerHTML='<option value="">전 캠퍼스</option>';
-      allCampuses.forEach(cp=>{const o=document.createElement('option');o.value=cp;o.textContent=cp;wdSel.appendChild(o);});
-    }
-    const scCampusSel=document.getElementById('sc-campus');
-    if(scCampusSel){
-      scCampusSel.innerHTML='<option value="">전체</option>';
-      allCampuses.forEach(cp=>{const o=document.createElement('option');o.value=cp;o.textContent=cp;scCampusSel.appendChild(o);});
-    }
+  // 조회용 드롭다운: 모든 역할이 전체 캠퍼스 열람 가능 (잠금 없음)
+  fillCampusSelect('cs-campus',allCampuses,null);
+  fillCampusSelect('cl-campus',allCampuses,null);
+  // 입력/업로드용 드롭다운: 전체접근권한 없으면 담당 캠퍼스만 옵션 제공
+  fillCampusSelect('inp-campus', hasFullAccess()?allCampuses:getUserCampuses(), null);
+
+  const wdSel=document.getElementById('wd-campus');
+  if(wdSel){
+    const cur=wdSel.value;
+    wdSel.innerHTML='<option value="">전 캠퍼스</option>'+allCampuses.map(cp=>`<option value="${cp}"${cp===cur?' selected':''}>${cp}</option>`).join('');
+    wdSel.disabled=false;
+  }
+  const scCampusSel=document.getElementById('sc-campus');
+  if(scCampusSel){
+    const cur=scCampusSel.value;
+    scCampusSel.innerHTML='<option value="">전체</option>'+allCampuses.map(cp=>`<option value="${cp}"${cp===cur?' selected':''}>${cp}</option>`).join('');
   }
 }
 
@@ -1131,8 +1206,8 @@ function initDropdowns(){
   fillYearSelect('cmp-sy',years,minY);fillYearSelect('cmp-ey',years,maxY);
   fillYearSelect('cmp-sem-sy',years,minY);fillYearSelect('cmp-sem-ey',years,maxY);
   
-  // Campus tab
-  fillCampusSelect('cs-campus',campuses,currentUser.role!=='admin'?currentUser.campus:null);
+  // Campus tab (조회용 - 전체 캠퍼스 항상 표시)
+  fillCampusSelect('cs-campus',campuses,null);
   fillYearSelect('cs-sy',years,minY);fillYearSelect('cs-ey',years,maxY);
   fillYearSelect('cs-sem-sy',years,minY);fillYearSelect('cs-sem-ey',years,maxY);
   
@@ -1140,43 +1215,37 @@ function initDropdowns(){
   const gSel=document.getElementById('gr-grade');if(!gSel.options.length){GRADES.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;gSel.appendChild(o);});}
   fillYearSelect('gr-sy',years,minY);fillYearSelect('gr-ey',years,maxY);
   
-  // Input tab
-  fillCampusSelect('inp-campus',campuses,currentUser.role!=='admin'?currentUser.campus:null);
+  // Input tab (업로드용 - 전체접근권한 없으면 담당 캠퍼스만)
+  fillCampusSelect('inp-campus', hasFullAccess()?campuses:getUserCampuses(), null);
   const curY=new Date().getFullYear();
   for(let y=curY-1;y<=curY+1;y++){const o=document.createElement('option');o.value=String(y);o.textContent=y+'년';o.selected=(y===curY);document.getElementById('inp-year').appendChild(o);}
   updateInpMonths();document.getElementById('inp-sem').onchange=updateInpMonths;
-  
-  // Admin campus - Firestore에서 직접 불러오기
-  fillCampusSelect('nu-campus',campuses,null);
-  // 실시간으로 Firestore 캠퍼스도 반영
+
+  // 신규 사용자 추가 - 캠퍼스 체크박스 렌더
+  getAllCampusNames().then(allCampuses=>{
+    renderCampusCheckboxes('nu-campus-box',allCampuses,[],'nu-role');
+    document.getElementById('nu-role').onchange=()=>{
+      renderCampusCheckboxes('nu-campus-box',allCampuses,getSelectedCampuses('nu-campus-box'),'nu-role');
+    };
+  });
+
+  // Firestore 동적 캠퍼스 반영 (조회/입력 드롭다운)
   db.collection('campuses').get().then(snap=>{
     const fsCampuses=snap.docs.map(d=>d.data().name).filter(Boolean).sort();
     const allCampuses=[...new Set([...campuses,...fsCampuses])].sort();
-    fillCampusSelect('nu-campus',allCampuses,null);
-    fillCampusSelect('cs-campus',allCampuses,currentUser.role!=='admin'?currentUser.campus:null);
-    fillCampusSelect('inp-campus',allCampuses,currentUser.role!=='admin'?currentUser.campus:null);
-    if(!canViewAll()){
-      document.getElementById('cs-campus').disabled=true;
-      document.getElementById('inp-campus').disabled=true;
-      // 퇴원생 분석 캠퍼스도 잠금
-      const wdSel=document.getElementById('wd-campus');
-      if(wdSel){wdSel.innerHTML=`<option value="${currentUser.campus}">${currentUser.campus}</option>`;wdSel.disabled=true;}
-    } else {
-      // 관리자: wd-campus에 Firestore 캠퍼스 추가
-      const fixed=['남동탄','서수원','수원','운정1','운정2','장안'];
-      const wdSel=document.getElementById('wd-campus');
-      if(wdSel){
-        allCampuses.forEach(cp=>{
-          if(!fixed.includes(cp)&&![...wdSel.options].some(o=>o.value===cp)){
-            const o=document.createElement('option');o.value=cp;o.textContent=cp;wdSel.appendChild(o);
-          }
-        });
-      }
+    fillCampusSelect('cs-campus',allCampuses,null);
+    fillCampusSelect('inp-campus', hasFullAccess()?allCampuses:getUserCampuses(), null);
+    // 퇴원생 분석 캠퍼스: 조회용이므로 항상 전체 표시
+    const wdSel=document.getElementById('wd-campus');
+    if(wdSel){
+      const cur=wdSel.value;
+      wdSel.innerHTML='<option value="">전체</option>'+allCampuses.map(cp=>`<option value="${cp}"${cp===cur?' selected':''}>${cp}</option>`).join('');
+      wdSel.disabled=false;
     }
   });
   
-  // 캠퍼스 마감 / 전 캠퍼스 마감 드롭다운
-  fillCampusSelect('cl-campus',campuses,currentUser.role!=='admin'?currentUser.campus:null);
+  // 캠퍼스 마감 / 전 캠퍼스 마감 드롭다운 (조회용 - 전체 표시)
+  fillCampusSelect('cl-campus',campuses,null);
   fillYearSelect('cl-year',years,maxY);
   fillYearSelect('cl-sem-year',years,maxY);
   fillYearSelect('acl-year',years,maxY);
@@ -1185,39 +1254,12 @@ function initDropdowns(){
   db.collection('campuses').get().then(snap=>{
     const fsCampuses=snap.docs.map(d=>d.data().name).filter(Boolean).sort();
     const allCampuses=[...new Set([...campuses,...fsCampuses])].sort();
-    fillCampusSelect('cl-campus',allCampuses,currentUser.role!=='admin'?currentUser.campus:null);
+    fillCampusSelect('cl-campus',allCampuses,null);
   });
 
-  // 퇴원생 분석 드롭다운
+  // 퇴원생 분석 드롭다운 (조회용 - 전체 캠퍼스 항상 가능)
   fillYearSelect('wd-sy',years,minY);fillYearSelect('wd-ey',years,maxY);
   fillYearSelect('wd-sem-sy',years,minY);fillYearSelect('wd-sem-ey',years,maxY);
-  // wd-campus 권한 처리
-  const wdCampusSel=document.getElementById('wd-campus');
-  if(wdCampusSel){
-    if(!canViewAll()){
-      // 사용자: 본인 캠퍼스만
-      wdCampusSel.innerHTML=`<option value="${currentUser.campus}">${currentUser.campus}</option>`;
-      wdCampusSel.disabled=true;
-    }
-    // 관리자·뷰어는 전체 캠퍼스 - Firestore 캠퍼스도 추가
-    if(currentUser.role==='admin'||currentUser.role==='viewer'){
-      db.collection('campuses').get().then(snap=>{
-        const fixed=['남동탄','서수원','수원','운정1','운정2','장안'];
-        snap.docs.forEach(d=>{
-          const name=d.data().name;
-          if(name&&!fixed.includes(name)){
-            const o=document.createElement('option');o.value=name;o.textContent=name;wdCampusSel.appendChild(o);
-          }
-        });
-      });
-    }
-  }
-
-  // 캠퍼스 잠금: 사용자만 잠금 (뷰어는 전체 볼 수 있음)
-  if(!canViewAll()){
-    document.getElementById('cs-campus').disabled=true;
-    document.getElementById('inp-campus').disabled=true;
-  }
 }
 
 function fillYearSelect(id,years,selected){
@@ -1225,9 +1267,24 @@ function fillYearSelect(id,years,selected){
   years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y+'년';o.selected=(y===selected);el.appendChild(o);});
 }
 function fillCampusSelect(id,campuses,locked){
-  const el=document.getElementById(id);if(!el) return;el.innerHTML='';
-  if(!locked){campuses.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;el.appendChild(o);});}
-  else{const o=document.createElement('option');o.value=locked;o.textContent=locked;el.appendChild(o);}
+  const el=document.getElementById(id);if(!el) return;
+  const cur=el.value; // 기존 선택값 보존
+  el.innerHTML='';
+  if(!locked){
+    // 전체 표시 (조회용)
+    campuses.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;el.appendChild(o);});
+  } else if(Array.isArray(locked)){
+    // 필터된 목록 (담당 캠퍼스만, 잠금 아님 - 복수 옵션 중 선택 가능)
+    if(locked.includes('전체')){
+      campuses.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;el.appendChild(o);});
+    } else {
+      locked.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;el.appendChild(o);});
+    }
+  } else {
+    // 단일 값 잠금 (구버전 호환)
+    const o=document.createElement('option');o.value=locked;o.textContent=locked;el.appendChild(o);
+  }
+  if(cur&&[...el.options].some(o=>o.value===cur)) el.value=cur;
 }
 function updateInpMonths(){
   const sem=document.getElementById('inp-sem').value;
@@ -1475,8 +1532,8 @@ function semNumericScore(year,sem){
 }
 
 function renderCampus(){
-  // 사용자 권한: 본인 캠퍼스만
-  const campus=!canViewAll()?currentUser.campus:(document.getElementById('cs-campus')?.value||'');
+  // 조회는 모든 역할이 전체 캠퍼스 가능
+  const campus=document.getElementById('cs-campus')?.value||'';
   if(!campus) return;
   let recs=[];
 
@@ -1813,7 +1870,7 @@ async function loadInputHistory(){
   }));
 
   // 슈퍼관리자: 전체 / 나머지: 본인 업로드만
-  if(!isSuperAdmin()) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
+  if(!hasFullAccess()&&currentUser.role!=='viewer') files=files.filter(f=>f.campuses?f.campuses.split(', ').some(cp=>canEditCampus(cp)):true);
   files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
 
   if(!files.length){
@@ -1825,7 +1882,7 @@ async function loadInputHistory(){
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
+      ${hasFullAccess()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">기간</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">건수</th>
@@ -1833,7 +1890,7 @@ async function loadInputHistory(){
     </tr></thead>
     <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
       <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'이전 업로드'}</td>
-      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
+      ${hasFullAccess()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
       <td style="${tdS}text-align:center;color:var(--tif-dk);font-weight:600;">${f.campuses}</td>
       <td style="${tdS}text-align:center;">${f.period}</td>
       <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
@@ -1849,9 +1906,9 @@ async function deleteInputFile(uploadedAt){
   if(!fileRecs.length){alert('데이터를 찾을 수 없어요.');return;}
   const camps=[...new Set(fileRecs.map(r=>r.campus))].join(', ');
   // 권한 체크: 본인 업로드 또는 슈퍼관리자만
-  const uploader=fileRecs[0]?.uploadedBy||'';
-  if(!isSuperAdmin()&&uploader&&uploader!==currentUser?.email){
-    alert('본인이 업로드한 파일만 삭제할 수 있어요.');return;
+  const fileCampuses=[...new Set(fileRecs.map(r=>r.campus))];
+  if(!fileCampuses.every(cp=>canEditCampus(cp))){
+    alert('해당 캠퍼스 데이터에 대한 수정/삭제 권한이 없어요.');return;
   }
   if(!confirm(`[${camps}] 업로드 파일 (${fileRecs.length}건)을 전체 삭제하시겠습니까?\n⚠️ 수기 입력 데이터도 함께 삭제됩니다.`)) return;
   try{
@@ -2115,17 +2172,21 @@ async function deleteCampus(id,name){
 }
 
 // ====== 사용자 수정 모달 ======
-async function openEditModal(uid,name,role,campus){
+async function openEditModal(uid,name,role,campusList){
   document.getElementById('edit-uid').value=uid;
   document.getElementById('edit-name').value=name;
   document.getElementById('edit-role').value=role;
   document.getElementById('edit-user-alert').innerHTML='';
 
-  // 캠퍼스 목록 채우기
-  const snap=await db.collection('campuses').get();
-  const campuses=snap.docs.map(d=>d.data().name).filter(Boolean).sort();
-  const sel=document.getElementById('edit-campus');
-  sel.innerHTML=campuses.map(cp=>`<option value="${cp}" ${cp===campus?'selected':''}>${cp}</option>`).join('');
+  // 캠퍼스 체크박스 렌더 (캠퍼스 관리에서 추가된 캠퍼스 전부 반영)
+  const allCampuses=await getAllCampusNames();
+  const selected=Array.isArray(campusList)?campusList:(campusList?[campusList]:[]);
+  renderCampusCheckboxes('edit-campus-box',allCampuses,selected,'edit-role');
+
+  // 역할 변경 시 체크박스 갱신
+  document.getElementById('edit-role').onchange=()=>{
+    renderCampusCheckboxes('edit-campus-box',allCampuses,getSelectedCampuses('edit-campus-box'),'edit-role');
+  };
 
   const modal=document.getElementById('edit-user-modal');
   modal.style.display='flex';
@@ -2139,12 +2200,17 @@ async function saveEditUser(){
   const uid=document.getElementById('edit-uid').value;
   const name=document.getElementById('edit-name').value.trim();
   const role=document.getElementById('edit-role').value;
-  const campus=document.getElementById('edit-campus').value;
+  const campuses=role==='viewer'?[]:getSelectedCampuses('edit-campus-box');
   const alertEl=document.getElementById('edit-user-alert');
 
   if(!name){alertEl.innerHTML='<div class="alert alert-err">이름을 입력해주세요.</div>';return;}
+  if(role!=='viewer'&&!campuses.length){alertEl.innerHTML='<div class="alert alert-err">담당 캠퍼스를 1개 이상 선택해주세요.</div>';return;}
   try{
-    await db.collection('users').doc(uid).update({name,role,campus});
+    // campus(구버전 단일필드)도 제거하고 campuses 배열로 통일
+    await db.collection('users').doc(uid).update({
+      name,role,campuses,
+      campus:firebase.firestore.FieldValue.delete()
+    });
     cacheInvalidate('users');
     alertEl.innerHTML='<div class="alert alert-ok">✅ 수정 완료!</div>';
     setTimeout(()=>{closeEditModal();renderAdmin();},800);
@@ -2167,14 +2233,16 @@ async function renderAdmin(){
     const isActive=u.isActive!==false;
     const cAt=u.createdAt?.toDate?.()?.toLocaleDateString('ko-KR')||'-';
     const dAt=u.deletedAt?.toDate?.()?.toLocaleDateString('ko-KR')||null;
+    const campusList=Array.isArray(u.campuses)?u.campuses:(u.campus?[u.campus]:[]);
+    const campusLabel=u.role==='viewer'?'전체조회':(campusList.includes('전체')?'전체':(campusList.length?campusList.join(', '):'캠퍼스 미지정'));
     return `<div class="user-item">
       <div class="u-info">
         <div class="u-name">${u.name||'이름없음'} <span class="badge ${u.role==='admin'?'badge-admin':u.role==='viewer'?'badge-viewer':'badge-user'}">${u.role==='admin'?'관리자':u.role==='viewer'?'뷰어':'사용자'}</span>${!isActive?'<span class="badge badge-del" style="margin-left:4px;">삭제됨</span>':''}</div>
-        <div class="u-email">${u.email||'-'} · ${u.campus||'캠퍼스 미지정'}</div>
+        <div class="u-email">${u.email||'-'} · ${campusLabel}</div>
         <div class="u-meta">등록일: ${cAt}${dAt?` · 삭제일: ${dAt}`:''}</div>
       </div>
       <div style="display:flex;gap:6px;">
-        ${isActive?`<button onclick="openEditModal('${u.id}','${u.name||''}','${u.role||'user'}','${u.campus||''}')" style="padding:4px 10px;border:1.5px solid var(--tif);border-radius:5px;background:#fff;color:var(--tif-dk);font-size:11px;cursor:pointer;">수정</button>`:''}
+        ${isActive?`<button onclick='openEditModal(${JSON.stringify(u.id)},${JSON.stringify(u.name||"")},${JSON.stringify(u.role||"user")},${JSON.stringify(campusList)})' style="padding:4px 10px;border:1.5px solid var(--tif);border-radius:5px;background:#fff;color:var(--tif-dk);font-size:11px;cursor:pointer;">수정</button>`:''}
         ${isActive&&u.id!==currentUser.uid?`<button class="btn-del" onclick="deleteUser('${u.id}','${u.name||''}')">삭제</button>`:''}
       </div>
     </div>`;
@@ -2188,11 +2256,12 @@ async function addUser(){
   const email=document.getElementById('nu-email').value.trim();
   const pw=document.getElementById('nu-pw').value;
   const role=document.getElementById('nu-role').value;
-  const campus=document.getElementById('nu-campus').value;
+  const campuses=role==='viewer'?[]:getSelectedCampuses('nu-campus-box');
   const adminPw=document.getElementById('nu-admin-pw').value;
   const alertEl=document.getElementById('add-user-alert');
   
   if(!name||!email||!pw||!adminPw){alertEl.innerHTML=`<div class="alert alert-err">모든 항목을 입력해주세요.</div>`;return;}
+  if(role!=='viewer'&&!campuses.length){alertEl.innerHTML=`<div class="alert alert-err">담당 캠퍼스를 1개 이상 선택해주세요.</div>`;return;}
   
   alertEl.innerHTML=`<div class="alert alert-info">사용자 생성 중...</div>`;
   
@@ -2203,7 +2272,7 @@ async function addUser(){
     
     // Save user profile to Firestore
     await db.collection('users').doc(newUid).set({
-      name,email,role,campus,isActive:true,
+      name,email,role,campuses,isActive:true,
       createdAt:firebase.firestore.FieldValue.serverTimestamp(),
       deletedAt:null
     });
@@ -2970,7 +3039,7 @@ async function loadWdHistory(){
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
+      ${hasFullAccess()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">기간</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">건수</th>
@@ -2978,7 +3047,7 @@ async function loadWdHistory(){
     </tr></thead>
     <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
       <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'이전 업로드'}</td>
-      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
+      ${hasFullAccess()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
       <td style="${tdS}text-align:center;color:#1D4ED8;font-weight:600;">${f.campuses}</td>
       <td style="${tdS}text-align:center;">${f.period}</td>
       <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
@@ -2989,8 +3058,8 @@ async function loadWdHistory(){
 async function deleteWdFile(uploadedAt){
   const fileRecs=allRecordsWd.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
   if(!fileRecs.length){alert('데이터를 찾을 수 없어요.');return;}
-  const uploader=fileRecs[0]?.uploadedBy||'';
-  if(!isSuperAdmin()&&uploader&&uploader!==currentUser?.email){alert('본인이 업로드한 파일만 삭제할 수 있어요.');return;}
+  const fileCampusesS=[...new Set(fileRecs.map(r=>r.campus))];
+  if(!fileCampusesS.every(cp=>canEditCampus(cp))){alert('해당 캠퍼스 데이터에 대한 수정/삭제 권한이 없어요.');return;}
   if(!confirm(`파일 ${fileRecs.length}건을 전체 삭제하시겠습니까?`))return;
   try{
     for(let i=0;i<fileRecs.length;i+=400){const batch=db.batch();fileRecs.slice(i,i+400).forEach(r=>batch.delete(db.collection('recordsWd').doc(r.id)));await batch.commit();}
@@ -3539,14 +3608,14 @@ async function loadScoreUploadHistory(){
     types:[...f.types].filter(Boolean).sort().join('·'),
     count:f.count
   }));
-  if(!isSuperAdmin()) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
+  if(!hasFullAccess()&&currentUser.role!=='viewer') files=files.filter(f=>f.campuses?f.campuses.split(', ').some(cp=>canEditCampus(cp)):true);
   files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
   if(!files.length){logEl.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';return;}
   const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   logEl.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
+      ${hasFullAccess()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">년도/학기/구분</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">건수</th>
@@ -3554,7 +3623,7 @@ async function loadScoreUploadHistory(){
     </tr></thead>
     <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
       <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'이전 업로드'}</td>
-      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
+      ${hasFullAccess()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
       <td style="${tdS}text-align:center;color:#15803D;font-weight:600;">${f.campuses}</td>
       <td style="${tdS}text-align:center;">${f.years}년 ${f.sems} ${f.types}</td>
       <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
@@ -4371,87 +4440,9 @@ async function renderMock(){
 // ====== 업로드 이력 관리 ======
 // ADMIN1 이메일 (슈퍼관리자)
 // 모의고사 이력 로드 및 표시
-async function loadMockHistory(){
-  const el=document.getElementById('mock-history-content');
-  if(!el) return;
 
-  let logs=[];
-  try{
-    const snap=await db.collection('uploadLogs').where('dataType','==','mock').get();
-    logs=snap.docs.map(d=>({id:d.id,...d.data()}));
-  }catch(e){}
 
-  // uploadedAt 기준 파일 단위 그룹핑
-  const mockGroups={};
-  allMockRecords.forEach(r=>{
-    const key=r.uploadedAt||'legacy';
-    if(!mockGroups[key]){
-      mockGroups[key]={uploadedAt:r.uploadedAt||'',uploadedBy:r.uploadedBy||'',
-        uploadedByName:r.uploadedByName||'',campuses:new Set(),
-        years:new Set(),months:new Set(),types:new Set(),count:0};
-    }
-    mockGroups[key].campuses.add(r.campus||'');
-    mockGroups[key].years.add(r.year||'');
-    mockGroups[key].months.add(r.month||'');
-    mockGroups[key].types.add(r.type||'');
-    mockGroups[key].count++;
-  });
 
-  let fileList=Object.entries(mockGroups).map(([key,f])=>({
-    key, uploadedAt:f.uploadedAt, uploadedBy:f.uploadedBy, uploadedByName:f.uploadedByName,
-    campuses:[...f.campuses].filter(Boolean).sort().join(', '),
-    years:[...f.years].filter(Boolean).sort().join(', '),
-    months:[...f.months].filter(Boolean).sort().join('·'),
-    types:[...f.types].filter(Boolean).sort().join('·'),
-    count:f.count
-  }));
-
-  if(!isSuperAdmin()) fileList=fileList.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
-  fileList.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
-
-  if(!fileList.length){el.innerHTML='<div style="padding:12px;color:var(--mut);font-size:13px;">업로드 이력이 없어요.</div>';return;}
-
-  const tdS='padding:7px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
-  el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
-    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
-      <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
-      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">포함 캠퍼스</th>
-      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">년도</th>
-      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">월·시험유형</th>
-      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">총 건수</th>
-      <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">삭제</th>
-    </tr></thead>
-    <tbody>${fileList.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
-      <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'(이전 업로드)'}</td>
-      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedByName||f.uploadedBy||'-'}</td>`:''}
-      <td style="${tdS}text-align:center;color:#6D28D9;font-weight:600;">${f.campuses||'-'}</td>
-      <td style="${tdS}text-align:center;">${f.years}년</td>
-      <td style="${tdS}text-align:center;">${f.months} ${f.types}</td>
-      <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
-      <td style="${tdS}text-align:center;">
-        <button onclick="deleteMockFile('${f.key}')" style="padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;font-weight:700;">🗑️ 삭제</button>
-      </td>
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
-
-async function deleteMockFile(uploadedAt){
-  const fileRecs=allMockRecords.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
-  const campuses=[...new Set(fileRecs.map(r=>r.campus))].join(', ');
-  if(!confirm(`[${campuses}] 업로드 파일 (${fileRecs.length}건)을 전체 삭제하시겠습니까?`)) return;
-  try{
-    const ids=fileRecs.map(r=>r.id);
-    for(let i=0;i<ids.length;i+=400){
-      const batch=db.batch();
-      ids.slice(i,i+400).forEach(id=>batch.delete(db.collection('recordsMock').doc(id)));
-      await batch.commit();
-    }
-    allMockRecords=allMockRecords.filter(r=>(r.uploadedAt||'legacy')!==uploadedAt);
-    updateMockDropdowns();
-    await loadMockHistory();
-  }catch(e){alert('삭제 오류: '+e.message);}
-}
 
 
 // ====== 신입전형 ======
@@ -4509,12 +4500,11 @@ async function initAdmissionTab(){
   if(!allAdmRecs.length) await loadAdmRecs();
   admUpdateDropdowns();
   document.getElementById('adm-modal').style.display='none';
-  // 뷰어는 업로드/개별입력 숨기기
-  const isViewer=currentUser?.role==='viewer';
+  // 뷰어는 업로드/개별입력 숨기기 (canUpload 통일 규칙)
   const uploadBox=document.getElementById('adm-upload-box');
   const inputBox=document.getElementById('adm-input-box');
-  if(uploadBox) uploadBox.style.display=isViewer?'none':'block';
-  if(inputBox) inputBox.style.display=isViewer?'none':'block';
+  if(uploadBox) uploadBox.style.display=canUpload()?'block':'none';
+  if(inputBox) inputBox.style.display=canUpload()?'block':'none';
   await admLoadHistory();
 }
 
@@ -4824,14 +4814,14 @@ async function admLoadHistory(){
     campuses:[...f.campuses].filter(Boolean).sort().join(', '),
     quarters:[...f.quarters].filter(Boolean).sort().join('·'),count:f.count
   }));
-  if(!isSuperAdmin()) files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
+  if(!hasFullAccess()&&currentUser.role!=='viewer') files=files.filter(f=>f.campuses?f.campuses.split(', ').some(cp=>canEditCampus(cp)):true);
   files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
   if(!files.length){el.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';return;}
   const t='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${t}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${isSuperAdmin()?`<th style="${t}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
+      ${hasFullAccess()?`<th style="${t}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${t}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
       <th style="${t}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">응시분기</th>
       <th style="${t}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">건수</th>
@@ -4839,7 +4829,7 @@ async function admLoadHistory(){
     </tr></thead>
     <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
       <td style="${t}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'이전 업로드'}</td>
-      ${isSuperAdmin()?`<td style="${t}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
+      ${hasFullAccess()?`<td style="${t}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
       <td style="${t}text-align:center;color:#15803D;font-weight:600;">${f.campuses}</td>
       <td style="${t}text-align:center;">${f.quarters}</td>
       <td style="${t}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
@@ -5286,15 +5276,18 @@ async function loadTeacherHistory(){
     period:[...f.years].filter(Boolean).sort().join('·')+'년 '+[...f.months].filter(Boolean).sort((a,b)=>a-b).map(m=>m+'월').join('·'),
     count:f.count
   }));
-  // 슈퍼관리자: 전체, 관리자: 전체, 사용자: 본인만
-  if(currentUser?.role==='user') files=files.filter(f=>f.uploadedBy===currentUser?.email||f.uploadedBy==='');
+  // 전체접근권한 없으면 본인 담당 캠퍼스 데이터만 표시
+  if(!hasFullAccess()) files=files.filter(f=>{
+    const fCamps=[...new Set(allTeacherRecs.filter(r=>(r.uploadedAt||'legacy')===f.key).map(r=>r.campus))];
+    return fCamps.some(cp=>canEditCampus(cp))||currentUser.role==='viewer';
+  });
   files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
   if(!files.length){el.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';return;}
   const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${isSuperAdmin()||currentUser?.role==='admin'?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
+      ${hasFullAccess()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">캠퍼스</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">기간</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">건수</th>
@@ -5302,7 +5295,7 @@ async function loadTeacherHistory(){
     </tr></thead>
     <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
       <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'이전 업로드'}</td>
-      ${isSuperAdmin()||currentUser?.role==='admin'?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
+      ${hasFullAccess()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedBy||'-'}</td>`:''}
       <td style="${tdS}text-align:center;color:#15803D;font-weight:600;">${f.campuses}</td>
       <td style="${tdS}text-align:center;">${f.period}</td>
       <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
@@ -5317,9 +5310,10 @@ async function deleteTeacherFile(uploadedAt){
   const fileRecs=allTeacherRecs.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
   if(!fileRecs.length){alert('데이터를 찾을 수 없어요.');return;}
   const uploader=fileRecs[0]?.uploadedBy||'';
-  // 관리자 이상: 전체 삭제 가능 / 사용자: 본인 것만
-  if(currentUser?.role==='user'&&uploader&&uploader!==currentUser?.email){
-    alert('본인이 업로드한 파일만 삭제할 수 있어요.');return;
+  // 캠퍼스 기준 통일 권한 체크
+  const tFileCampuses=[...new Set(fileRecs.map(r=>r.campus))];
+  if(!tFileCampuses.every(cp=>canEditCampus(cp))){
+    alert('해당 캠퍼스 데이터에 대한 수정/삭제 권한이 없어요.');return;
   }
   if(!confirm(`파일 ${fileRecs.length}건을 전체 삭제하시겠습니까?`))return;
   try{
@@ -5334,8 +5328,8 @@ async function deleteTeacherFile(uploadedAt){
 // ===== 수정 모달 =====
 function openTeacherEdit(id){
   const r=allTeacherRecs.find(x=>x.id===id);if(!r)return;
-  // 관리자: 전체 / 사용자: 본인 것만
-  if(currentUser?.role==='user'&&r.uploadedBy&&r.uploadedBy!==currentUser?.email){
+  // 캠퍼스 기준 통일 권한 체크
+  if(!canEditCampus(r.campus)){
     alert('본인이 업로드한 데이터만 수정할 수 있어요.');return;
   }
   document.getElementById('teacher-edit-id').value=id;
@@ -5371,7 +5365,7 @@ async function saveTeacherEdit(){
 
 async function deleteTeacherRec(id){
   const r=allTeacherRecs.find(x=>x.id===id);if(!r)return;
-  if(currentUser?.role==='user'&&r.uploadedBy&&r.uploadedBy!==currentUser?.email){
+  if(!canEditCampus(r.campus)){
     alert('본인이 업로드한 데이터만 삭제할 수 있어요.');return;
   }
   if(!confirm('이 항목을 삭제하시겠습니까?'))return;
@@ -5564,7 +5558,7 @@ async function loadMockHistory(){
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
       <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
+      ${hasFullAccess()?`<th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">업로드한 사람</th>`:''}
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">포함 캠퍼스</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">년도</th>
       <th style="${tdS}font-weight:800;text-align:center;border-bottom:2px solid var(--bdr);">월·시험유형</th>
@@ -5573,7 +5567,7 @@ async function loadMockHistory(){
     </tr></thead>
     <tbody>${fileList.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
       <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'(이전 업로드)'}</td>
-      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedByName||f.uploadedBy||'-'}</td>`:''}
+      ${hasFullAccess()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedByName||f.uploadedBy||'-'}</td>`:''}
       <td style="${tdS}text-align:center;color:#6D28D9;font-weight:600;">${f.campuses||'-'}</td>
       <td style="${tdS}text-align:center;">${f.years}년</td>
       <td style="${tdS}text-align:center;">${f.months} ${f.types}</td>
@@ -5604,85 +5598,14 @@ async function deleteMockFile(uploadedAt){
 
 
 // ====== 신입전형 ======
-// ===== 신입전형 업로드 이력 =====
-async function loadAdmUploadHistory(){
-  const el=document.getElementById('adm-upload-history-list');
-  if(!el) return;
-  if(!allAdmRecords.length) await loadAdmRecords();
-
-  // uploadedAt 기준 파일 단위 그룹핑
-  const fileGroups={};
-  allAdmRecords.forEach(r=>{
-    const key=r.uploadedAt||'legacy';
-    if(!fileGroups[key]){
-      fileGroups[key]={
-        uploadedAt:r.uploadedAt||'',
-        uploadedBy:r.uploadedBy||'',
-        uploadedByName:r.uploadedByName||'',
-        campuses:new Set(), quarters:new Set(), count:0
-      };
-    }
-    fileGroups[key].campuses.add(r.campus||'');
-    fileGroups[key].quarters.add(r.quarter||'');
-    fileGroups[key].count++;
-  });
-
-  let files=Object.entries(fileGroups).map(([key,f])=>({
-    key,
-    uploadedAt:f.uploadedAt,
-    uploadedBy:f.uploadedBy,
-    uploadedByName:f.uploadedByName,
-    campuses:[...f.campuses].filter(Boolean).sort().join(', '),
-    quarters:[...f.quarters].filter(Boolean).sort().join('·'),
-    count:f.count
-  }));
-
-  // 권한 필터: 슈퍼관리자는 전체, 나머지는 본인 캠퍼스 것만
-  if(!isSuperAdmin()){
-    if(currentUser?.role==='admin'){
-      // 일반 관리자: 본인 캠퍼스 파일만
-      files=files.filter(f=>f.campuses.includes(currentUser?.campus||''));
-    } else {
-      files=files.filter(f=>f.campuses.includes(currentUser?.campus||'')||f.uploadedBy===currentUser?.email);
-    }
-  }
-  files.sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
-
-  if(!files.length){
-    el.innerHTML='<div style="padding:10px;color:var(--mut);font-size:12px;">업로드 이력이 없어요.</div>';
-    return;
-  }
-
-  const tdS='padding:6px 10px;font-size:12px;border-bottom:1px solid #F1F5F9;';
-  el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
-    <thead><tr style="background:#F8FAFC;position:sticky;top:0;z-index:1;">
-      <th style="${tdS}font-weight:800;text-align:left;border-bottom:2px solid var(--bdr);">업로드 일시</th>
-      ${isSuperAdmin()?`<th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">업로드한 사람</th>`:''}
-      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">캠퍼스</th>
-      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">응시분기</th>
-      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">건수</th>
-      <th style="${tdS}font-weight:800;border-bottom:2px solid var(--bdr);text-align:center;">삭제</th>
-    </tr></thead>
-    <tbody>${files.map((f,i)=>`<tr style="${i%2===0?'':'background:#FAFAFA'}">
-      <td style="${tdS}font-weight:700;">${f.uploadedAt?f.uploadedAt.substring(0,16).replace('T',' '):'(이전 업로드)'}</td>
-      ${isSuperAdmin()?`<td style="${tdS}text-align:center;color:var(--mut);">${f.uploadedByName||f.uploadedBy||'-'}</td>`:''}
-      <td style="${tdS}text-align:center;color:#15803D;font-weight:600;">${f.campuses||'-'}</td>
-      <td style="${tdS}text-align:center;">${f.quarters||'-'}</td>
-      <td style="${tdS}text-align:center;font-weight:800;color:var(--tif-dk);">${f.count}건</td>
-      <td style="${tdS}text-align:center;">
-        <button onclick="deleteAdmFile('${f.key}')" style="padding:4px 10px;border:1.5px solid #EF4444;border-radius:5px;background:#fff;color:#EF4444;font-size:11px;cursor:pointer;font-weight:700;">🗑️ 삭제</button>
-      </td>
-    </tr>`).join('')}</tbody>
-  </table>`;
-}
 
 async function deleteAdmFile(uploadedAt){
-  const fileRecs=allAdmRecords.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
+  const fileRecs=allAdmRecs.filter(r=>(r.uploadedAt||'legacy')===uploadedAt);
   if(!fileRecs.length){alert('데이터를 찾을 수 없어요.');return;}
-  // 권한 체크
+  // 권한 체크 (캠퍼스 기준 통일)
   const camps=[...new Set(fileRecs.map(r=>r.campus))];
-  if(!isSuperAdmin()&&!camps.every(cp=>cp===currentUser?.campus)){
-    alert('본인 소속 분원 데이터만 삭제할 수 있어요.');return;
+  if(!camps.every(cp=>canEditCampus(cp))){
+    alert('해당 캠퍼스 데이터에 대한 수정/삭제 권한이 없어요.');return;
   }
   if(!confirm(`[${camps.join(', ')}] 업로드 파일 (${fileRecs.length}건)을 전체 삭제하시겠습니까?`)) return;
   try{
@@ -5692,10 +5615,10 @@ async function deleteAdmFile(uploadedAt){
       ids.slice(i,i+400).forEach(id=>batch.delete(db.collection('recordsAdm').doc(id)));
       await batch.commit();
     }
-    allAdmRecords=allAdmRecords.filter(r=>(r.uploadedAt||'legacy')!==uploadedAt);
+    allAdmRecs=allAdmRecs.filter(r=>(r.uploadedAt||'legacy')!==uploadedAt);
     cacheInvalidate('recordsAdm');
-    updateAdmDropdowns();
-    await loadAdmUploadHistory();
+    admUpdateDropdowns();
+    await admLoadHistory();
   }catch(e){alert('삭제 오류: '+e.message);}
 }
 
