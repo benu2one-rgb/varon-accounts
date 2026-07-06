@@ -1436,7 +1436,7 @@ function renderCompare(){
     od.forEach(d=>{
       campusMoData[c].out[d.key]=d.value;
       const denom=(prevD[d.key]||0)+(campusMoData[c].in[d.key]||0)+(tiD[d.key]||0);
-      campusMoData[c].rate[d.key]=denom>0?((d.value/denom)*100).toFixed(1):0;
+      campusMoData[c].rate[d.key]=denom>0?((d.value/denom)*100).toFixed(2):0;
       allMonthKeys.add(d.key);
     });
   });
@@ -1475,7 +1475,7 @@ function renderCompare(){
   const cmpRateAvg={};
   campuses.forEach(c=>{
     const rates=sortedKeys.map(k=>parseFloat(campusMoData[c].rate[k]||0)).filter(v=>v>0);
-    cmpRateAvg[c]=rates.length?(rates.reduce((a,b)=>a+b,0)/rates.length).toFixed(1):0;
+    cmpRateAvg[c]=rates.length?(rates.reduce((a,b)=>a+b,0)/rates.length).toFixed(2):0;
   });
   const thead=`<tr><th>캠퍼스</th><th class="th-org">순수신입 누계</th><th class="th-org">월평균</th><th class="th-tif">전입포함 누계</th><th class="th-tif">월평균</th><th class="th-org">순수퇴원 누계</th><th class="th-org">월평균</th><th class="th-tif">전출/졸업포함 누계</th><th class="th-tif">월평균</th><th style="background:var(--tif-lt);color:var(--tif-dk);">현재원 평균</th><th style="background:#FEF9C3;color:#854D0E;">퇴원율 평균</th></tr>`;
   const tbody=campuses.map(c=>{const s=csStats[c];return `<tr><td class="td-bold">${c}</td><td>${s.pureIn}</td><td class="td-avg">${s.avgNewIn}</td><td>${s.totalIn}</td><td class="td-avg">${s.avgTotalIn}</td><td>${s.pureOut}</td><td class="td-avg">${s.avgPureOut}</td><td>${s.totalOut}</td><td class="td-avg">${s.avgTotalOut}</td><td style="color:var(--tif-dk);font-weight:700;">${s.curAvg}</td><td style="color:#854D0E;font-weight:700;">${cmpRateAvg[c]}%</td></tr>`;}).join('');
@@ -1485,7 +1485,7 @@ function renderCompare(){
   const totalPureOut=campuses.reduce((a,c)=>a+csStats[c].pureOut,0);
   const totalTotalOut=campuses.reduce((a,c)=>a+csStats[c].totalOut,0);
   const totalCurAvg=campuses.length?(campuses.reduce((a,c)=>a+parseFloat(csStats[c].curAvg||0),0)/campuses.length).toFixed(1):0;
-  const totalRateAvg=campuses.length?(campuses.reduce((a,c)=>a+parseFloat(cmpRateAvg[c]||0),0)/campuses.length).toFixed(1):0;
+  const totalRateAvg=campuses.length?(campuses.reduce((a,c)=>a+parseFloat(cmpRateAvg[c]||0),0)/campuses.length).toFixed(2):0;
   const avgRow=`<tr style="background:var(--org-lt);font-weight:700;border-top:2px solid var(--org);">
     <td style="color:var(--org);">바론(평균)</td>
     <td>${avgIn}</td><td>-</td><td>-</td><td>-</td>
@@ -1587,7 +1587,7 @@ function renderCampus(){
       const byMo={};
       yr_recs.forEach(r=>{const mo=parseInt(r.month.replace('월',''));if(!byMo[mo])byMo[mo]={in:0,out:0,prev:0,tIn:0};byMo[mo].in+=r.newIn||0;byMo[mo].out+=r.withdrawal||0;byMo[mo].prev+=r.prev||0;byMo[mo].tIn+=r.transferIn||0;});
       const inData=[],outData=[],rateData=[];
-      for(let m=1;m<=12;m++){const d=byMo[m];inData.push(d?d.in:null);outData.push(d?d.out:null);const denom=d?(d.prev+d.in+d.tIn):0;rateData.push(d&&denom>0?(d.out/denom*100).toFixed(1):null);}
+      for(let m=1;m<=12;m++){const d=byMo[m];inData.push(d?d.in:null);outData.push(d?d.out:null);const denom=d?(d.prev+d.in+d.tIn):0;rateData.push(d&&denom>0?(d.out/denom*100).toFixed(2):null);}
       const base={label:yr+'년',borderColor:col,backgroundColor:col.replace(')',',0.08)').replace('#','rgba(').replace(/^rgba\(([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i,(_,r,g,b)=>`rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)}`),borderWidth:2,tension:0.35,spanGaps:true};
       datasets_in.push({...base,data:inData});datasets_out.push({...base,data:outData});datasets_rate.push({...base,data:rateData});
     });
@@ -1625,8 +1625,8 @@ function renderCampus(){
           const byMo={};yr_recs.forEach(r=>{const m=parseInt(r.month.replace('월',''));if(!byMo[m])byMo[m]={prev:0,wd:0,tOut:0,grad:0,in:0,tIn:0};byMo[m].prev+=r.prev||0;byMo[m].wd+=r.withdrawal||0;byMo[m].tOut+=r.transferOut||0;byMo[m].grad+=r.graduation||0;byMo[m].in+=r.newIn||0;byMo[m].tIn+=r.transferIn||0;});
           const d=byMo[mi+1];
           const denom=d?(d.prev+d.in+d.tIn):0;
-          const pureR=d&&denom>0?(d.wd/denom*100).toFixed(1):'-';
-          const totR=d&&denom>0?((d.wd+d.tOut+d.grad)/denom*100).toFixed(1):'-';
+          const pureR=d&&denom>0?(d.wd/denom*100).toFixed(2):'-';
+          const totR=d&&denom>0?((d.wd+d.tOut+d.grad)/denom*100).toFixed(2):'-';
           return `<td style="padding:4px 6px;border-bottom:1px solid #F1F5F9;text-align:center;color:#854D0E;">${pureR}${pureR!=='-'?'%':''}</td><td style="padding:4px 6px;border-bottom:1px solid #F1F5F9;text-align:center;color:#92400E;">${totR}${totR!=='-'?'%':''}</td>`;
         }).join('')+'</tr>';
       }).join('')}
@@ -1641,8 +1641,8 @@ function renderCampus(){
           const totalWd=yr_recs.reduce((a,r)=>a+(r.withdrawal||0),0);
           const totalOut=yr_recs.reduce((a,r)=>a+(r.withdrawal||0)+(r.transferOut||0)+(r.graduation||0),0);
           const totalDenom=totalPrev+totalNewIn+totalTransferIn;
-          const pureAvg=totalDenom>0?(totalWd/totalDenom*100).toFixed(1):'-';
-          const totAvg=totalDenom>0?(totalOut/totalDenom*100).toFixed(1):'-';
+          const pureAvg=totalDenom>0?(totalWd/totalDenom*100).toFixed(2):'-';
+          const totAvg=totalDenom>0?(totalOut/totalDenom*100).toFixed(2):'-';
           return `<td style="padding:5px;background:var(--org-lt);font-weight:800;color:var(--org);text-align:center;">${pureAvg}${pureAvg!=='-'?'%':''}</td><td style="padding:5px;background:var(--org-lt);font-weight:800;color:#92400E;text-align:center;">${totAvg}${totAvg!=='-'?'%':''}</td>`;
         }).join('')}
       </tr></tfoot>
@@ -1662,7 +1662,7 @@ function renderCampus(){
         const wd=semRecs.reduce((a,r)=>a+(r.withdrawal||0),0);
         const pv=semRecs.reduce((a,r)=>a+(r.prev||0),0);
         const semDenom=pv+nI+tI;
-        semData[k]={in:nI,out:wd,rate:semDenom>0?(wd/semDenom*100).toFixed(1):0,inAvg:(nI/3).toFixed(1),outAvg:(wd/3).toFixed(1)};
+        semData[k]={in:nI,out:wd,rate:semDenom>0?(wd/semDenom*100).toFixed(2):0,inAvg:(nI/3).toFixed(1),outAvg:(wd/3).toFixed(1)};
       }
     });});
     const sLabels=Object.keys(semData);
@@ -1708,13 +1708,13 @@ function renderCampus(){
         const wd=recs.filter(r=>{const[yr,sem]=k.split(' ');return r.year===yr.replace('년','')&&r.semester===sem;}).reduce((a,r)=>a+(r.withdrawal||0),0);
         const tot=recs.filter(r=>{const[yr,sem]=k.split(' ');return r.year===yr.replace('년','')&&r.semester===sem;}).reduce((a,r)=>a+(r.withdrawal||0)+(r.transferOut||0)+(r.graduation||0),0);
         const semTblDenom=pv+nI+tI;
-        const pr=semTblDenom>0?(wd/semTblDenom*100).toFixed(1)+' %':'-';
-        const tr=semTblDenom>0?(tot/semTblDenom*100).toFixed(1)+' %':'-';
+        const pr=semTblDenom>0?(wd/semTblDenom*100).toFixed(2)+' %':'-';
+        const tr=semTblDenom>0?(tot/semTblDenom*100).toFixed(2)+' %':'-';
         return `<tr><td style="padding:4px 6px;border-bottom:1px solid #F1F5F9;font-weight:600;">${k.replace('\n',' ')}</td><td style="padding:4px 6px;text-align:center;color:#854D0E;">${pr}</td><td style="padding:4px 6px;text-align:center;color:#92400E;">${tr}</td></tr>`;
       }).join('')}</tbody>
       <tfoot><tr>
         <td style="padding:5px;background:var(--org-lt);font-weight:800;color:var(--org);">평균</td>
-        ${(()=>{const pv=recs.reduce((a,r)=>a+(r.prev||0),0);const nI=recs.reduce((a,r)=>a+(r.newIn||0),0);const tI=recs.reduce((a,r)=>a+(r.transferIn||0),0);const wd=recs.reduce((a,r)=>a+(r.withdrawal||0),0);const tot=recs.reduce((a,r)=>a+(r.withdrawal||0)+(r.transferOut||0)+(r.graduation||0),0);const ftDenom=pv+nI+tI;return `<td style="padding:5px;background:var(--org-lt);font-weight:800;color:#854D0E;text-align:center;">${ftDenom>0?(wd/ftDenom*100).toFixed(1)+'%':'-'}</td><td style="padding:5px;background:var(--org-lt);font-weight:800;color:#92400E;text-align:center;">${ftDenom>0?(tot/ftDenom*100).toFixed(1)+'%':'-'}</td>`;})()}
+        ${(()=>{const pv=recs.reduce((a,r)=>a+(r.prev||0),0);const nI=recs.reduce((a,r)=>a+(r.newIn||0),0);const tI=recs.reduce((a,r)=>a+(r.transferIn||0),0);const wd=recs.reduce((a,r)=>a+(r.withdrawal||0),0);const tot=recs.reduce((a,r)=>a+(r.withdrawal||0)+(r.transferOut||0)+(r.graduation||0),0);const ftDenom=pv+nI+tI;return `<td style="padding:5px;background:var(--org-lt);font-weight:800;color:#854D0E;text-align:center;">${ftDenom>0?(wd/ftDenom*100).toFixed(2)+'%':'-'}</td><td style="padding:5px;background:var(--org-lt);font-weight:800;color:#92400E;text-align:center;">${ftDenom>0?(tot/ftDenom*100).toFixed(2)+'%':'-'}</td>`;})()}
       </tr></tfoot>
     </table>`;
     const csRateEl2=document.getElementById('cs-rate-table');
@@ -1796,7 +1796,7 @@ function renderGrade(){
       const tI=sr.reduce((a,r)=>a+(r.transferIn||0),0);
       const wd=sr.reduce((a,r)=>a+(r.withdrawal||0),0);
       const grDenom=pv+nI+tI;
-      return grDenom>0?(wd/grDenom*100).toFixed(1):null;
+      return grDenom>0?(wd/grDenom*100).toFixed(2):null;
     }),
     borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2,tension:0.35,spanGaps:true
   }));
