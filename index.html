@@ -268,14 +268,14 @@ tr:hover td{background:#FFFBF5;}
       <div id="cmp-stats" class="stats-grid"></div>
       <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title">📊 캠퍼스별 신입 / 퇴원 (마지막 = 바론 전체 평균)</div><div class="chart-wrap tall"><canvas id="ch-cmp-bar"></canvas></div></div></div>
       <div class="chart-row cols-2">
-        <div class="chart-card"><div class="chart-title">📈 월별 신입 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-in"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title">📉 월별 퇴원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-out"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title">📈 월별 신입 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-in"></canvas></div><div id="cmp-in-table" style="margin-top:10px;overflow-x:auto;max-height:200px;overflow-y:auto;font-size:11px;"></div></div>
+        <div class="chart-card"><div class="chart-title">📉 월별 퇴원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-out"></canvas></div><div id="cmp-out-table" style="margin-top:10px;overflow-x:auto;max-height:200px;overflow-y:auto;font-size:11px;"></div></div>
       </div>
       <div class="chart-row cols-2">
         <div class="chart-card"><div class="chart-title">📉 캠퍼스별 퇴원율 추이</div><div class="chart-wrap"><canvas id="ch-cmp-rate"></canvas></div></div>
         <div class="chart-card"><div class="chart-title">📋 캠퍼스별 퇴원율 데이터</div><div id="cmp-rate-table" style="overflow-x:auto;max-height:280px;overflow-y:auto;"></div></div>
       </div>
-      <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title">👥 월별 현재원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-cur"></canvas></div></div></div>
+      <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title">👥 월별 현재원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-cur"></canvas></div><div id="cmp-cur-table" style="margin-top:10px;overflow-x:auto;max-height:220px;overflow-y:auto;font-size:11px;"></div></div></div>
       <div id="cmp-table"></div>
     </div>
 
@@ -1101,6 +1101,8 @@ function mkChart(id,cfg){destroyChart(id);const el=document.getElementById(id);i
 function buildMiniNumTable(rowLabels,colLabels,getVal,opts){
   opts=opts||{};
   const totalDir=opts.totalDirection||(opts.showTotal===false?'none':'col');
+  const stickyCorner='position:sticky;left:0;z-index:2;';
+  const stickyRowLabel='position:sticky;left:0;z-index:1;';
   const rowTotalHead=totalDir==='row'?`<th style="padding:4px 6px;background:var(--org-lt);color:var(--org);border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;">합계</th>`:'';
   const colHead=colLabels.map(c=>`<th style="padding:4px 6px;background:#F8FAFC;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;">${c}</th>`).join('')+rowTotalHead;
   const rows=rowLabels.map((rl,ri)=>{
@@ -1111,7 +1113,7 @@ function buildMiniNumTable(rowLabels,colLabels,getVal,opts){
       return `<td style="padding:3px 6px;border-bottom:1px solid #F1F5F9;text-align:center;">${(v===null||v===undefined)?'-':v}</td>`;
     }).join('');
     const rowTotalCell=totalDir==='row'?`<td style="padding:3px 6px;border-bottom:1px solid #F1F5F9;text-align:center;font-weight:800;color:var(--org);background:var(--org-lt);">${rowHas?rowSum:'-'}</td>`:'';
-    return `<tr><td style="padding:3px 6px;border-bottom:1px solid #F1F5F9;font-weight:600;background:#FAFAFA;white-space:nowrap;">${rl}</td>${cells}${rowTotalCell}</tr>`;
+    return `<tr><td style="${stickyRowLabel}padding:3px 6px;border-bottom:1px solid #F1F5F9;font-weight:600;background:#FAFAFA;white-space:nowrap;">${rl}</td>${cells}${rowTotalCell}</tr>`;
   }).join('');
   let footer='';
   if(totalDir==='col'){
@@ -1120,10 +1122,10 @@ function buildMiniNumTable(rowLabels,colLabels,getVal,opts){
       rowLabels.forEach((rl,ri)=>{const v=getVal(ri,cl);if(v!==null&&v!==undefined&&v!==''){sum+=Number(v)||0;has=true;}});
       return has?sum:'-';
     });
-    footer=`<tfoot><tr><td style="padding:4px 6px;background:var(--org-lt);font-weight:800;color:var(--org);">합계</td>${totals.map(t=>`<td style="padding:4px 6px;background:var(--org-lt);font-weight:800;color:var(--org);text-align:center;">${t}</td>`).join('')}</tr></tfoot>`;
+    footer=`<tfoot><tr><td style="${stickyRowLabel}padding:4px 6px;background:var(--org-lt);font-weight:800;color:var(--org);">합계</td>${totals.map(t=>`<td style="padding:4px 6px;background:var(--org-lt);font-weight:800;color:var(--org);text-align:center;">${t}</td>`).join('')}</tr></tfoot>`;
   }
   return `<table style="width:100%;border-collapse:collapse;font-size:11px;">
-    <thead><tr><th style="padding:4px 6px;background:#F8FAFC;border-bottom:2px solid var(--bdr);"></th>${colHead}</tr></thead>
+    <thead><tr><th style="${stickyCorner}padding:4px 6px;background:#F8FAFC;border-bottom:2px solid var(--bdr);"></th>${colHead}</tr></thead>
     <tbody>${rows}</tbody>
     ${footer}
   </table>`;
@@ -1503,6 +1505,14 @@ function renderCompare(){
   });
   mkChart('ch-cmp-cur',{type:'line',data:{labels:moLabels,datasets:campuses.map(c=>({label:c,data:sortedKeys.map(k=>campusMoData[c].cur[k]||null),borderColor:getCColor(c),backgroundColor:getCColorA(c,0.07),borderWidth:2,spanGaps:true,pointRadius:3}))},options:{...lineOpts,plugins:{...lineOpts.plugins,tooltip:{callbacks:{title:items=>'현재원 '+items[0].label,label:item=>item.dataset.label+': '+item.parsed.y+'명'}}}}}); 
   
+  // 차트 아래 순수 숫자 표 (신입/퇴원/현재원) - 행:캠퍼스, 열:월, 신입·퇴원은 우측에 캠퍼스별 합계
+  const cmpInTableEl=document.getElementById('cmp-in-table');
+  if(cmpInTableEl) cmpInTableEl.innerHTML=buildMiniNumTable(campuses,moLabels,(ri,cl)=>{const c=campuses[ri];const mi=moLabels.indexOf(cl);const k=sortedKeys[mi];return campusMoData[c].in[k]??null;},{totalDirection:'row'});
+  const cmpOutTableEl=document.getElementById('cmp-out-table');
+  if(cmpOutTableEl) cmpOutTableEl.innerHTML=buildMiniNumTable(campuses,moLabels,(ri,cl)=>{const c=campuses[ri];const mi=moLabels.indexOf(cl);const k=sortedKeys[mi];return campusMoData[c].out[k]??null;},{totalDirection:'row'});
+  const cmpCurTableEl=document.getElementById('cmp-cur-table');
+  if(cmpCurTableEl) cmpCurTableEl.innerHTML=buildMiniNumTable(campuses,moLabels,(ri,cl)=>{const c=campuses[ri];const mi=moLabels.indexOf(cl);const k=sortedKeys[mi];return campusMoData[c].cur[k]??null;},{totalDirection:'none'});
+  
   // Detailed table
   // 캠퍼스별 퇴원율 평균 계산
   const cmpRateAvg={};
@@ -1657,14 +1667,14 @@ function renderCampus(){
 
     // 퇴원율 표 (월별: 각 연도별 월별 순수퇴원율 + 퇴원율)
     const rateTableHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px;">
-      <thead><tr><th style="padding:5px;background:#F8FAFC;border-bottom:2px solid var(--bdr);">월</th>
+      <thead><tr><th style="position:sticky;left:0;z-index:2;padding:5px;background:#F8FAFC;border-bottom:2px solid var(--bdr);">월</th>
         ${years.map(yr=>`<th colspan="2" style="padding:5px;background:#FEF9C3;border-bottom:2px solid var(--bdr);color:#854D0E;">${yr}년</th>`).join('')}
       </tr>
-      <tr><th style="padding:4px;background:#F8FAFC;border-bottom:1px solid var(--bdr);"></th>
+      <tr><th style="position:sticky;left:0;z-index:2;padding:4px;background:#F8FAFC;border-bottom:1px solid var(--bdr);"></th>
         ${years.map(()=>'<th style="padding:4px;background:#FEF9C3;font-size:10px;color:#854D0E;">순수</th><th style="padding:4px;background:#FEF9C3;font-size:10px;color:#854D0E;">포함</th>').join('')}
       </tr></thead>
       <tbody>${months.map((mo,mi)=>{
-        return '<tr>'+`<td style="padding:4px 6px;border-bottom:1px solid #F1F5F9;font-weight:600;">${mo}</td>`+
+        return '<tr>'+`<td style="position:sticky;left:0;z-index:1;padding:4px 6px;border-bottom:1px solid #F1F5F9;font-weight:600;background:#fff;">${mo}</td>`+
         years.map(yr=>{
           const yr_recs=recs.filter(r=>r.year===yr);
           const byMo={};yr_recs.forEach(r=>{const m=parseInt(r.month.replace('월',''));if(!byMo[m])byMo[m]={prev:0,wd:0,tOut:0,grad:0,in:0,tIn:0};byMo[m].prev+=r.prev||0;byMo[m].wd+=r.withdrawal||0;byMo[m].tOut+=r.transferOut||0;byMo[m].grad+=r.graduation||0;byMo[m].in+=r.newIn||0;byMo[m].tIn+=r.transferIn||0;});
@@ -1677,7 +1687,7 @@ function renderCampus(){
       }).join('')}
       </tbody>
       <tfoot><tr>
-        <td style="padding:5px;background:var(--org-lt);font-weight:800;color:var(--org);">평균</td>
+        <td style="position:sticky;left:0;z-index:1;padding:5px;background:var(--org-lt);font-weight:800;color:var(--org);">평균</td>
         ${years.map(yr=>{
           const yr_recs=recs.filter(r=>r.year===yr);
           const totalPrev=yr_recs.reduce((a,r)=>a+(r.prev||0),0);
