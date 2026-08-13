@@ -267,9 +267,11 @@ tr:hover td{background:#FFFBF5;}
       </div>
       <div id="cmp-stats" class="stats-grid"></div>
       <div class="chart-row cols-1"><div class="chart-card"><div class="chart-title">📊 캠퍼스별 신입 / 퇴원 (마지막 = 바론 전체 평균)</div><div class="chart-wrap tall"><canvas id="ch-cmp-bar"></canvas></div></div></div>
-      <div class="chart-row cols-2">
-        <div class="chart-card"><div class="chart-title">📈 월별 신입 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-in"></canvas></div><div id="cmp-in-table" style="margin-top:10px;overflow-x:auto;max-height:200px;overflow-y:auto;font-size:11px;"></div></div>
-        <div class="chart-card"><div class="chart-title">📉 월별 퇴원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-out"></canvas></div><div id="cmp-out-table" style="margin-top:10px;overflow-x:auto;max-height:200px;overflow-y:auto;font-size:11px;"></div></div>
+      <div class="chart-row cols-1">
+        <div class="chart-card"><div class="chart-title">📈 월별 신입 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-in"></canvas></div><div id="cmp-in-table" style="margin-top:10px;overflow-x:auto;max-height:220px;overflow-y:auto;font-size:11px;"></div></div>
+      </div>
+      <div class="chart-row cols-1">
+        <div class="chart-card"><div class="chart-title">📉 월별 퇴원 추이 (캠퍼스별)</div><div class="chart-wrap"><canvas id="ch-cmp-out"></canvas></div><div id="cmp-out-table" style="margin-top:10px;overflow-x:auto;max-height:220px;overflow-y:auto;font-size:11px;"></div></div>
       </div>
       <div class="chart-row cols-2">
         <div class="chart-card"><div class="chart-title">📉 캠퍼스별 퇴원율 추이</div><div class="chart-wrap"><canvas id="ch-cmp-rate"></canvas></div></div>
@@ -322,14 +324,18 @@ tr:hover td{background:#FFFBF5;}
         <div class="fg"><div class="fl">&nbsp;</div><button class="btn-go" onclick="renderCampus()">조회</button></div>
       </div>
       <div id="cs-stats" class="stats-grid"></div>
-      <div class="chart-row cols-3" id="cs-charts">
-        <div class="chart-card"><div class="chart-title" id="cs-ch1-title">📈 신입</div><div class="chart-wrap"><canvas id="ch-cs-in"></canvas></div><div id="cs-in-table" style="margin-top:10px;overflow-x:auto;max-height:170px;overflow-y:auto;font-size:11px;"></div></div>
-        <div class="chart-card"><div class="chart-title" id="cs-ch2-title">📉 퇴원</div><div class="chart-wrap"><canvas id="ch-cs-out"></canvas></div><div id="cs-out-table" style="margin-top:10px;overflow-x:auto;max-height:170px;overflow-y:auto;font-size:11px;"></div></div>
-        <div class="chart-card"><div class="chart-title" id="cs-ch4-title">👥 현재원</div><div class="chart-wrap"><canvas id="ch-cs-cur"></canvas></div><div id="cs-cur-table" style="margin-top:10px;overflow-x:auto;max-height:170px;overflow-y:auto;font-size:11px;"></div></div>
+      <div class="chart-row cols-1" id="cs-charts">
+        <div class="chart-card"><div class="chart-title" id="cs-ch1-title">📈 신입</div><div class="chart-wrap"><canvas id="ch-cs-in"></canvas></div><div id="cs-in-table" style="margin-top:10px;overflow-x:auto;max-height:220px;overflow-y:auto;font-size:11px;"></div></div>
+      </div>
+      <div class="chart-row cols-1">
+        <div class="chart-card"><div class="chart-title" id="cs-ch2-title">📉 퇴원</div><div class="chart-wrap"><canvas id="ch-cs-out"></canvas></div><div id="cs-out-table" style="margin-top:10px;overflow-x:auto;max-height:220px;overflow-y:auto;font-size:11px;"></div></div>
       </div>
       <div class="chart-row cols-2">
         <div class="chart-card"><div class="chart-title" id="cs-ch3-title">📊 퇴원율</div><div class="chart-wrap"><canvas id="ch-cs-rate"></canvas></div></div>
         <div class="chart-card"><div class="chart-title">📋 퇴원율 데이터 표</div><div id="cs-rate-table" style="overflow-y:auto;max-height:260px;font-size:12px;"></div></div>
+      </div>
+      <div class="chart-row cols-1">
+        <div class="chart-card"><div class="chart-title" id="cs-ch4-title">👥 현재원</div><div class="chart-wrap"><canvas id="ch-cs-cur"></canvas></div><div id="cs-cur-table" style="margin-top:10px;overflow-x:auto;max-height:220px;overflow-y:auto;font-size:11px;"></div></div>
       </div>
       <div class="chart-row cols-2">
         <div id="cs-grade-table"></div>
