@@ -323,9 +323,9 @@ tr:hover td{background:#FFFBF5;}
       </div>
       <div id="cs-stats" class="stats-grid"></div>
       <div class="chart-row cols-3" id="cs-charts">
-        <div class="chart-card"><div class="chart-title" id="cs-ch1-title">📈 신입</div><div class="chart-wrap"><canvas id="ch-cs-in"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title" id="cs-ch2-title">📉 퇴원</div><div class="chart-wrap"><canvas id="ch-cs-out"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title" id="cs-ch4-title">👥 현재원</div><div class="chart-wrap"><canvas id="ch-cs-cur"></canvas></div></div>
+        <div class="chart-card"><div class="chart-title" id="cs-ch1-title">📈 신입</div><div class="chart-wrap"><canvas id="ch-cs-in"></canvas></div><div id="cs-in-table" style="margin-top:10px;overflow-x:auto;max-height:170px;overflow-y:auto;font-size:11px;"></div></div>
+        <div class="chart-card"><div class="chart-title" id="cs-ch2-title">📉 퇴원</div><div class="chart-wrap"><canvas id="ch-cs-out"></canvas></div><div id="cs-out-table" style="margin-top:10px;overflow-x:auto;max-height:170px;overflow-y:auto;font-size:11px;"></div></div>
+        <div class="chart-card"><div class="chart-title" id="cs-ch4-title">👥 현재원</div><div class="chart-wrap"><canvas id="ch-cs-cur"></canvas></div><div id="cs-cur-table" style="margin-top:10px;overflow-x:auto;max-height:170px;overflow-y:auto;font-size:11px;"></div></div>
       </div>
       <div class="chart-row cols-2">
         <div class="chart-card"><div class="chart-title" id="cs-ch3-title">📊 퇴원율</div><div class="chart-wrap"><canvas id="ch-cs-rate"></canvas></div></div>
@@ -1096,6 +1096,34 @@ const charts={};
 function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 function mkChart(id,cfg){destroyChart(id);const el=document.getElementById(id);if(!el)return;charts[id]=new Chart(el.getContext('2d'),cfg);return charts[id];}
 
+// 차트 아래에 붙는 순수 숫자 표 생성기: rowLabels(예: 월/학기) x colLabels(예: 연도), getVal(rowIdx,colLabel)
+function buildMiniNumTable(rowLabels,colLabels,getVal,opts){
+  opts=opts||{};
+  const showTotal=opts.showTotal!==false;
+  const colHead=colLabels.map(c=>`<th style="padding:4px 6px;background:#F8FAFC;border-bottom:2px solid var(--bdr);text-align:center;white-space:nowrap;">${c}</th>`).join('');
+  const rows=rowLabels.map((rl,ri)=>{
+    const cells=colLabels.map(cl=>{
+      const v=getVal(ri,cl);
+      return `<td style="padding:3px 6px;border-bottom:1px solid #F1F5F9;text-align:center;">${(v===null||v===undefined)?'-':v}</td>`;
+    }).join('');
+    return `<tr><td style="padding:3px 6px;border-bottom:1px solid #F1F5F9;font-weight:600;background:#FAFAFA;white-space:nowrap;">${rl}</td>${cells}</tr>`;
+  }).join('');
+  let footer='';
+  if(showTotal){
+    const totals=colLabels.map(cl=>{
+      let sum=0,has=false;
+      rowLabels.forEach((rl,ri)=>{const v=getVal(ri,cl);if(v!==null&&v!==undefined&&v!==''){sum+=Number(v)||0;has=true;}});
+      return has?sum:'-';
+    });
+    footer=`<tfoot><tr><td style="padding:4px 6px;background:var(--org-lt);font-weight:800;color:var(--org);">합계</td>${totals.map(t=>`<td style="padding:4px 6px;background:var(--org-lt);font-weight:800;color:var(--org);text-align:center;">${t}</td>`).join('')}</tr></tfoot>`;
+  }
+  return `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr><th style="padding:4px 6px;background:#F8FAFC;border-bottom:2px solid var(--bdr);"></th>${colHead}</tr></thead>
+    <tbody>${rows}</tbody>
+    ${footer}
+  </table>`;
+}
+
 // ====== AUTH ======
 auth.onAuthStateChanged(async user=>{
   if(user){
@@ -1581,6 +1609,7 @@ function renderCampus(){
     // Each year = one line, months on x-axis
     const months=['1','2','3','4','5','6','7','8','9','10','11','12'].map(m=>m+'월');
     const datasets_in=[],datasets_out=[],datasets_rate=[];
+    const inByYear={},outByYear={};
     years.forEach((yr,i)=>{
       const col=YR_COLORS[i%YR_COLORS.length];
       const yr_recs=recs.filter(r=>r.year===yr);
@@ -1590,6 +1619,7 @@ function renderCampus(){
       for(let m=1;m<=12;m++){const d=byMo[m];inData.push(d?d.in:null);outData.push(d?d.out:null);const denom=d?(d.prev+d.in+d.tIn):0;rateData.push(d&&denom>0?(d.out/denom*100).toFixed(2):null);}
       const base={label:yr+'년',borderColor:col,backgroundColor:col.replace(')',',0.08)').replace('#','rgba(').replace(/^rgba\(([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i,(_,r,g,b)=>`rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)}`),borderWidth:2,tension:0.35,spanGaps:true};
       datasets_in.push({...base,data:inData});datasets_out.push({...base,data:outData});datasets_rate.push({...base,data:rateData});
+      inByYear[yr]=inData;outByYear[yr]=outData;
     });
     const lo={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}},elements:{point:{radius:3}}};
     document.getElementById('cs-ch1-title').textContent='📈 연도별 월별 신입';
@@ -1600,15 +1630,25 @@ function renderCampus(){
     mkChart('ch-cs-rate',{type:'line',data:{labels:months,datasets:datasets_rate},options:{...lo,scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
     // 월별 현재원
     const datasets_cur=[];
+    const curByYear={};
     years.forEach((yr,i)=>{
       const col=YR_COLORS[i%YR_COLORS.length];
       const yr_recs=recs.filter(r=>r.year===yr);
       const byMo={};yr_recs.forEach(r=>{const mo=parseInt(r.month.replace('월',''));if(!byMo[mo])byMo[mo]=0;byMo[mo]+=r.current||0;});
       const curData=[];for(let m=1;m<=12;m++)curData.push(byMo[m]??null);
       datasets_cur.push({label:yr+'년',borderColor:col,backgroundColor:col.replace('#','rgba(').replace(/^rgba\(([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i,(_,r,g,b)=>`rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)}`).replace(')',',0.08)'),borderWidth:2,tension:0.35,spanGaps:true,data:curData});
+      curByYear[yr]=curData;
     });
     document.getElementById('cs-ch4-title').textContent='👥 연도별 월별 현재원';
     mkChart('ch-cs-cur',{type:'line',data:{labels:months,datasets:datasets_cur},options:lo});
+
+    // 차트 아래 순수 숫자 표 (신입/퇴원/현재원)
+    const csInTableEl=document.getElementById('cs-in-table');
+    if(csInTableEl) csInTableEl.innerHTML=buildMiniNumTable(months,years.map(y=>y+'년'),(ri,cl)=>{const yr=cl.replace('년','');return inByYear[yr]?inByYear[yr][ri]:null;});
+    const csOutTableEl=document.getElementById('cs-out-table');
+    if(csOutTableEl) csOutTableEl.innerHTML=buildMiniNumTable(months,years.map(y=>y+'년'),(ri,cl)=>{const yr=cl.replace('년','');return outByYear[yr]?outByYear[yr][ri]:null;});
+    const csCurTableEl=document.getElementById('cs-cur-table');
+    if(csCurTableEl) csCurTableEl.innerHTML=buildMiniNumTable(months,years.map(y=>y+'년'),(ri,cl)=>{const yr=cl.replace('년','');return curByYear[yr]?curByYear[yr][ri]:null;},{showTotal:false});
 
     // 퇴원율 표 (월별: 각 연도별 월별 순수퇴원율 + 퇴원율)
     const rateTableHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px;">
@@ -1693,6 +1733,15 @@ function renderCampus(){
     const curBgColors=semNames.map(s=>SEM_IN_COLORS[s]||'#FB923C');
     document.getElementById('cs-ch4-title').textContent='👥 학기별 현재원 (학기 평균)';
     mkChart('ch-cs-cur',{type:'bar',data:{labels:sLabels,datasets:[{label:'현재원',data:curSemData,backgroundColor:curBgColors,borderColor:curBgColors,borderWidth:1.5}]},options:{...loLabel,plugins:{...loLabel.plugins,legend:{display:false}}}});
+
+    // 차트 아래 순수 숫자 표 (학기별 신입/퇴원/현재원)
+    const semLabelsShort=sLabels.map(k=>k.replace('\n',' '));
+    const csInTableEl2=document.getElementById('cs-in-table');
+    if(csInTableEl2) csInTableEl2.innerHTML=buildMiniNumTable(semLabelsShort,['누계','학기평균'],(ri,cl)=>{const k=sLabels[ri];return cl==='누계'?semData[k].in:semData[k].inAvg;});
+    const csOutTableEl2=document.getElementById('cs-out-table');
+    if(csOutTableEl2) csOutTableEl2.innerHTML=buildMiniNumTable(semLabelsShort,['누계','학기평균'],(ri,cl)=>{const k=sLabels[ri];return cl==='누계'?semData[k].out:semData[k].outAvg;});
+    const csCurTableEl2=document.getElementById('cs-cur-table');
+    if(csCurTableEl2) csCurTableEl2.innerHTML=buildMiniNumTable(semLabelsShort,['현재원'],(ri)=>curSemData[ri],{showTotal:false});
 
     // 학기별 퇴원율 표
     const semRateHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px;">
